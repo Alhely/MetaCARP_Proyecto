@@ -83,8 +83,8 @@ Thumbs.db
 .dmypy.json
 dmypy.json
 
-# CSV experiment results (optional - uncomment if you want to track results)
-# *.csv
+# CSV experiment results
+*.csv
 
 # Temporary files
 *.tmp
