@@ -1,0 +1,9 @@
+seed_base=2117088759
+experimento=random_seed_w_params
+timestamp=20260427_214859
+instancias=['gdb19', 'kshs1', 'kshs2', 'kshs3', 'kshs4', 'kshs5', 'kshs6', 'gdb4', 'gdb14', 'gdb15', 'gdb1', 'gdb20', 'gdb3', 'gdb6', 'gdb7', 'gdb12', 'gdb10', 'gdb2', 'gdb5', 'gdb13', 'gdb16', 'gdb17', 'gdb21']
+metaheuristicas=['sa', 'tabu', 'abejas', 'cuckoo']
+repeticiones=2
+usar_gpu=True
+usar_penalizacion_capacidad=True
+lambda_capacidad=None

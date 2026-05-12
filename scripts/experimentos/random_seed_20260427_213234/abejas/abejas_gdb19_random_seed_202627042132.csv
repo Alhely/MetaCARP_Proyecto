@@ -1,0 +1,2169 @@
+metaheuristica,instancia,id_corrida,config_id,repeticion,semilla,backend_evaluacion_solicitado,backend_evaluacion_real,tiempo_segundos,iteraciones_totales,fuentes_alimento,scouts_reinicios,mejoras,usar_penalizacion_capacidad,lambda_capacidad,n_iniciales_evaluados,iniciales_infactibles_aceptadas,aceptaciones_solucion_infactible,mejor_solucion_factible_final,costo_solucion_inicial,mejor_costo,mejora_absoluta,mejora_porcentaje_inicial_vs_final,bks_referencia,bks_origen,gap_bks_porcentaje,mejor_solucion_tr_legible,reporte_detalle_deadheading,costo_total_desde_reporte,propuesto_relocate_intra,propuesto_swap_intra,propuesto_2opt_intra,propuesto_relocate_inter,propuesto_swap_inter,propuesto_2opt_star,propuesto_cross_exchange,aceptado_relocate_intra,aceptado_swap_intra,aceptado_2opt_intra,aceptado_relocate_inter,aceptado_swap_inter,aceptado_2opt_star,aceptado_cross_exchange,mejoraron_relocate_intra,mejoraron_swap_intra,mejoraron_2opt_intra,mejoraron_relocate_inter,mejoraron_swap_inter,mejoraron_2opt_star,mejoraron_cross_exchange,trayectoria_mejor_relocate_intra,trayectoria_mejor_swap_intra,trayectoria_mejor_2opt_intra,trayectoria_mejor_relocate_inter,trayectoria_mejor_swap_inter,trayectoria_mejor_2opt_star,trayectoria_mejor_cross_exchange
+busqueda_abejas,gdb19,gdb19-abejas-cfg1-rep1-seed578443194,abejas-cfg1,1,578443194,gpu,gpu,0.38009115300155827,300,10,274,6,True,60.0,1,1,135,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D || R2: D -> TR4 -> TR10 -> TR2 -> D || R3: D -> TR1 -> TR8 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,700,1018,970,668,977,961,980,55,90,89,64,103,87,83,1,0,0,0,2,1,2,11,22,17,14,25,21,25
+busqueda_abejas,gdb19,gdb19-abejas-cfg1-rep2-seed578443195,abejas-cfg1,2,578443195,gpu,gpu,0.3860481890005758,300,10,269,6,True,60.0,1,1,131,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR11 -> TR7 -> D || R2: D -> TR3 -> TR9 -> TR5 -> TR6 -> TR2 -> D || R3: D -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 24.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR2 1->4) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 30.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,719,927,983,635,1065,972,968,73,75,80,53,108,86,85,1,2,0,0,2,1,0,4,6,6,3,11,3,7
+busqueda_abejas,gdb19,gdb19-abejas-cfg1-rep3-seed578443196,abejas-cfg1,3,578443196,gpu,gpu,0.41225451699938276,300,10,252,9,True,60.0,1,1,147,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR6 -> D || R2: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D || R3: D -> TR2 -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 20.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,674,962,957,687,1011,976,985,60,92,99,65,89,92,90,1,0,5,1,1,0,1,14,25,30,22,30,17,21
+busqueda_abejas,gdb19,gdb19-abejas-cfg2-rep1-seed578443294,abejas-cfg2,1,578443294,gpu,gpu,0.37334455299969704,300,10,130,4,True,60.0,1,1,66,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R2: D -> TR1 -> TR8 -> TR5 -> TR6 -> D || R3: D -> TR2 -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,704,965,961,624,928,991,957,35,43,55,36,62,52,45,0,0,2,0,1,0,1,11,10,16,10,23,11,14
+busqueda_abejas,gdb19,gdb19-abejas-cfg2-rep2-seed578443295,abejas-cfg2,2,578443295,gpu,gpu,0.3519839700002194,300,10,132,8,True,60.0,1,1,84,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR4 -> TR10 -> TR2 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,715,983,921,676,954,942,941,30,52,47,39,56,71,58,1,3,0,1,1,2,0,8,23,19,9,14,24,11
+busqueda_abejas,gdb19,gdb19-abejas-cfg2-rep3-seed578443296,abejas-cfg2,3,578443296,gpu,gpu,0.370322994000162,300,10,130,7,True,60.0,1,1,82,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR5 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,767,915,900,606,1016,963,963,48,53,43,43,55,44,63,0,2,1,0,2,0,2,4,10,4,4,4,3,8
+busqueda_abejas,gdb19,gdb19-abejas-cfg3-rep1-seed578443394,abejas-cfg3,1,578443394,gpu,gpu,0.36421545700068236,300,10,90,6,True,60.0,1,1,44,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R2: D -> TR1 -> TR8 -> TR5 -> TR6 -> D || R3: D -> TR2 -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,673,942,954,657,919,967,978,35,42,47,20,37,36,45,0,0,1,1,2,0,2,12,15,14,5,18,11,18
+busqueda_abejas,gdb19,gdb19-abejas-cfg3-rep2-seed578443395,abejas-cfg3,2,578443395,gpu,gpu,0.3600390609990427,300,10,86,7,True,60.0,1,1,58,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR4 -> TR10 -> D || R2: D -> TR2 -> TR3 -> TR9 -> TR11 -> TR7 -> D || R3: D -> TR1 -> TR5 -> TR8 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR3 1->5) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 27.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,686,962,977,636,974,910,941,18,46,36,28,50,39,43,0,0,2,2,0,2,1,4,16,10,6,11,11,18
+busqueda_abejas,gdb19,gdb19-abejas-cfg3-rep3-seed578443396,abejas-cfg3,3,578443396,gpu,gpu,0.35572092900110874,300,10,87,7,True,60.0,1,1,42,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,708,950,936,598,978,961,956,35,48,40,19,56,27,38,0,2,2,1,1,1,0,2,9,11,4,13,7,7
+busqueda_abejas,gdb19,gdb19-abejas-cfg4-rep1-seed578443494,abejas-cfg4,1,578443494,gpu,gpu,0.3359132059995318,300,10,68,6,True,60.0,1,1,49,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> TR2 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [DEADHEADING] 5 -> 1 (para servir TR2 1->4) Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 27.0 | Demanda = 26.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,659,973,949,624,945,940,978,27,22,37,28,39,29,30,0,0,0,1,1,2,2,4,2,8,5,11,5,11
+busqueda_abejas,gdb19,gdb19-abejas-cfg4-rep2-seed578443495,abejas-cfg4,2,578443495,gpu,gpu,0.39501160200052254,300,10,57,7,True,60.0,1,1,29,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,707,916,940,647,940,943,964,26,18,38,13,33,25,35,1,0,2,0,1,0,3,7,8,14,5,17,10,13
+busqueda_abejas,gdb19,gdb19-abejas-cfg4-rep3-seed578443496,abejas-cfg4,3,578443496,gpu,gpu,0.3734586679984204,300,10,66,10,True,60.0,1,1,39,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R3: D -> TR4 -> TR10 -> TR2 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,708,922,936,615,933,974,978,26,32,31,19,38,30,39,1,1,2,0,3,1,2,8,7,11,3,16,5,8
+busqueda_abejas,gdb19,gdb19-abejas-cfg5-rep1-seed578443594,abejas-cfg5,1,578443594,gpu,gpu,0.58949850099998,300,20,549,7,True,60.0,1,1,228,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR5 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1376,2031,1908,1336,2039,1943,1916,123,193,176,101,180,145,169,0,0,1,0,4,1,1,11,17,20,6,26,11,16
+busqueda_abejas,gdb19,gdb19-abejas-cfg5-rep2-seed578443595,abejas-cfg5,2,578443595,gpu,gpu,0.5839408800002275,300,20,519,7,True,60.0,1,1,317,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR4 -> TR10 -> D || R2: D -> TR2 -> TR1 -> TR8 -> TR6 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR1 1->2) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 20.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 26.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1381,2067,2013,1288,1945,1935,1890,105,181,173,110,190,162,211,0,2,2,0,0,0,3,13,37,36,9,28,20,27
+busqueda_abejas,gdb19,gdb19-abejas-cfg5-rep3-seed578443596,abejas-cfg5,3,578443596,gpu,gpu,0.6056947249999212,300,20,533,6,True,60.0,1,1,287,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1453,1979,2023,1311,1930,1945,1892,117,146,195,117,202,167,170,1,0,2,1,1,0,1,14,14,16,12,25,8,22
+busqueda_abejas,gdb19,gdb19-abejas-cfg6-rep1-seed578443694,abejas-cfg6,1,578443694,gpu,gpu,0.5963724440007354,300,20,265,7,True,60.0,1,1,162,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1371,1947,1890,1270,1965,1914,1908,74,109,104,67,136,87,97,0,2,2,0,1,1,1,8,18,17,8,33,7,14
+busqueda_abejas,gdb19,gdb19-abejas-cfg6-rep2-seed578443695,abejas-cfg6,2,578443695,gpu,gpu,0.6116151349997381,300,20,266,5,True,60.0,1,1,111,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR4 -> TR10 -> TR2 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1368,1863,1930,1318,1937,1960,1890,69,125,108,58,124,81,106,0,2,0,1,0,1,1,4,14,11,7,24,9,18
+busqueda_abejas,gdb19,gdb19-abejas-cfg6-rep3-seed578443696,abejas-cfg6,3,578443696,gpu,gpu,0.5325770560011733,300,20,262,5,True,60.0,1,1,166,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR6 -> TR2 -> D || R2: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D || R3: D -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 23.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR2 1->4) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 26.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1393,1920,1953,1194,1960,1934,1908,74,111,108,65,130,96,115,1,0,0,1,0,1,2,13,27,12,9,26,10,14
+busqueda_abejas,gdb19,gdb19-abejas-cfg7-rep1-seed578443794,abejas-cfg7,1,578443794,gpu,gpu,0.5596999329991377,300,20,172,7,True,60.0,1,1,90,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR1 -> TR8 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1369,1904,1835,1297,1945,1874,1948,52,85,71,48,71,72,86,0,0,0,2,2,0,3,42,75,52,37,58,44,64
+busqueda_abejas,gdb19,gdb19-abejas-cfg7-rep2-seed578443795,abejas-cfg7,2,578443795,gpu,gpu,0.5637144459997216,300,20,170,6,True,60.0,1,1,120,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR4 -> TR10 -> D || R2: D -> TR1 -> TR8 -> TR5 -> TR6 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> TR2 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [DEADHEADING] 5 -> 1 (para servir TR2 1->4) Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 27.0 | Demanda = 26.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1311,1886,1845,1274,1947,2000,1907,54,77,88,54,98,78,88,2,1,2,0,0,0,1,19,30,29,10,43,19,28
+busqueda_abejas,gdb19,gdb19-abejas-cfg7-rep3-seed578443796,abejas-cfg7,3,578443796,gpu,gpu,0.600484773000062,300,20,175,6,True,60.0,1,1,119,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR1 -> TR8 -> TR5 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1333,1965,1937,1310,1914,1883,1833,58,83,78,68,79,69,85,0,3,0,1,2,0,0,15,28,27,17,37,12,28
+busqueda_abejas,gdb19,gdb19-abejas-cfg8-rep1-seed578443894,abejas-cfg8,1,578443894,gpu,gpu,0.5233896900008403,300,20,134,6,True,60.0,1,1,78,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1370,1874,1920,1249,1917,1873,1931,55,67,72,50,61,49,69,0,2,0,2,0,1,1,9,12,18,11,21,8,14
+busqueda_abejas,gdb19,gdb19-abejas-cfg8-rep2-seed578443895,abejas-cfg8,2,578443895,gpu,gpu,0.5336442369989527,300,20,127,6,True,60.0,1,1,78,True,95.0,65.0,30.0,31.57894736842105,55.0,BKS,18.181818181818183,R1: D -> TR3 -> TR4 -> TR10 -> D || R2: D -> TR9 -> TR11 -> TR8 -> TR7 -> D || R3: D -> TR1 -> TR5 -> TR6 -> TR2 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [DEADHEADING] 5 -> 1 (para servir TR4 1->6) Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 13.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 18.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 16.0 | Demanda = 18.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [DEADHEADING] 1 -> 5 (para servir TR9 5->7) Caminos: ['1', '5'] (Costo: 1.0)
+    - Arco 1 -> 5 | Costo: 1.0
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 9.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR7 2->5) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 25.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR2 1->4) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 21.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 24.0 | Demanda = 21.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 65.0",65.0,1324,1899,1899,1311,1893,1937,1864,43,62,81,42,82,44,74,1,1,3,0,0,0,1,9,18,22,12,19,7,32
+busqueda_abejas,gdb19,gdb19-abejas-cfg8-rep3-seed578443896,abejas-cfg8,3,578443896,gpu,gpu,0.5344607030001498,300,20,125,6,True,60.0,1,1,99,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1347,1952,1879,1303,1867,1884,1893,41,51,69,43,80,67,86,0,0,1,0,0,2,3,6,16,24,7,24,19,28
+busqueda_abejas,gdb19,gdb19-abejas-cfg9-rep1-seed578443994,abejas-cfg9,1,578443994,gpu,gpu,0.7775100769995333,300,30,784,6,True,60.0,1,1,475,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R2: D -> TR4 -> TR10 -> TR2 -> D || R3: D -> TR1 -> TR5 -> TR8 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2089,2959,2980,1971,2899,2999,2887,176,256,276,178,282,259,305,1,0,4,0,1,0,0,18,28,34,18,35,27,36
+busqueda_abejas,gdb19,gdb19-abejas-cfg9-rep2-seed578443995,abejas-cfg9,2,578443995,gpu,gpu,0.8451296739985992,300,30,793,7,True,60.0,1,1,389,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R2: D -> TR4 -> TR10 -> TR2 -> D || R3: D -> TR1 -> TR8 -> TR5 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2121,2933,3017,1927,2979,2942,2874,189,233,290,150,291,242,270,1,0,3,0,1,1,1,41,52,63,29,72,48,45
+busqueda_abejas,gdb19,gdb19-abejas-cfg9-rep3-seed578443996,abejas-cfg9,3,578443996,gpu,gpu,0.790508782998586,300,30,808,7,True,60.0,1,1,394,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR11 -> TR7 -> D || R2: D -> TR2 -> TR3 -> TR9 -> TR5 -> TR6 -> D || R3: D -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR3 1->5) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 30.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2048,2987,3072,1948,2943,2931,2879,186,250,281,161,281,239,259,1,1,1,0,4,0,0,124,168,192,98,169,141,161
+busqueda_abejas,gdb19,gdb19-abejas-cfg10-rep1-seed578444094,abejas-cfg10,1,578444094,gpu,gpu,0.7466820879999432,300,30,397,8,True,60.0,1,1,208,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR5 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR1 -> TR8 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 24.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 24.0 | Demanda = 24.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2033,2895,2852,1885,2949,2853,2930,119,147,182,88,200,129,166,2,1,1,0,3,1,0,25,43,58,31,61,39,48
+busqueda_abejas,gdb19,gdb19-abejas-cfg10-rep2-seed578444095,abejas-cfg10,2,578444095,gpu,gpu,0.782198924000113,300,30,393,8,True,60.0,1,1,289,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2058,2867,2867,1929,2882,2804,2986,109,164,152,106,174,168,195,2,0,4,0,2,0,0,16,17,29,10,32,17,26
+busqueda_abejas,gdb19,gdb19-abejas-cfg10-rep3-seed578444096,abejas-cfg10,3,578444096,gpu,gpu,0.7259985019991291,300,30,404,7,True,60.0,1,1,252,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR2 -> TR4 -> TR10 -> D || R2: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D || R3: D -> TR1 -> TR8 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2013,2898,2883,1867,2921,2877,2945,118,165,173,106,168,136,182,0,3,1,0,1,1,1,51,72,83,36,61,49,62
+busqueda_abejas,gdb19,gdb19-abejas-cfg11-rep1-seed578444194,abejas-cfg11,1,578444194,gpu,gpu,0.7044211899992661,300,30,266,6,True,60.0,1,1,160,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR4 -> TR10 -> TR2 -> D || R2: D -> TR1 -> TR8 -> TR6 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1972,2889,2912,1896,2767,2931,2899,65,112,99,79,136,117,123,1,3,0,1,1,0,0,9,20,23,11,31,11,26
+busqueda_abejas,gdb19,gdb19-abejas-cfg11-rep2-seed578444195,abejas-cfg11,2,578444195,gpu,gpu,0.7311657549998927,300,30,268,6,True,60.0,1,1,145,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR2 -> TR3 -> TR9 -> TR11 -> TR7 -> D || R2: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R3: D -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR3 1->5) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 27.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2068,2901,2874,1929,2864,2732,2900,83,121,123,72,122,95,124,1,1,0,2,0,1,1,16,30,25,16,34,19,30
+busqueda_abejas,gdb19,gdb19-abejas-cfg11-rep3-seed578444196,abejas-cfg11,3,578444196,gpu,gpu,0.7731465869983367,300,30,251,7,True,60.0,1,1,142,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR4 -> TR10 -> D || R3: D -> TR2 -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR3 1->5) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 27.0 | Demanda = 26.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2103,2773,2969,1861,2880,2756,2909,66,141,119,51,148,105,125,0,2,1,0,1,2,1,50,104,87,43,121,78,96
+busqueda_abejas,gdb19,gdb19-abejas-cfg12-rep1-seed578444294,abejas-cfg12,1,578444294,gpu,gpu,0.7204508730010275,300,30,197,7,True,60.0,1,1,110,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR4 -> TR10 -> D || R2: D -> TR3 -> TR9 -> TR11 -> TR7 -> TR2 -> D || R3: D -> TR1 -> TR5 -> TR8 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [DEADHEADING] 5 -> 1 (para servir TR2 1->4) Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 27.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1961,2836,2867,1906,2911,2837,2879,85,93,134,51,116,79,77,0,0,2,0,4,0,1,23,25,45,16,43,11,23
+busqueda_abejas,gdb19,gdb19-abejas-cfg12-rep2-seed578444295,abejas-cfg12,2,578444295,gpu,gpu,0.7094089369984431,300,30,190,5,True,60.0,1,1,138,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2031,2935,2890,1923,2710,2844,2857,58,103,97,61,131,78,106,0,1,1,0,2,1,0,13,27,41,13,49,23,34
+busqueda_abejas,gdb19,gdb19-abejas-cfg12-rep3-seed578444296,abejas-cfg12,3,578444296,gpu,gpu,0.7409773229992425,300,30,197,6,True,60.0,1,1,119,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2098,2750,2850,1932,2856,2841,2870,74,87,108,55,104,74,105,0,1,2,1,1,0,1,13,14,31,9,22,12,19
+busqueda_abejas,gdb19,gdb19-abejas-cfg13-rep1-seed578444394,abejas-cfg13,1,578444394,gpu,gpu,0.9983267530005833,300,40,1053,6,True,60.0,1,1,563,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR4 -> TR10 -> D || R2: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D || R3: D -> TR2 -> TR1 -> TR8 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR1 1->2) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 20.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 26.0 | Demanda = 26.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2806,3891,3866,2615,4049,3913,3913,260,357,345,227,381,309,363,0,0,3,0,1,0,2,85,118,108,70,120,117,122
+busqueda_abejas,gdb19,gdb19-abejas-cfg13-rep2-seed578444395,abejas-cfg13,2,578444395,gpu,gpu,0.9386101970012533,300,40,1081,7,True,60.0,1,1,575,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR5 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2870,4012,4039,2554,3886,3809,3911,243,343,346,216,397,330,379,1,0,2,2,0,1,1,19,38,42,19,53,37,52
+busqueda_abejas,gdb19,gdb19-abejas-cfg13-rep3-seed578444396,abejas-cfg13,3,578444396,gpu,gpu,0.9816460860001825,300,40,1056,5,True,60.0,1,1,618,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 20.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2750,3870,3979,2586,4021,3938,3912,249,360,372,257,393,298,366,1,1,1,1,0,0,1,51,97,104,62,110,67,81
+busqueda_abejas,gdb19,gdb19-abejas-cfg14-rep1-seed578444494,abejas-cfg14,1,578444494,gpu,gpu,0.976138018999336,300,40,524,8,True,60.0,1,1,311,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R2: D -> TR4 -> TR10 -> TR2 -> D || R3: D -> TR1 -> TR5 -> TR8 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2783,3876,3888,2532,3788,3811,3846,164,235,229,124,241,163,224,2,1,3,1,0,1,0,58,85,70,44,91,50,85
+busqueda_abejas,gdb19,gdb19-abejas-cfg14-rep2-seed578444495,abejas-cfg14,2,578444495,gpu,gpu,0.9281986460009648,300,40,509,8,True,60.0,1,1,342,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR11 -> TR7 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR5 -> TR6 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 24.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 24.0 | Demanda = 24.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2832,3903,3765,2555,3754,3859,3841,176,195,216,143,273,195,216,3,0,1,1,1,1,1,63,68,88,42,102,55,84
+busqueda_abejas,gdb19,gdb19-abejas-cfg14-rep3-seed578444496,abejas-cfg14,3,578444496,gpu,gpu,0.9907097140003316,300,40,545,5,True,60.0,1,1,236,True,95.0,65.0,30.0,31.57894736842105,55.0,BKS,18.181818181818183,R1: D -> TR9 -> TR11 -> TR8 -> TR7 -> D || R2: D -> TR1 -> TR5 -> TR6 -> D || R3: D -> TR4 -> TR10 -> TR3 -> TR2 -> D,"VEHÍCULO #1:
+  [DEADHEADING] 1 -> 5 (para servir TR9 5->7) Caminos: ['1', '5'] (Costo: 1.0)
+    - Arco 1 -> 5 | Costo: 1.0
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 9.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR7 2->5) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 25.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 18.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 18.0 | Demanda = 18.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR3 1->5) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 5 -> 1 (para servir TR2 1->4) Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 21.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 22.0 | Demanda = 21.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 65.0",65.0,2677,3828,3951,2549,3825,3869,3846,144,211,216,126,247,178,191,0,1,2,0,1,0,1,9,34,31,10,43,20,20
+busqueda_abejas,gdb19,gdb19-abejas-cfg15-rep1-seed578444594,abejas-cfg15,1,578444594,gpu,gpu,0.9110064319993398,300,40,348,4,True,60.0,1,1,179,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2742,3866,3731,2463,3899,3777,3870,120,172,148,83,169,128,147,0,1,0,1,1,0,1,18,33,28,12,30,23,17
+busqueda_abejas,gdb19,gdb19-abejas-cfg15-rep2-seed578444595,abejas-cfg15,2,578444595,gpu,gpu,0.9077978040004382,300,40,344,5,True,60.0,1,1,205,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR11 -> TR7 -> D || R2: D -> TR3 -> TR9 -> TR5 -> TR6 -> D || R3: D -> TR4 -> TR10 -> TR2 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 24.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 24.0 | Demanda = 24.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2699,3842,3820,2491,3891,3793,3808,108,158,177,91,170,149,171,1,0,0,1,3,0,0,19,34,36,14,50,23,31
+busqueda_abejas,gdb19,gdb19-abejas-cfg15-rep3-seed578444596,abejas-cfg15,3,578444596,gpu,gpu,0.9532048519995442,300,40,337,8,True,60.0,1,1,224,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR2 -> TR4 -> TR10 -> D || R2: D -> TR3 -> TR9 -> TR5 -> TR6 -> D || R3: D -> TR1 -> TR8 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 24.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 24.0 | Demanda = 24.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2698,3766,3825,2524,3828,3773,3923,115,167,166,87,206,119,176,2,1,0,0,4,1,0,36,53,56,35,71,36,59
+busqueda_abejas,gdb19,gdb19-abejas-cfg16-rep1-seed578444694,abejas-cfg16,1,578444694,gpu,gpu,0.8921645209993585,300,40,244,7,True,60.0,1,1,196,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR11 -> TR7 -> D || R2: D -> TR2 -> TR3 -> TR9 -> TR5 -> TR6 -> D || R3: D -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR3 1->5) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 30.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2619,3831,3802,2525,3855,3860,3752,84,128,121,83,151,141,136,1,0,5,0,1,0,0,24,38,40,31,54,31,45
+busqueda_abejas,gdb19,gdb19-abejas-cfg16-rep2-seed578444695,abejas-cfg16,2,578444695,gpu,gpu,0.9153361890002998,300,40,249,5,True,60.0,1,1,186,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR4 -> TR10 -> D || R2: D -> TR1 -> TR8 -> TR6 -> TR2 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 23.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR2 1->4) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 26.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2690,3794,3795,2536,3804,3871,3759,81,131,121,79,167,130,149,0,1,0,0,3,0,1,21,40,25,12,39,26,27
+busqueda_abejas,gdb19,gdb19-abejas-cfg16-rep3-seed578444696,abejas-cfg16,3,578444696,gpu,gpu,0.9626413959995261,300,40,249,6,True,60.0,1,1,168,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D || R2: D -> TR2 -> TR1 -> TR8 -> TR6 -> D || R3: D -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR1 1->2) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 20.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 26.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,2649,3826,3734,2413,3785,3966,3876,95,155,147,67,121,113,140,3,0,2,0,1,0,0,27,48,37,23,37,29,44
+busqueda_abejas,gdb19,gdb19-abejas-cfg17-rep1-seed578444794,abejas-cfg17,1,578444794,gpu,gpu,0.7460956689992599,600,10,530,7,True,60.0,1,1,314,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR11 -> TR7 -> D || R2: D -> TR3 -> TR9 -> TR5 -> TR6 -> D || R3: D -> TR2 -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #1: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 24.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 24.0 | Demanda = 24.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1404,1980,1971,1325,1948,1966,1936,125,191,180,114,187,188,192,0,1,1,1,1,1,2,23,38,37,24,45,42,34
+busqueda_abejas,gdb19,gdb19-abejas-cfg17-rep2-seed578444795,abejas-cfg17,2,578444795,gpu,gpu,0.7257125090000045,600,10,541,6,True,60.0,1,1,253,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR2 -> TR3 -> TR9 -> TR5 -> TR6 -> D || R2: D -> TR4 -> TR10 -> D || R3: D -> TR1 -> TR8 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR3 1->5) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 30.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1449,1909,1925,1382,1948,1920,2008,141,167,181,101,201,144,195,1,1,0,0,2,0,2,50,61,60,32,74,40,58
+busqueda_abejas,gdb19,gdb19-abejas-cfg17-rep3-seed578444796,abejas-cfg17,3,578444796,gpu,gpu,0.7252586070007965,600,10,518,5,True,60.0,1,1,280,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR2 -> TR4 -> TR10 -> D || R2: D -> TR1 -> TR8 -> TR5 -> TR6 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1383,1923,1928,1352,2013,2011,1908,126,189,172,132,207,158,165,0,1,0,0,1,0,3,20,36,38,22,34,25,32
+busqueda_abejas,gdb19,gdb19-abejas-cfg18-rep1-seed578444894,abejas-cfg18,1,578444894,gpu,gpu,0.7541943840005843,600,10,275,5,True,60.0,1,1,153,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR4 -> TR10 -> TR2 -> D || R2: D -> TR1 -> TR8 -> TR6 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR5 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR5 2->3) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 26.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 23.0 | Demanda = 27.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1414,1925,1894,1266,1888,1950,1938,93,91,110,60,114,93,105,0,0,4,0,0,1,0,15,19,20,9,11,15,12
+busqueda_abejas,gdb19,gdb19-abejas-cfg18-rep2-seed578444895,abejas-cfg18,2,578444895,gpu,gpu,0.7136073440015025,600,10,267,8,True,60.0,1,1,159,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR2 -> TR4 -> TR10 -> D || R2: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1365,1903,1933,1263,1965,1909,1929,77,101,112,82,108,111,99,1,1,1,1,2,2,0,5,10,11,11,9,11,8
+busqueda_abejas,gdb19,gdb19-abejas-cfg18-rep3-seed578444896,abejas-cfg18,3,578444896,gpu,gpu,0.6928832679986954,600,10,271,6,True,60.0,1,1,150,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR8 -> TR5 -> TR6 -> D || R2: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R3: D -> TR2 -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1313,1927,1947,1308,1961,1938,1877,66,118,92,72,103,104,110,2,1,0,1,1,0,1,12,36,28,21,30,21,23
+busqueda_abejas,gdb19,gdb19-abejas-cfg19-rep1-seed578444994,abejas-cfg19,1,578444994,gpu,gpu,0.7199643959993409,600,10,175,6,True,60.0,1,1,109,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R3: D -> TR2 -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1366,1972,1903,1253,1870,1961,1850,60,74,83,50,83,67,75,0,0,2,1,1,0,2,26,35,41,22,36,30,35
+busqueda_abejas,gdb19,gdb19-abejas-cfg19-rep2-seed578444995,abejas-cfg19,2,578444995,gpu,gpu,0.7533835129997897,600,10,183,5,True,60.0,1,1,114,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR2 -> TR4 -> TR10 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1350,1935,1948,1279,1899,1901,1871,55,80,63,51,76,72,88,1,2,0,1,1,0,0,4,6,4,4,6,2,4
+busqueda_abejas,gdb19,gdb19-abejas-cfg19-rep3-seed578444996,abejas-cfg19,3,578444996,gpu,gpu,0.6715596109988837,600,10,175,7,True,60.0,1,1,119,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR4 -> TR10 -> D || R2: D -> TR3 -> TR9 -> TR5 -> TR6 -> TR2 -> D || R3: D -> TR1 -> TR8 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 14.0 | Demanda = 13.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 24.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR2 1->4) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 30.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 25.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 26.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 19.0 | Demanda = 26.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1337,1954,1919,1308,1894,1869,1894,55,70,91,53,81,72,80,1,1,2,0,0,2,1,33,44,67,36,52,50,54
+busqueda_abejas,gdb19,gdb19-abejas-cfg20-rep1-seed578445094,abejas-cfg20,1,578445094,gpu,gpu,0.6513627089989313,600,10,133,6,True,60.0,1,1,68,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR4 -> TR10 -> TR2 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 13.0 / 27.0 [OK]
+  [DEADHEADING] 8 -> 1 (para servir TR2 1->4) Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1348,1895,1933,1264,1957,1843,1893,42,64,70,32,70,48,57,0,0,2,2,1,0,1,7,12,11,3,10,5,8
+busqueda_abejas,gdb19,gdb19-abejas-cfg20-rep2-seed578445095,abejas-cfg20,2,578445095,gpu,gpu,0.7107242010006303,600,10,138,7,True,60.0,1,1,86,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR2 -> TR4 -> TR10 -> D || R2: D -> TR1 -> TR8 -> TR5 -> TR6 -> D || R3: D -> TR3 -> TR9 -> TR11 -> TR7 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 17.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->3) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR6 2->4) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #2: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #3: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1346,1901,1879,1237,1843,1925,2007,50,72,65,35,91,44,60,2,0,1,0,3,0,1,15,15,16,9,34,14,21
+busqueda_abejas,gdb19,gdb19-abejas-cfg20-rep3-seed578445096,abejas-cfg20,3,578445096,gpu,gpu,0.7128076730004977,600,10,136,6,True,60.0,1,1,86,True,95.0,63.0,32.0,33.68421052631579,55.0,BKS,14.545454545454545,R1: D -> TR1 -> TR5 -> TR8 -> TR6 -> D || R2: D -> TR3 -> TR9 -> TR11 -> TR7 -> D || R3: D -> TR2 -> TR4 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR8 2->7) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 21.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->4) Caminos: ['7', '2'] (Costo: 2.0)
+    - Arco 7 -> 2 | Costo: 2.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 27.0 / 27.0 [OK]
+  [RETORNO] 4 -> Depósito 1 Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  TOTAL VEHÍCULO #1: Costo = 22.0 | Demanda = 27.0 / 27.0 [OK]
+
+VEHÍCULO #2:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 14.0 / 27.0 [OK]
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 22.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 2 (para servir TR7 2->5) Caminos: ['3', '2'] (Costo: 1.0)
+    - Arco 3 -> 2 | Costo: 1.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 5 -> Depósito 1 Caminos: ['5', '1'] (Costo: 1.0)
+    - Arco 5 -> 1 | Costo: 1.0
+  TOTAL VEHÍCULO #2: Costo = 21.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 1 (para servir TR4 1->6) Caminos: ['4', '1'] (Costo: 3.0)
+    - Arco 4 -> 1 | Costo: 3.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 11.0 / 27.0 [OK]
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 16.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #3: Costo = 20.0 | Demanda = 16.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 63.0",63.0,1390,1913,1966,1175,1904,1890,1898,50,54,64,40,76,56,74,1,1,1,1,0,0,2,8,13,19,4,15,12,14

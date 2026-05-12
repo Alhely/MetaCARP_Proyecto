@@ -1,0 +1,345 @@
+metaheuristica,instancia,id_corrida,config_id,repeticion,semilla,backend_evaluacion_solicitado,backend_evaluacion_real,tiempo_segundos,iteraciones_totales,enfriamientos_ejecutados,aceptadas,mejoras,costo_inicial_referencia,mejor_costo,gap_porcentaje,mejora_absoluta,mejora_porcentaje,mejor_solucion_tr_legible,reporte_detalle_deadheading,costo_total_desde_reporte,operadores_propuestos,operadores_aceptados,operadores_mejoraron,operadores_trayectoria_mejor
+recocido_simulado,kshs1,kshs1-sa-cfg1-rep1-seed100143,sa-cfg1,1,100143,gpu,gpu,0.24927747999026906,2400,60,209,11,19105.0,14431.0,-24.464799790630725,4674.0,24.464799790630725,R1: D -> D || R2: D -> TR2 -> TR9 -> TR6 -> TR15 -> D || R3: D -> TR1 -> TR8 -> TR12 -> TR14 -> TR4 -> TR11 -> TR7 -> TR5 -> TR13 -> TR3 -> TR10 -> D || R4: D -> D,"VEHÍCULO #1:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #1: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,8) | Costo: 1082.0 | Demanda +27.0 = 27.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 3 (para servir TR9 3->7) Caminos: ['8', '3'] (Costo: 696.0)
+    - Arco 8 -> 3 | Costo: 696.0
+  [SERVICIO] TR9 (3,7) | Costo: 311.0 | Demanda +50.0 = 77.0 / 150.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->6) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR6 (2,6) | Costo: 780.0 | Demanda +60.0 = 137.0 / 150.0 [OK]
+  [SERVICIO] TR15 (6,8) | Costo: 402.0 | Demanda +26.0 = 163.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #2: Costo = 4723.0 | Demanda = 163.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,3) | Costo: 737.0 | Demanda +40.0 = 40.0 / 150.0 [OK]
+  [SERVICIO] TR8 (3,4) | Costo: 663.0 | Demanda +7.0 = 47.0 / 150.0 [OK]
+  [SERVICIO] TR12 (4,8) | Costo: 1046.0 | Demanda +55.0 = 102.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 6 (para servir TR14 6->7) Caminos: ['8', '6'] (Costo: 402.0)
+    - Arco 8 -> 6 | Costo: 402.0
+  [SERVICIO] TR14 (6,7) | Costo: 490.0 | Demanda +65.0 = 167.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR4 2->4) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR4 (2,4) | Costo: 166.0 | Demanda +54.0 = 221.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR11 (4,7) | Costo: 468.0 | Demanda +39.0 = 260.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR7 2->7) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR7 (2,7) | Costo: 370.0 | Demanda +30.0 = 290.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->5) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR5 (2,5) | Costo: 745.0 | Demanda +5.0 = 295.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR13 (5,8) | Costo: 239.0 | Demanda +29.0 = 324.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 8 -> 2 (para servir TR3 2->3) Caminos: ['8', '5', '2'] (Costo: 984.0)
+    - Arco 8 -> 5 | Costo: 239.0
+    - Arco 5 -> 2 | Costo: 745.0
+  [SERVICIO] TR3 (2,3) | Costo: 510.0 | Demanda +25.0 = 349.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR10 (3,8) | Costo: 696.0 | Demanda +23.0 = 372.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #3: Costo = 9708.0 | Demanda = 372.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #4:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #4: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+COSTO TOTAL DE LA SOLUCIÓN: 14431.0",14431.0,"{'2opt_intra': 387, 'swap_intra': 383, 'swap_inter': 381, '2opt_star': 344, 'cross_exchange': 311, 'relocate_intra': 310, 'relocate_inter': 284}","{'2opt_star': 102, 'relocate_inter': 37, 'cross_exchange': 32, 'relocate_intra': 14, '2opt_intra': 12, 'swap_inter': 8, 'swap_intra': 4}","{'relocate_inter': 3, '2opt_intra': 2, '2opt_star': 2, 'swap_inter': 2, 'cross_exchange': 1, 'swap_intra': 1}","{'2opt_star': 33, 'cross_exchange': 19, 'relocate_inter': 7, 'swap_inter': 7, '2opt_intra': 5, 'relocate_intra': 3, 'swap_intra': 3}"
+recocido_simulado,kshs1,kshs1-sa-cfg1-rep2-seed100144,sa-cfg1,2,100144,gpu,gpu,0.2168430440069642,2400,60,232,15,19105.0,14431.0,-24.464799790630725,4674.0,24.464799790630725,R1: D -> D || R2: D -> D || R3: D -> TR1 -> TR8 -> TR11 -> TR6 -> TR15 -> TR10 -> TR14 -> TR3 -> TR9 -> TR5 -> TR7 -> TR4 -> TR12 -> D || R4: D -> TR2 -> TR13 -> D,"VEHÍCULO #1:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #1: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+VEHÍCULO #2:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #2: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+VEHÍCULO #3:
+  [SERVICIO] TR1 (1,3) | Costo: 737.0 | Demanda +40.0 = 40.0 / 150.0 [OK]
+  [SERVICIO] TR8 (3,4) | Costo: 663.0 | Demanda +7.0 = 47.0 / 150.0 [OK]
+  [SERVICIO] TR11 (4,7) | Costo: 468.0 | Demanda +39.0 = 86.0 / 150.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->6) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR6 (2,6) | Costo: 780.0 | Demanda +60.0 = 146.0 / 150.0 [OK]
+  [SERVICIO] TR15 (6,8) | Costo: 402.0 | Demanda +26.0 = 172.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 8 -> 3 (para servir TR10 3->8) Caminos: ['8', '3'] (Costo: 696.0)
+    - Arco 8 -> 3 | Costo: 696.0
+  [SERVICIO] TR10 (3,8) | Costo: 696.0 | Demanda +23.0 = 195.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 8 -> 6 (para servir TR14 6->7) Caminos: ['8', '6'] (Costo: 402.0)
+    - Arco 8 -> 6 | Costo: 402.0
+  [SERVICIO] TR14 (6,7) | Costo: 490.0 | Demanda +65.0 = 260.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR3 2->3) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR3 (2,3) | Costo: 510.0 | Demanda +25.0 = 285.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR9 (3,7) | Costo: 311.0 | Demanda +50.0 = 335.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->5) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR5 (2,5) | Costo: 745.0 | Demanda +5.0 = 340.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 5 -> 2 (para servir TR7 2->7) Caminos: ['5', '2'] (Costo: 745.0)
+    - Arco 5 -> 2 | Costo: 745.0
+  [SERVICIO] TR7 (2,7) | Costo: 370.0 | Demanda +30.0 = 370.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR4 2->4) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR4 (2,4) | Costo: 166.0 | Demanda +54.0 = 424.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR12 (4,8) | Costo: 1046.0 | Demanda +55.0 = 479.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #3: Costo = 11789.0 | Demanda = 479.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #4:
+  [SERVICIO] TR2 (1,8) | Costo: 1082.0 | Demanda +27.0 = 27.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 5 (para servir TR13 5->8) Caminos: ['8', '5'] (Costo: 239.0)
+    - Arco 8 -> 5 | Costo: 239.0
+  [SERVICIO] TR13 (5,8) | Costo: 239.0 | Demanda +29.0 = 56.0 / 150.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #4: Costo = 2642.0 | Demanda = 56.0 / 150.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 14431.0",14431.0,"{'2opt_intra': 389, '2opt_star': 370, 'swap_intra': 359, 'relocate_intra': 342, 'swap_inter': 333, 'relocate_inter': 315, 'cross_exchange': 292}","{'2opt_star': 115, 'cross_exchange': 41, 'relocate_intra': 24, 'relocate_inter': 21, '2opt_intra': 13, 'swap_intra': 12, 'swap_inter': 6}","{'2opt_star': 4, 'relocate_intra': 4, '2opt_intra': 3, 'cross_exchange': 3, 'swap_intra': 1}","{'2opt_star': 53, 'cross_exchange': 20, 'relocate_inter': 11, '2opt_intra': 10, 'relocate_intra': 10, 'swap_inter': 4, 'swap_intra': 4}"
+recocido_simulado,kshs1,kshs1-sa-cfg2-rep1-seed100243,sa-cfg2,1,100243,gpu,gpu,0.3796227459970396,4000,100,318,8,19105.0,14431.0,-24.464799790630725,4674.0,24.464799790630725,R1: D -> TR1 -> TR8 -> TR12 -> TR3 -> TR9 -> TR7 -> TR6 -> TR14 -> TR4 -> TR11 -> TR5 -> TR13 -> D || R2: D -> D || R3: D -> D || R4: D -> TR2 -> TR15 -> TR10 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,3) | Costo: 737.0 | Demanda +40.0 = 40.0 / 150.0 [OK]
+  [SERVICIO] TR8 (3,4) | Costo: 663.0 | Demanda +7.0 = 47.0 / 150.0 [OK]
+  [SERVICIO] TR12 (4,8) | Costo: 1046.0 | Demanda +55.0 = 102.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 2 (para servir TR3 2->3) Caminos: ['8', '5', '2'] (Costo: 984.0)
+    - Arco 8 -> 5 | Costo: 239.0
+    - Arco 5 -> 2 | Costo: 745.0
+  [SERVICIO] TR3 (2,3) | Costo: 510.0 | Demanda +25.0 = 127.0 / 150.0 [OK]
+  [SERVICIO] TR9 (3,7) | Costo: 311.0 | Demanda +50.0 = 177.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR7 2->7) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR7 (2,7) | Costo: 370.0 | Demanda +30.0 = 207.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->6) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR6 (2,6) | Costo: 780.0 | Demanda +60.0 = 267.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR14 (6,7) | Costo: 490.0 | Demanda +65.0 = 332.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR4 2->4) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR4 (2,4) | Costo: 166.0 | Demanda +54.0 = 386.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR11 (4,7) | Costo: 468.0 | Demanda +39.0 = 425.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->5) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR5 (2,5) | Costo: 745.0 | Demanda +5.0 = 430.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR13 (5,8) | Costo: 239.0 | Demanda +29.0 = 459.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #1: Costo = 10071.0 | Demanda = 459.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #2:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #2: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+VEHÍCULO #3:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #3: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+VEHÍCULO #4:
+  [SERVICIO] TR2 (1,8) | Costo: 1082.0 | Demanda +27.0 = 27.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 6 (para servir TR15 6->8) Caminos: ['8', '6'] (Costo: 402.0)
+    - Arco 8 -> 6 | Costo: 402.0
+  [SERVICIO] TR15 (6,8) | Costo: 402.0 | Demanda +26.0 = 53.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 3 (para servir TR10 3->8) Caminos: ['8', '3'] (Costo: 696.0)
+    - Arco 8 -> 3 | Costo: 696.0
+  [SERVICIO] TR10 (3,8) | Costo: 696.0 | Demanda +23.0 = 76.0 / 150.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #4: Costo = 4360.0 | Demanda = 76.0 / 150.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 14431.0",14431.0,"{'swap_inter': 656, '2opt_intra': 615, '2opt_star': 611, 'cross_exchange': 598, 'swap_intra': 596, 'relocate_intra': 470, 'relocate_inter': 454}","{'2opt_star': 167, 'cross_exchange': 52, 'relocate_inter': 28, 'relocate_intra': 24, 'swap_intra': 18, 'swap_inter': 15, '2opt_intra': 14}","{'swap_intra': 4, '2opt_intra': 1, '2opt_star': 1, 'relocate_intra': 1, 'swap_inter': 1}","{'2opt_star': 89, 'cross_exchange': 34, 'relocate_inter': 14, 'swap_intra': 11, 'swap_inter': 9, 'relocate_intra': 7, '2opt_intra': 4}"
+recocido_simulado,kshs1,kshs1-sa-cfg2-rep2-seed100244,sa-cfg2,2,100244,gpu,gpu,0.3988407059950987,4000,100,283,11,19105.0,14431.0,-24.464799790630725,4674.0,24.464799790630725,R1: D -> TR1 -> TR8 -> TR12 -> TR10 -> TR14 -> TR4 -> TR11 -> TR5 -> TR13 -> D || R2: D -> TR2 -> TR7 -> TR3 -> TR9 -> TR6 -> TR15 -> D || R3: D -> D || R4: D -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,3) | Costo: 737.0 | Demanda +40.0 = 40.0 / 150.0 [OK]
+  [SERVICIO] TR8 (3,4) | Costo: 663.0 | Demanda +7.0 = 47.0 / 150.0 [OK]
+  [SERVICIO] TR12 (4,8) | Costo: 1046.0 | Demanda +55.0 = 102.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 3 (para servir TR10 3->8) Caminos: ['8', '3'] (Costo: 696.0)
+    - Arco 8 -> 3 | Costo: 696.0
+  [SERVICIO] TR10 (3,8) | Costo: 696.0 | Demanda +23.0 = 125.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 6 (para servir TR14 6->7) Caminos: ['8', '6'] (Costo: 402.0)
+    - Arco 8 -> 6 | Costo: 402.0
+  [SERVICIO] TR14 (6,7) | Costo: 490.0 | Demanda +65.0 = 190.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR4 2->4) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR4 (2,4) | Costo: 166.0 | Demanda +54.0 = 244.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR11 (4,7) | Costo: 468.0 | Demanda +39.0 = 283.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->5) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR5 (2,5) | Costo: 745.0 | Demanda +5.0 = 288.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR13 (5,8) | Costo: 239.0 | Demanda +29.0 = 317.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #1: Costo = 8170.0 | Demanda = 317.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,8) | Costo: 1082.0 | Demanda +27.0 = 27.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 2 (para servir TR7 2->7) Caminos: ['8', '5', '2'] (Costo: 984.0)
+    - Arco 8 -> 5 | Costo: 239.0
+    - Arco 5 -> 2 | Costo: 745.0
+  [SERVICIO] TR7 (2,7) | Costo: 370.0 | Demanda +30.0 = 57.0 / 150.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR3 2->3) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR3 (2,3) | Costo: 510.0 | Demanda +25.0 = 82.0 / 150.0 [OK]
+  [SERVICIO] TR9 (3,7) | Costo: 311.0 | Demanda +50.0 = 132.0 / 150.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->6) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR6 (2,6) | Costo: 780.0 | Demanda +60.0 = 192.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR15 (6,8) | Costo: 402.0 | Demanda +26.0 = 218.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #2: Costo = 6261.0 | Demanda = 218.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #3:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #3: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+VEHÍCULO #4:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #4: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+COSTO TOTAL DE LA SOLUCIÓN: 14431.0",14431.0,"{'swap_intra': 651, '2opt_intra': 649, '2opt_star': 630, 'swap_inter': 594, 'cross_exchange': 540, 'relocate_intra': 505, 'relocate_inter': 431}","{'2opt_star': 154, 'relocate_inter': 37, 'cross_exchange': 33, 'swap_intra': 19, 'relocate_intra': 18, 'swap_inter': 14, '2opt_intra': 8}","{'relocate_inter': 3, 'relocate_intra': 3, '2opt_star': 2, '2opt_intra': 1, 'cross_exchange': 1, 'swap_inter': 1}","{'2opt_star': 55, 'relocate_inter': 17, 'relocate_intra': 11, 'cross_exchange': 9, 'swap_intra': 8, 'swap_inter': 7, '2opt_intra': 2}"
+recocido_simulado,kshs1,kshs1-sa-cfg3-rep1-seed100343,sa-cfg3,1,100343,gpu,gpu,0.5078532439947594,4800,60,408,11,19105.0,14431.0,-24.464799790630725,4674.0,24.464799790630725,R1: D -> TR1 -> TR8 -> TR12 -> TR15 -> TR7 -> TR4 -> TR11 -> TR6 -> TR14 -> TR5 -> TR13 -> D || R2: D -> D || R3: D -> TR2 -> TR9 -> TR3 -> TR10 -> D || R4: D -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,3) | Costo: 737.0 | Demanda +40.0 = 40.0 / 150.0 [OK]
+  [SERVICIO] TR8 (3,4) | Costo: 663.0 | Demanda +7.0 = 47.0 / 150.0 [OK]
+  [SERVICIO] TR12 (4,8) | Costo: 1046.0 | Demanda +55.0 = 102.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 6 (para servir TR15 6->8) Caminos: ['8', '6'] (Costo: 402.0)
+    - Arco 8 -> 6 | Costo: 402.0
+  [SERVICIO] TR15 (6,8) | Costo: 402.0 | Demanda +26.0 = 128.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 2 (para servir TR7 2->7) Caminos: ['8', '5', '2'] (Costo: 984.0)
+    - Arco 8 -> 5 | Costo: 239.0
+    - Arco 5 -> 2 | Costo: 745.0
+  [SERVICIO] TR7 (2,7) | Costo: 370.0 | Demanda +30.0 = 158.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR4 2->4) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR4 (2,4) | Costo: 166.0 | Demanda +54.0 = 212.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR11 (4,7) | Costo: 468.0 | Demanda +39.0 = 251.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->6) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR6 (2,6) | Costo: 780.0 | Demanda +60.0 = 311.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR14 (6,7) | Costo: 490.0 | Demanda +65.0 = 376.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->5) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR5 (2,5) | Costo: 745.0 | Demanda +5.0 = 381.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR13 (5,8) | Costo: 239.0 | Demanda +29.0 = 410.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #1: Costo = 9684.0 | Demanda = 410.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #2:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #2: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,8) | Costo: 1082.0 | Demanda +27.0 = 27.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 3 (para servir TR9 3->7) Caminos: ['8', '3'] (Costo: 696.0)
+    - Arco 8 -> 3 | Costo: 696.0
+  [SERVICIO] TR9 (3,7) | Costo: 311.0 | Demanda +50.0 = 77.0 / 150.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR3 2->3) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR3 (2,3) | Costo: 510.0 | Demanda +25.0 = 102.0 / 150.0 [OK]
+  [SERVICIO] TR10 (3,8) | Costo: 696.0 | Demanda +23.0 = 125.0 / 150.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #3: Costo = 4747.0 | Demanda = 125.0 / 150.0 [OK]
+
+VEHÍCULO #4:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #4: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+COSTO TOTAL DE LA SOLUCIÓN: 14431.0",14431.0,"{'swap_intra': 820, '2opt_intra': 785, 'swap_inter': 744, '2opt_star': 698, 'cross_exchange': 643, 'relocate_intra': 579, 'relocate_inter': 531}","{'2opt_star': 208, 'cross_exchange': 72, 'relocate_inter': 40, 'swap_inter': 26, '2opt_intra': 24, 'relocate_intra': 24, 'swap_intra': 14}","{'2opt_intra': 4, 'swap_inter': 2, 'swap_intra': 2, '2opt_star': 1, 'cross_exchange': 1, 'relocate_inter': 1}","{'2opt_star': 57, 'cross_exchange': 33, 'relocate_inter': 18, 'swap_inter': 12, '2opt_intra': 10, 'swap_intra': 5, 'relocate_intra': 4}"
+recocido_simulado,kshs1,kshs1-sa-cfg3-rep2-seed100344,sa-cfg3,2,100344,gpu,gpu,0.5021972770045977,4800,60,390,12,19105.0,14431.0,-24.464799790630725,4674.0,24.464799790630725,R1: D -> TR1 -> TR8 -> TR12 -> TR9 -> TR3 -> TR10 -> D || R2: D -> D || R3: D -> TR2 -> TR4 -> TR11 -> TR7 -> TR5 -> TR13 -> TR14 -> TR6 -> TR15 -> D || R4: D -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,3) | Costo: 737.0 | Demanda +40.0 = 40.0 / 150.0 [OK]
+  [SERVICIO] TR8 (3,4) | Costo: 663.0 | Demanda +7.0 = 47.0 / 150.0 [OK]
+  [SERVICIO] TR12 (4,8) | Costo: 1046.0 | Demanda +55.0 = 102.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 3 (para servir TR9 3->7) Caminos: ['8', '3'] (Costo: 696.0)
+    - Arco 8 -> 3 | Costo: 696.0
+  [SERVICIO] TR9 (3,7) | Costo: 311.0 | Demanda +50.0 = 152.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR3 2->3) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR3 (2,3) | Costo: 510.0 | Demanda +25.0 = 177.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR10 (3,8) | Costo: 696.0 | Demanda +23.0 = 200.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #1: Costo = 6111.0 | Demanda = 200.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #2:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #2: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,8) | Costo: 1082.0 | Demanda +27.0 = 27.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 2 (para servir TR4 2->4) Caminos: ['8', '5', '2'] (Costo: 984.0)
+    - Arco 8 -> 5 | Costo: 239.0
+    - Arco 5 -> 2 | Costo: 745.0
+  [SERVICIO] TR4 (2,4) | Costo: 166.0 | Demanda +54.0 = 81.0 / 150.0 [OK]
+  [SERVICIO] TR11 (4,7) | Costo: 468.0 | Demanda +39.0 = 120.0 / 150.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR7 2->7) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR7 (2,7) | Costo: 370.0 | Demanda +30.0 = 150.0 / 150.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->5) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR5 (2,5) | Costo: 745.0 | Demanda +5.0 = 155.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR13 (5,8) | Costo: 239.0 | Demanda +29.0 = 184.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 8 -> 6 (para servir TR14 6->7) Caminos: ['8', '6'] (Costo: 402.0)
+    - Arco 8 -> 6 | Costo: 402.0
+  [SERVICIO] TR14 (6,7) | Costo: 490.0 | Demanda +65.0 = 249.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->6) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR6 (2,6) | Costo: 780.0 | Demanda +60.0 = 309.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR15 (6,8) | Costo: 402.0 | Demanda +26.0 = 335.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #3: Costo = 8320.0 | Demanda = 335.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #4:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #4: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+COSTO TOTAL DE LA SOLUCIÓN: 14431.0",14431.0,"{'swap_intra': 783, '2opt_star': 755, '2opt_intra': 717, 'swap_inter': 709, 'cross_exchange': 664, 'relocate_intra': 608, 'relocate_inter': 564}","{'2opt_star': 221, 'cross_exchange': 66, 'relocate_intra': 34, 'relocate_inter': 27, 'swap_inter': 15, 'swap_intra': 14, '2opt_intra': 13}","{'relocate_intra': 3, 'swap_inter': 3, '2opt_intra': 2, 'swap_intra': 2, '2opt_star': 1, 'relocate_inter': 1}","{'2opt_star': 22, 'relocate_intra': 12, 'relocate_inter': 8, 'swap_intra': 6, '2opt_intra': 5, 'swap_inter': 5, 'cross_exchange': 3}"
+recocido_simulado,kshs1,kshs1-sa-cfg4-rep1-seed100443,sa-cfg4,1,100443,gpu,gpu,0.9925100320106139,8000,100,631,10,19105.0,14431.0,-24.464799790630725,4674.0,24.464799790630725,R1: D -> TR1 -> TR9 -> TR6 -> TR15 -> TR8 -> TR12 -> D || R2: D -> D || R3: D -> TR2 -> TR7 -> TR3 -> TR10 -> TR14 -> TR4 -> TR11 -> TR5 -> TR13 -> D || R4: D -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,3) | Costo: 737.0 | Demanda +40.0 = 40.0 / 150.0 [OK]
+  [SERVICIO] TR9 (3,7) | Costo: 311.0 | Demanda +50.0 = 90.0 / 150.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR6 2->6) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR6 (2,6) | Costo: 780.0 | Demanda +60.0 = 150.0 / 150.0 [OK]
+  [SERVICIO] TR15 (6,8) | Costo: 402.0 | Demanda +26.0 = 176.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 8 -> 3 (para servir TR8 3->4) Caminos: ['8', '3'] (Costo: 696.0)
+    - Arco 8 -> 3 | Costo: 696.0
+  [SERVICIO] TR8 (3,4) | Costo: 663.0 | Demanda +7.0 = 183.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR12 (4,8) | Costo: 1046.0 | Demanda +55.0 = 238.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #1: Costo = 6087.0 | Demanda = 238.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #2:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #2: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+VEHÍCULO #3:
+  [SERVICIO] TR2 (1,8) | Costo: 1082.0 | Demanda +27.0 = 27.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 2 (para servir TR7 2->7) Caminos: ['8', '5', '2'] (Costo: 984.0)
+    - Arco 8 -> 5 | Costo: 239.0
+    - Arco 5 -> 2 | Costo: 745.0
+  [SERVICIO] TR7 (2,7) | Costo: 370.0 | Demanda +30.0 = 57.0 / 150.0 [OK]
+  [DEADHEADING] 7 -> 2 (para servir TR3 2->3) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR3 (2,3) | Costo: 510.0 | Demanda +25.0 = 82.0 / 150.0 [OK]
+  [SERVICIO] TR10 (3,8) | Costo: 696.0 | Demanda +23.0 = 105.0 / 150.0 [OK]
+  [DEADHEADING] 8 -> 6 (para servir TR14 6->7) Caminos: ['8', '6'] (Costo: 402.0)
+    - Arco 8 -> 6 | Costo: 402.0
+  [SERVICIO] TR14 (6,7) | Costo: 490.0 | Demanda +65.0 = 170.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR4 2->4) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR4 (2,4) | Costo: 166.0 | Demanda +54.0 = 224.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR11 (4,7) | Costo: 468.0 | Demanda +39.0 = 263.0 / 150.0 [EXCEDIDA]
+  [DEADHEADING] 7 -> 2 (para servir TR5 2->5) Caminos: ['7', '2'] (Costo: 370.0)
+    - Arco 7 -> 2 | Costo: 370.0
+  [SERVICIO] TR5 (2,5) | Costo: 745.0 | Demanda +5.0 = 268.0 / 150.0 [EXCEDIDA]
+  [SERVICIO] TR13 (5,8) | Costo: 239.0 | Demanda +29.0 = 297.0 / 150.0 [EXCEDIDA]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '1'] (Costo: 1082.0)
+    - Arco 8 -> 1 | Costo: 1082.0
+  TOTAL VEHÍCULO #3: Costo = 8344.0 | Demanda = 297.0 / 150.0 [EXCEDIDA]
+
+VEHÍCULO #4:
+  (Sin tareas) [RETORNO] 1 -> Depósito 1 (Costo: 0.0)
+  TOTAL VEHÍCULO #4: Costo = 0.0 | Demanda = 0.0 / 150.0
+
+COSTO TOTAL DE LA SOLUCIÓN: 14431.0",14431.0,"{'swap_intra': 1374, '2opt_intra': 1325, 'swap_inter': 1137, '2opt_star': 1109, 'relocate_intra': 1068, 'cross_exchange': 1003, 'relocate_inter': 984}","{'2opt_star': 305, 'cross_exchange': 84, 'relocate_inter': 62, 'relocate_intra': 53, '2opt_intra': 46, 'swap_inter': 41, 'swap_intra': 40}","{'2opt_star': 4, 'relocate_inter': 2, 'relocate_intra': 2, 'swap_inter': 1, 'swap_intra': 1}","{'2opt_star': 23, 'cross_exchange': 11, 'swap_inter': 9, '2opt_intra': 8, 'swap_intra': 7, 'relocate_inter': 6, 'relocate_intra': 6}"

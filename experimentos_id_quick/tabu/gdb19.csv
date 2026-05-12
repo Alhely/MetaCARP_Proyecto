@@ -1,0 +1,48 @@
+metaheuristica,instancia,id_corrida,config_id,repeticion,semilla,tiempo_segundos,iteraciones_totales,vecinos_evaluados,movimientos_tabu_bloqueados,mejoras,costo_inicial_referencia,mejor_costo,gap_porcentaje,mejora_absoluta,mejora_porcentaje,mejor_solucion_tr_legible,reporte_detalle_deadheading,costo_total_desde_reporte
+busqueda_tabu,gdb19,demo-id-001,tabu-cfgX,1,9,0.0034368010001344373,1,2,0,0,95.0,95.0,0.0,0.0,0.0,R1: D -> TR1 -> TR5 -> TR11 -> TR4 -> D || R2: D -> TR2 -> TR6 -> TR8 -> TR10 -> D || R3: D -> TR3 -> TR7 -> TR9 -> D,"VEHÍCULO #1:
+  [SERVICIO] TR1 (1,2) | Costo: 4.0 | Demanda +8.0 = 8.0 / 27.0 [OK]
+  [SERVICIO] TR5 (2,3) | Costo: 1.0 | Demanda +4.0 = 12.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 7 (para servir TR11 7->3) Caminos: ['3', '2', '7'] (Costo: 3.0)
+    - Arco 3 -> 2 | Costo: 1.0
+    - Arco 2 -> 7 | Costo: 2.0
+  [SERVICIO] TR11 (7,3) | Costo: 6.0 | Demanda +8.0 = 20.0 / 27.0 [OK]
+  [DEADHEADING] 3 -> 1 (para servir TR4 1->6) Caminos: ['3', '2', '1'] (Costo: 5.0)
+    - Arco 3 -> 2 | Costo: 1.0
+    - Arco 2 -> 1 | Costo: 4.0
+  [SERVICIO] TR4 (1,6) | Costo: 2.0 | Demanda +8.0 = 28.0 / 27.0 [EXCEDIDA]
+  [RETORNO] 6 -> Depósito 1 Caminos: ['6', '1'] (Costo: 2.0)
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #1: Costo = 23.0 | Demanda = 28.0 / 27.0 [EXCEDIDA]
+
+VEHÍCULO #2:
+  [SERVICIO] TR2 (1,4) | Costo: 3.0 | Demanda +3.0 = 3.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 2 (para servir TR6 2->4) Caminos: ['4', '1', '2'] (Costo: 7.0)
+    - Arco 4 -> 1 | Costo: 3.0
+    - Arco 1 -> 2 | Costo: 4.0
+  [SERVICIO] TR6 (2,4) | Costo: 9.0 | Demanda +6.0 = 9.0 / 27.0 [OK]
+  [DEADHEADING] 4 -> 2 (para servir TR8 2->7) Caminos: ['4', '1', '2'] (Costo: 7.0)
+    - Arco 4 -> 1 | Costo: 3.0
+    - Arco 1 -> 2 | Costo: 4.0
+  [SERVICIO] TR8 (2,7) | Costo: 2.0 | Demanda +9.0 = 18.0 / 27.0 [OK]
+  [DEADHEADING] 7 -> 6 (para servir TR10 6->8) Caminos: ['7', '2', '1', '6'] (Costo: 8.0)
+    - Arco 7 -> 2 | Costo: 2.0
+    - Arco 2 -> 1 | Costo: 4.0
+    - Arco 1 -> 6 | Costo: 2.0
+  [SERVICIO] TR10 (6,8) | Costo: 5.0 | Demanda +5.0 = 23.0 / 27.0 [OK]
+  [RETORNO] 8 -> Depósito 1 Caminos: ['8', '6', '1'] (Costo: 7.0)
+    - Arco 8 -> 6 | Costo: 5.0
+    - Arco 6 -> 1 | Costo: 2.0
+  TOTAL VEHÍCULO #2: Costo = 48.0 | Demanda = 23.0 / 27.0 [OK]
+
+VEHÍCULO #3:
+  [SERVICIO] TR3 (1,5) | Costo: 1.0 | Demanda +5.0 = 5.0 / 27.0 [OK]
+  [DEADHEADING] 5 -> 2 (para servir TR7 2->5) Caminos: ['5', '2'] (Costo: 5.0)
+    - Arco 5 -> 2 | Costo: 5.0
+  [SERVICIO] TR7 (2,5) | Costo: 5.0 | Demanda +1.0 = 6.0 / 27.0 [OK]
+  [SERVICIO] TR9 (5,7) | Costo: 7.0 | Demanda +9.0 = 15.0 / 27.0 [OK]
+  [RETORNO] 7 -> Depósito 1 Caminos: ['7', '2', '1'] (Costo: 6.0)
+    - Arco 7 -> 2 | Costo: 2.0
+    - Arco 2 -> 1 | Costo: 4.0
+  TOTAL VEHÍCULO #3: Costo = 24.0 | Demanda = 15.0 / 27.0 [OK]
+
+COSTO TOTAL DE LA SOLUCIÓN: 95.0",95.0
