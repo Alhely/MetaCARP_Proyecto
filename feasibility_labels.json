@@ -1,0 +1,1596 @@
+{
+  "egl-e1-A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 315 supera CAPACIDAD 305 (tras la tarea 'TR18', paso 6).",
+        "Ruta 4: demanda acumulada 307 supera CAPACIDAD 305 (tras la tarea 'TR16', paso 8)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e1-B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 243 supera CAPACIDAD 220 (tras la tarea 'TR11', paso 6).",
+        "Ruta 4: demanda acumulada 228 supera CAPACIDAD 220 (tras la tarea 'TR30', paso 5).",
+        "Ruta 6: demanda acumulada 248 supera CAPACIDAD 220 (tras la tarea 'TR18', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e1-C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 167 supera CAPACIDAD 160 (tras la tarea 'TR20', paso 5).",
+        "Ruta 1: demanda acumulada 170 supera CAPACIDAD 160 (tras la tarea 'TR18', paso 4).",
+        "Ruta 3: demanda acumulada 161 supera CAPACIDAD 160 (tras la tarea 'TR12', paso 3).",
+        "Ruta 4: demanda acumulada 168 supera CAPACIDAD 160 (tras la tarea 'TR22', paso 2)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e2-A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 6: demanda acumulada 333 supera CAPACIDAD 280 (tras la tarea 'TR29', paso 5)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e2-B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 215 supera CAPACIDAD 200 (tras la tarea 'TR31', paso 7).",
+        "Ruta 1: demanda acumulada 203 supera CAPACIDAD 200 (tras la tarea 'TR19', paso 5).",
+        "Ruta 4: demanda acumulada 218 supera CAPACIDAD 200 (tras la tarea 'TR61', paso 4).",
+        "Ruta 5: demanda acumulada 203 supera CAPACIDAD 200 (tras la tarea 'TR67', paso 6).",
+        "Ruta 8: demanda acumulada 248 supera CAPACIDAD 200 (tras la tarea 'TR29', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e2-C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 188 supera CAPACIDAD 140 (tras la tarea 'TR29', paso 4).",
+        "Ruta 2: demanda acumulada 196 supera CAPACIDAD 140 (tras la tarea 'TR32', paso 3).",
+        "Ruta 3: demanda acumulada 158 supera CAPACIDAD 140 (tras la tarea 'TR21', paso 4).",
+        "Ruta 7: demanda acumulada 151 supera CAPACIDAD 140 (tras la tarea 'TR31', paso 4).",
+        "Ruta 11: demanda acumulada 141 supera CAPACIDAD 140 (tras la tarea 'TR47', paso 3)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e3-A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 293 supera CAPACIDAD 280 (tras la tarea 'TR35', paso 8).",
+        "Ruta 4: demanda acumulada 316 supera CAPACIDAD 280 (tras la tarea 'TR72', paso 9).",
+        "Ruta 5: demanda acumulada 302 supera CAPACIDAD 280 (tras la tarea 'TR80', paso 9).",
+        "Ruta 6: demanda acumulada 321 supera CAPACIDAD 280 (tras la tarea 'TR34', paso 5)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e3-B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 223 supera CAPACIDAD 190 (tras la tarea 'TR81', paso 3).",
+        "Ruta 4: demanda acumulada 199 supera CAPACIDAD 190 (tras la tarea 'TR41', paso 5).",
+        "Ruta 9: demanda acumulada 248 supera CAPACIDAD 190 (tras la tarea 'TR34', paso 4).",
+        "Ruta 11: demanda acumulada 199 supera CAPACIDAD 190 (tras la tarea 'TR39', paso 5)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e3-C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 211 supera CAPACIDAD 135 (tras la tarea 'TR37', paso 3).",
+        "Ruta 3: demanda acumulada 152 supera CAPACIDAD 135 (tras la tarea 'TR15', paso 3).",
+        "Ruta 8: demanda acumulada 183 supera CAPACIDAD 135 (tras la tarea 'TR39', paso 4).",
+        "Ruta 12: demanda acumulada 191 supera CAPACIDAD 135 (tras la tarea 'TR81', paso 2).",
+        "Ruta 15: demanda acumulada 149 supera CAPACIDAD 135 (tras la tarea 'TR35', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e4-A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 288 supera CAPACIDAD 280 (tras la tarea 'TR98', paso 9).",
+        "Ruta 3: demanda acumulada 293 supera CAPACIDAD 280 (tras la tarea 'TR87', paso 9).",
+        "Ruta 4: demanda acumulada 287 supera CAPACIDAD 280 (tras la tarea 'TR40', paso 10).",
+        "Ruta 8: demanda acumulada 301 supera CAPACIDAD 280 (tras la tarea 'TR36', paso 6)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e4-B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 225 supera CAPACIDAD 180 (tras la tarea 'TR39', paso 5).",
+        "Ruta 3: demanda acumulada 191 supera CAPACIDAD 180 (tras la tarea 'TR29', paso 6).",
+        "Ruta 4: demanda acumulada 190 supera CAPACIDAD 180 (tras la tarea 'TR67', paso 3).",
+        "Ruta 5: demanda acumulada 215 supera CAPACIDAD 180 (tras la tarea 'TR83', paso 5).",
+        "Ruta 8: demanda acumulada 181 supera CAPACIDAD 180 (tras la tarea 'TR38', paso 6).",
+        "Ruta 11: demanda acumulada 193 supera CAPACIDAD 180 (tras la tarea 'TR41', paso 5).",
+        "Ruta 12: demanda acumulada 218 supera CAPACIDAD 180 (tras la tarea 'TR35', paso 6)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-e4-C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 139 supera CAPACIDAD 130 (tras la tarea 'TR88', paso 3).",
+        "Ruta 4: demanda acumulada 134 supera CAPACIDAD 130 (tras la tarea 'TR64', paso 3).",
+        "Ruta 5: demanda acumulada 134 supera CAPACIDAD 130 (tras la tarea 'TR23', paso 3).",
+        "Ruta 8: demanda acumulada 132 supera CAPACIDAD 130 (tras la tarea 'TR79', paso 3).",
+        "Ruta 11: demanda acumulada 191 supera CAPACIDAD 130 (tras la tarea 'TR39', paso 4).",
+        "Ruta 12: demanda acumulada 147 supera CAPACIDAD 130 (tras la tarea 'TR31', paso 4).",
+        "Ruta 15: demanda acumulada 194 supera CAPACIDAD 130 (tras la tarea 'TR41', paso 4).",
+        "Ruta 17: demanda acumulada 178 supera CAPACIDAD 130 (tras la tarea 'TR36', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s1-A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 4: demanda acumulada 216 supera CAPACIDAD 210 (tras la tarea 'TR9', paso 9).",
+        "Ruta 5: demanda acumulada 229 supera CAPACIDAD 210 (tras la tarea 'TR1', paso 9).",
+        "Ruta 6: demanda acumulada 223 supera CAPACIDAD 210 (tras la tarea 'TR5', paso 7)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s1-B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 158 supera CAPACIDAD 150 (tras la tarea 'TR11', paso 7).",
+        "Ruta 4: demanda acumulada 151 supera CAPACIDAD 150 (tras la tarea 'TR1', paso 7).",
+        "Ruta 7: demanda acumulada 165 supera CAPACIDAD 150 (tras la tarea 'TR42', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s1-C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 105 supera CAPACIDAD 103 (tras la tarea 'TR16', paso 4).",
+        "Ruta 1: demanda acumulada 106 supera CAPACIDAD 103 (tras la tarea 'TR1', paso 5).",
+        "Ruta 2: demanda acumulada 107 supera CAPACIDAD 103 (tras la tarea 'TR4', paso 4).",
+        "Ruta 3: demanda acumulada 114 supera CAPACIDAD 103 (tras la tarea 'TR5', paso 4).",
+        "Ruta 4: demanda acumulada 115 supera CAPACIDAD 103 (tras la tarea 'TR60', paso 1).",
+        "Ruta 5: demanda acumulada 112 supera CAPACIDAD 103 (tras la tarea 'TR42', paso 3).",
+        "Ruta 10: demanda acumulada 110 supera CAPACIDAD 103 (tras la tarea 'TR7', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s2-A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 251 supera CAPACIDAD 235 (tras la tarea 'TR142', paso 10).",
+        "Ruta 3: demanda acumulada 240 supera CAPACIDAD 235 (tras la tarea 'TR135', paso 10).",
+        "Ruta 4: demanda acumulada 249 supera CAPACIDAD 235 (tras la tarea 'TR132', paso 8).",
+        "Ruta 6: demanda acumulada 266 supera CAPACIDAD 235 (tras la tarea 'TR10', paso 8).",
+        "Ruta 11: demanda acumulada 239 supera CAPACIDAD 235 (tras la tarea 'TR4', paso 7)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s2-B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 161 supera CAPACIDAD 160 (tras la tarea 'TR15', paso 7).",
+        "Ruta 1: demanda acumulada 164 supera CAPACIDAD 160 (tras la tarea 'TR129', paso 4).",
+        "Ruta 2: demanda acumulada 162 supera CAPACIDAD 160 (tras la tarea 'TR16', paso 7).",
+        "Ruta 3: demanda acumulada 174 supera CAPACIDAD 160 (tras la tarea 'TR5', paso 6).",
+        "Ruta 4: demanda acumulada 166 supera CAPACIDAD 160 (tras la tarea 'TR12', paso 7).",
+        "Ruta 5: demanda acumulada 192 supera CAPACIDAD 160 (tras la tarea 'TR146', paso 6).",
+        "Ruta 6: demanda acumulada 182 supera CAPACIDAD 160 (tras la tarea 'TR14', paso 7).",
+        "Ruta 8: demanda acumulada 161 supera CAPACIDAD 160 (tras la tarea 'TR51', paso 4).",
+        "Ruta 11: demanda acumulada 190 supera CAPACIDAD 160 (tras la tarea 'TR23', paso 5).",
+        "Ruta 16: demanda acumulada 162 supera CAPACIDAD 160 (tras la tarea 'TR35', paso 4).",
+        "Ruta 17: demanda acumulada 166 supera CAPACIDAD 160 (tras la tarea 'TR3', paso 6).",
+        "Ruta 18: demanda acumulada 179 supera CAPACIDAD 160 (tras la tarea 'TR25', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s2-C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 125 supera CAPACIDAD 120 (tras la tarea 'TR22', paso 5).",
+        "Ruta 1: demanda acumulada 121 supera CAPACIDAD 120 (tras la tarea 'TR140', paso 3).",
+        "Ruta 3: demanda acumulada 145 supera CAPACIDAD 120 (tras la tarea 'TR3', paso 5).",
+        "Ruta 6: demanda acumulada 122 supera CAPACIDAD 120 (tras la tarea 'TR15', paso 5).",
+        "Ruta 7: demanda acumulada 153 supera CAPACIDAD 120 (tras la tarea 'TR16', paso 5).",
+        "Ruta 8: demanda acumulada 122 supera CAPACIDAD 120 (tras la tarea 'TR45', paso 4).",
+        "Ruta 9: demanda acumulada 153 supera CAPACIDAD 120 (tras la tarea 'TR13', paso 5).",
+        "Ruta 10: demanda acumulada 126 supera CAPACIDAD 120 (tras la tarea 'TR12', paso 5).",
+        "Ruta 11: demanda acumulada 125 supera CAPACIDAD 120 (tras la tarea 'TR24', paso 4).",
+        "Ruta 16: demanda acumulada 183 supera CAPACIDAD 120 (tras la tarea 'TR35', paso 3).",
+        "Ruta 18: demanda acumulada 138 supera CAPACIDAD 120 (tras la tarea 'TR51', paso 3).",
+        "Ruta 21: demanda acumulada 130 supera CAPACIDAD 120 (tras la tarea 'TR129', paso 2)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s3-A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 251 supera CAPACIDAD 240 (tras la tarea 'TR7', paso 9).",
+        "Ruta 1: demanda acumulada 245 supera CAPACIDAD 240 (tras la tarea 'TR35', paso 8).",
+        "Ruta 6: demanda acumulada 245 supera CAPACIDAD 240 (tras la tarea 'TR26', paso 9).",
+        "Ruta 7: demanda acumulada 250 supera CAPACIDAD 240 (tras la tarea 'TR154', paso 7)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s3-B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 170 supera CAPACIDAD 160 (tras la tarea 'TR56', paso 4).",
+        "Ruta 1: demanda acumulada 198 supera CAPACIDAD 160 (tras la tarea 'TR21', paso 7).",
+        "Ruta 2: demanda acumulada 174 supera CAPACIDAD 160 (tras la tarea 'TR149', paso 5).",
+        "Ruta 3: demanda acumulada 178 supera CAPACIDAD 160 (tras la tarea 'TR15', paso 6).",
+        "Ruta 10: demanda acumulada 166 supera CAPACIDAD 160 (tras la tarea 'TR83', paso 4).",
+        "Ruta 12: demanda acumulada 190 supera CAPACIDAD 160 (tras la tarea 'TR40', paso 4).",
+        "Ruta 16: demanda acumulada 187 supera CAPACIDAD 160 (tras la tarea 'TR28', paso 5)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s3-C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 6: demanda acumulada 123 supera CAPACIDAD 120 (tras la tarea 'TR67', paso 4).",
+        "Ruta 7: demanda acumulada 167 supera CAPACIDAD 120 (tras la tarea 'TR40', paso 3).",
+        "Ruta 10: demanda acumulada 159 supera CAPACIDAD 120 (tras la tarea 'TR28', paso 4).",
+        "Ruta 11: demanda acumulada 165 supera CAPACIDAD 120 (tras la tarea 'TR16', paso 5).",
+        "Ruta 12: demanda acumulada 127 supera CAPACIDAD 120 (tras la tarea 'TR84', paso 3).",
+        "Ruta 13: demanda acumulada 161 supera CAPACIDAD 120 (tras la tarea 'TR19', paso 5).",
+        "Ruta 22: demanda acumulada 138 supera CAPACIDAD 120 (tras la tarea 'TR57', paso 3).",
+        "Ruta 25: demanda acumulada 130 supera CAPACIDAD 120 (tras la tarea 'TR141', paso 2).",
+        "Ruta 26: demanda acumulada 132 supera CAPACIDAD 120 (tras la tarea 'TR26', paso 4).",
+        "Ruta 28: demanda acumulada 130 supera CAPACIDAD 120 (tras la tarea 'TR22', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s4-A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 5: demanda acumulada 269 supera CAPACIDAD 230 (tras la tarea 'TR189', paso 8).",
+        "Ruta 7: demanda acumulada 234 supera CAPACIDAD 230 (tras la tarea 'TR19', paso 9).",
+        "Ruta 10: demanda acumulada 231 supera CAPACIDAD 230 (tras la tarea 'TR66', paso 5).",
+        "Ruta 12: demanda acumulada 243 supera CAPACIDAD 230 (tras la tarea 'TR17', paso 9).",
+        "Ruta 14: demanda acumulada 235 supera CAPACIDAD 230 (tras la tarea 'TR57', paso 7).",
+        "Ruta 16: demanda acumulada 256 supera CAPACIDAD 230 (tras la tarea 'TR33', paso 8).",
+        "Ruta 17: demanda acumulada 241 supera CAPACIDAD 230 (tras la tarea 'TR27', paso 8)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s4-B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 3: demanda acumulada 188 supera CAPACIDAD 160 (tras la tarea 'TR122', paso 2).",
+        "Ruta 6: demanda acumulada 197 supera CAPACIDAD 160 (tras la tarea 'TR46', paso 4).",
+        "Ruta 7: demanda acumulada 200 supera CAPACIDAD 160 (tras la tarea 'TR36', paso 5).",
+        "Ruta 10: demanda acumulada 164 supera CAPACIDAD 160 (tras la tarea 'TR80', paso 2).",
+        "Ruta 11: demanda acumulada 169 supera CAPACIDAD 160 (tras la tarea 'TR4', paso 6).",
+        "Ruta 14: demanda acumulada 174 supera CAPACIDAD 160 (tras la tarea 'TR57', paso 5).",
+        "Ruta 23: demanda acumulada 188 supera CAPACIDAD 160 (tras la tarea 'TR22', paso 6).",
+        "Ruta 24: demanda acumulada 186 supera CAPACIDAD 160 (tras la tarea 'TR23', paso 6)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "egl-s4-C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 3: demanda acumulada 127 supera CAPACIDAD 120 (tras la tarea 'TR1', paso 5).",
+        "Ruta 4: demanda acumulada 134 supera CAPACIDAD 120 (tras la tarea 'TR2', paso 5).",
+        "Ruta 5: demanda acumulada 146 supera CAPACIDAD 120 (tras la tarea 'TR172', paso 3).",
+        "Ruta 6: demanda acumulada 147 supera CAPACIDAD 120 (tras la tarea 'TR25', paso 5).",
+        "Ruta 7: demanda acumulada 132 supera CAPACIDAD 120 (tras la tarea 'TR19', paso 5).",
+        "Ruta 8: demanda acumulada 123 supera CAPACIDAD 120 (tras la tarea 'TR20', paso 5).",
+        "Ruta 10: demanda acumulada 179 supera CAPACIDAD 120 (tras la tarea 'TR46', paso 3).",
+        "Ruta 11: demanda acumulada 154 supera CAPACIDAD 120 (tras la tarea 'TR34', paso 4).",
+        "Ruta 14: demanda acumulada 174 supera CAPACIDAD 120 (tras la tarea 'TR21', paso 5).",
+        "Ruta 17: demanda acumulada 130 supera CAPACIDAD 120 (tras la tarea 'TR189', paso 4).",
+        "Ruta 20: demanda acumulada 123 supera CAPACIDAD 120 (tras la tarea 'TR18', paso 4).",
+        "Ruta 24: demanda acumulada 126 supera CAPACIDAD 120 (tras la tarea 'TR9', paso 4).",
+        "Ruta 27: demanda acumulada 123 supera CAPACIDAD 120 (tras la tarea 'TR31', paso 4).",
+        "Ruta 32: demanda acumulada 136 supera CAPACIDAD 120 (tras la tarea 'TR128', paso 1).",
+        "Ruta 34: demanda acumulada 146 supera CAPACIDAD 120 (tras la tarea 'TR69', paso 2)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb10": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb11": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb12": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 37 supera CAPACIDAD 35 (tras la tarea 'TR23', paso 3).",
+        "Ruta 2: demanda acumulada 44 supera CAPACIDAD 35 (tras la tarea 'TR20', paso 2).",
+        "Ruta 4: demanda acumulada 42 supera CAPACIDAD 35 (tras la tarea 'TR21', paso 2)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb13": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 46 supera CAPACIDAD 41 (tras la tarea 'TR25', paso 4).",
+        "Ruta 3: demanda acumulada 46 supera CAPACIDAD 41 (tras la tarea 'TR21', paso 3)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb14": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 2: demanda acumulada 26 supera CAPACIDAD 21 (tras la tarea 'TR15', paso 3)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb15": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb16": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 26 supera CAPACIDAD 24 (tras la tarea 'TR23', paso 3).",
+        "Ruta 4: demanda acumulada 28 supera CAPACIDAD 24 (tras la tarea 'TR26', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb17": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb18": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 4: demanda acumulada 38 supera CAPACIDAD 37 (tras la tarea 'TR30', paso 6)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb19": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 28 supera CAPACIDAD 27 (tras la tarea 'TR4', paso 3)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb1": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb20": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 31 supera CAPACIDAD 27 (tras la tarea 'TR13', paso 4).",
+        "Ruta 1: demanda acumulada 29 supera CAPACIDAD 27 (tras la tarea 'TR22', paso 5)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb21": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 28 supera CAPACIDAD 27 (tras la tarea 'TR30', paso 4).",
+        "Ruta 1: demanda acumulada 32 supera CAPACIDAD 27 (tras la tarea 'TR19', paso 5).",
+        "Ruta 2: demanda acumulada 30 supera CAPACIDAD 27 (tras la tarea 'TR33', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb22": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 3: demanda acumulada 30 supera CAPACIDAD 27 (tras la tarea 'TR43', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb23": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 31 supera CAPACIDAD 27 (tras la tarea 'TR54', paso 5).",
+        "Ruta 3: demanda acumulada 30 supera CAPACIDAD 27 (tras la tarea 'TR52', paso 5).",
+        "Ruta 4: demanda acumulada 28 supera CAPACIDAD 27 (tras la tarea 'TR50', paso 4).",
+        "Ruta 9: demanda acumulada 30 supera CAPACIDAD 27 (tras la tarea 'TR53', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb2": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb3": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb4": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb5": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb6": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb7": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb8": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 30 supera CAPACIDAD 27 (tras la tarea 'TR15', paso 3).",
+        "Ruta 3: demanda acumulada 28 supera CAPACIDAD 27 (tras la tarea 'TR40', paso 3).",
+        "Ruta 5: demanda acumulada 28 supera CAPACIDAD 27 (tras la tarea 'TR21', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "gdb9": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 29 supera CAPACIDAD 27 (tras la tarea 'TR21', paso 3).",
+        "Ruta 1: demanda acumulada 31 supera CAPACIDAD 27 (tras la tarea 'TR39', paso 4).",
+        "Ruta 7: demanda acumulada 28 supera CAPACIDAD 27 (tras la tarea 'TR49', paso 3).",
+        "Ruta 8: demanda acumulada 28 supera CAPACIDAD 27 (tras la tarea 'TR40', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "kshs1": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 180 supera CAPACIDAD 150 (tras la tarea 'TR6', paso 3).",
+        "Ruta 2: demanda acumulada 163 supera CAPACIDAD 150 (tras la tarea 'TR13', paso 3)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "kshs2": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 152 supera CAPACIDAD 150 (tras la tarea 'TR15', paso 3).",
+        "Ruta 2: demanda acumulada 157 supera CAPACIDAD 150 (tras la tarea 'TR11', paso 3)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "kshs3": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 212 supera CAPACIDAD 150 (tras la tarea 'TR14', paso 3)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "kshs4": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 170 supera CAPACIDAD 150 (tras la tarea 'TR8', paso 2).",
+        "Ruta 1: demanda acumulada 153 supera CAPACIDAD 150 (tras la tarea 'TR10', paso 3)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "kshs5": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 194 supera CAPACIDAD 150 (tras la tarea 'TR12', paso 4).",
+        "Ruta 1: demanda acumulada 154 supera CAPACIDAD 150 (tras la tarea 'TR7', paso 3)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "kshs6": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 172 supera CAPACIDAD 150 (tras la tarea 'TR10', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val10A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 252 supera CAPACIDAD 250 (tras la tarea 'TR93', paso 32)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val10B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 3: demanda acumulada 193 supera CAPACIDAD 190 (tras la tarea 'TR97', paso 23)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val10C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 156 supera CAPACIDAD 150 (tras la tarea 'TR80', paso 18)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val10D": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 82 supera CAPACIDAD 75 (tras la tarea 'TR78', paso 8).",
+        "Ruta 3: demanda acumulada 78 supera CAPACIDAD 75 (tras la tarea 'TR93', paso 9)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val1A": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val1B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 123 supera CAPACIDAD 120 (tras la tarea 'TR37', paso 12).",
+        "Ruta 2: demanda acumulada 122 supera CAPACIDAD 120 (tras la tarea 'TR27', paso 11)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val1C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 47 supera CAPACIDAD 45 (tras la tarea 'TR18', paso 3).",
+        "Ruta 1: demanda acumulada 49 supera CAPACIDAD 45 (tras la tarea 'TR39', paso 4).",
+        "Ruta 2: demanda acumulada 47 supera CAPACIDAD 45 (tras la tarea 'TR26', paso 4).",
+        "Ruta 3: demanda acumulada 53 supera CAPACIDAD 45 (tras la tarea 'TR30', paso 3).",
+        "Ruta 5: demanda acumulada 46 supera CAPACIDAD 45 (tras la tarea 'TR37', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val2A": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val2B": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val2C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 41 supera CAPACIDAD 40 (tras la tarea 'TR20', paso 3).",
+        "Ruta 4: demanda acumulada 44 supera CAPACIDAD 40 (tras la tarea 'TR22', paso 3).",
+        "Ruta 6: demanda acumulada 43 supera CAPACIDAD 40 (tras la tarea 'TR34', paso 2)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val3A": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val3B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 52 supera CAPACIDAD 50 (tras la tarea 'TR24', paso 11)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val3C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 2: demanda acumulada 27 supera CAPACIDAD 20 (tras la tarea 'TR13', paso 4).",
+        "Ruta 3: demanda acumulada 21 supera CAPACIDAD 20 (tras la tarea 'TR22', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val4A": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val4B": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val4C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 3: demanda acumulada 137 supera CAPACIDAD 130 (tras la tarea 'TR54', paso 9)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val4D": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 1: demanda acumulada 80 supera CAPACIDAD 75 (tras la tarea 'TR64', paso 7).",
+        "Ruta 5: demanda acumulada 78 supera CAPACIDAD 75 (tras la tarea 'TR67', paso 7).",
+        "Ruta 8: demanda acumulada 77 supera CAPACIDAD 75 (tras la tarea 'TR62', paso 6)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val5A": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val5B": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val5C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 3: demanda acumulada 133 supera CAPACIDAD 130 (tras la tarea 'TR65', paso 11)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val5D": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 82 supera CAPACIDAD 75 (tras la tarea 'TR51', paso 7).",
+        "Ruta 2: demanda acumulada 85 supera CAPACIDAD 75 (tras la tarea 'TR25', paso 6).",
+        "Ruta 5: demanda acumulada 79 supera CAPACIDAD 75 (tras la tarea 'TR49', paso 6)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val6A": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val6B": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val6C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 4: demanda acumulada 58 supera CAPACIDAD 50 (tras la tarea 'TR37', paso 4).",
+        "Ruta 5: demanda acumulada 53 supera CAPACIDAD 50 (tras la tarea 'TR23', paso 4).",
+        "Ruta 6: demanda acumulada 54 supera CAPACIDAD 50 (tras la tarea 'TR30', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val7A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 201 supera CAPACIDAD 200 (tras la tarea 'TR51', paso 21)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val7B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 2: demanda acumulada 152 supera CAPACIDAD 150 (tras la tarea 'TR39', paso 14)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val7C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 2: demanda acumulada 71 supera CAPACIDAD 65 (tras la tarea 'TR66', paso 6).",
+        "Ruta 6: demanda acumulada 68 supera CAPACIDAD 65 (tras la tarea 'TR63', paso 4)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val8A": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 2: demanda acumulada 208 supera CAPACIDAD 200 (tras la tarea 'TR46', paso 20)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val8B": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val8C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 74 supera CAPACIDAD 65 (tras la tarea 'TR56', paso 6).",
+        "Ruta 3: demanda acumulada 67 supera CAPACIDAD 65 (tras la tarea 'TR47', paso 5).",
+        "Ruta 8: demanda acumulada 70 supera CAPACIDAD 65 (tras la tarea 'TR62', paso 6)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val9A": {
+    "factible": true,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": true,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val9B": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 176 supera CAPACIDAD 175 (tras la tarea 'TR73', paso 21).",
+        "Ruta 1: demanda acumulada 177 supera CAPACIDAD 175 (tras la tarea 'TR88', paso 22)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val9C": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 2: demanda acumulada 147 supera CAPACIDAD 140 (tras la tarea 'TR79', paso 17)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  },
+  "val9D": {
+    "factible": false,
+    "c1_cobertura": true,
+    "c2_conectividad": true,
+    "c3_capacidad": false,
+    "c4_vehiculos": true,
+    "c5_deposito": true,
+    "violaciones": {
+      "c1": [],
+      "c2": [],
+      "c3": [
+        "Ruta 0: demanda acumulada 73 supera CAPACIDAD 70 (tras la tarea 'TR91', paso 9).",
+        "Ruta 2: demanda acumulada 79 supera CAPACIDAD 70 (tras la tarea 'TR79', paso 8).",
+        "Ruta 6: demanda acumulada 79 supera CAPACIDAD 70 (tras la tarea 'TR84', paso 8)."
+      ],
+      "c4": [],
+      "c5": []
+    }
+  }
+}

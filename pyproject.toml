@@ -24,7 +24,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["metacarp", "metacarp.scripts"]
+packages = ["metacarp"]
 
 [tool.setuptools.package-data]
 metacarp = [

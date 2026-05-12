@@ -67,21 +67,21 @@ def _construir_runners() -> dict[str, MetaRunner]:
     )
     tabu_space = _grid(
         {
-            "iteraciones": [300, 600, 900],
+            "iteraciones": [500, 700, 1000],
             "tam_vecindario": [20, 30, 40, 60],
             "tenure_tabu": [10, 15, 20, 30],
         }
     )
     abejas_space = _grid(
         {
-            "iteraciones": [300, 600, 900],
+            "iteraciones": [500, 700, 1000],
             "num_fuentes": [10, 20, 30, 40],
             "limite_abandono": [15, 30, 45, 60],
         }
     )
     cuckoo_space = _grid(
         {
-            "iteraciones": [300, 600, 900],
+            "iteraciones": [500, 750, 1000],
             "num_nidos": [15, 25, 35],
             "pa_abandono": [0.15, 0.25, 0.35],
             "pasos_levy_base": [2, 3, 5],
@@ -310,7 +310,7 @@ def main() -> None:
                         print(
                             "       OK "
                             f"| mejor_costo={res.mejor_costo:.6f} "
-                            f"| gap={res.gap_porcentaje:.4f}% "
+                            f"| mejora={res.mejora_porcentaje_inicial_vs_final:.4f}% "
                             f"| tiempo={res.tiempo_segundos:.4f}s"
                         )
                         total_ok += 1
