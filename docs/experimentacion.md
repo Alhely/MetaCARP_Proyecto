@@ -120,12 +120,11 @@ Donde `ydmh` es un timestamp fijo al inicio de la campaña con formato `%Y%d%m%H
 |---|---|
 | `metaheuristica` | Nombre canónico (`recocido_simulado`, `busqueda_tabu`, `busqueda_abejas`, `cuckoo_search`) |
 | `instancia` | Nombre de la instancia (ej. `gdb1`, `kshs3`) |
-| `id_corrida` | Identificador único de la corrida: `<instancia>-<meta>-cfg<n>-rep<r>-seed<s>` |
-| `config_id` | Identificador de la configuración: `<meta>-cfg<n>` |
+| `bks_referencia` | Valor BKS de la literatura para esta instancia |
+| `bks_origen` | Fuente del BKS (`BKS`, `lower_bound`, etc.) |
 | `repeticion` | Número de repetición (1, 2, …) |
 | `semilla` | Semilla derivada usada en esta corrida |
-| `backend_evaluacion_solicitado` | Backend solicitado (`gpu` o `cpu`) |
-| `backend_evaluacion_real` | Backend realmente utilizado (puede diferir si CuPy no está disponible) |
+| `tiempo_segundos` | Duración real de la corrida |
 
 ### Parámetros específicos de cada metaheurística
 
