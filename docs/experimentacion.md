@@ -192,20 +192,20 @@ Ejemplo de nombre de columna: `aceptado_2opt_intra`, `trayectoria_mejor_cross_ex
 
 ---
 
-## Sesgo dinámico de operadores intra-ruta
+## Sesgo dinámico de operadores inter-ruta
 
-Cuando la solución actual viola restricciones de capacidad, el sistema activa un mecanismo de sesgo implementado en `pesos_intra_bias()` (módulo `metaheuristicas_utils`). Este mecanismo redistribuye las probabilidades de selección de operadores para favorecer a los tres operadores intra-ruta (`relocate_intra`, `swap_intra`, `2opt_intra`), que reorganizan tareas sin cambiar la asignación de rutas y por tanto nunca agravan una violación de capacidad.
+Cuando la solución actual viola restricciones de capacidad, el sistema activa un mecanismo de sesgo implementado en `pesos_inter_bias()` (módulo `metaheuristicas_utils`). La justificación es directa: una ruta que viola capacidad tiene **demasiada demanda asignada**, por lo que la única forma de corregirlo es mover tareas de esa ruta a otras. Eso requiere operadores **inter-ruta** (`relocate_inter`, `swap_inter`, `2opt_star`, `cross_exchange`). Los operadores intra-ruta solo reordenan tareas dentro de la misma ruta y no pueden reducir la demanda de ninguna ruta.
 
-El parámetro que controla el sesgo es `alpha_intra=0.8`: la fracción de probabilidad total asignada en conjunto a los operadores intra-ruta cuando hay violación.
+El parámetro que controla el sesgo es `alpha_inter=0.8`: la fracción de probabilidad total asignada en conjunto a los cuatro operadores inter-ruta cuando hay violación.
 
-| Estado de la solución | Selección | P(cada op. intra) | P(cada op. inter) |
+| Estado de la solución | Selección | P(cada op. inter) | P(cada op. intra) |
 |---|---|---|---|
-| Con violación de capacidad | sesgada (`alpha_intra=0.8`) | 80% / 3 ≈ 26.7% | 20% / 4 = 5.0% |
+| Con violación de capacidad | sesgada (`alpha_inter=0.8`) | 80% / 4 = 20.0% | 20% / 3 ≈ 6.7% |
 | Sin violación (factible) | uniforme | 1/7 ≈ 14.3% | 1/7 ≈ 14.3% |
 
 El sesgo se desactiva automáticamente en cuanto la solución vuelve a ser factible (`violacion ≤ 1e-12`), y se reactiva en cualquier iteración en que la solución actual viole capacidad.
 
-**Cómo leerlo en el CSV.** Las columnas `propuesto_*` reflejan directamente la distribución de selección a lo largo de la corrida. Si hubo muchas iteraciones con soluciones infactibles, se espera observar una proporción elevada de `propuesto_relocate_intra + propuesto_swap_intra + propuesto_2opt_intra` respecto al total.
+**Cómo leerlo en el CSV.** Las columnas `propuesto_*` reflejan directamente la distribución de selección a lo largo de la corrida. Si hubo muchas iteraciones con soluciones infactibles, se espera observar una proporción elevada de `propuesto_relocate_inter + propuesto_swap_inter + propuesto_2opt_star + propuesto_cross_exchange` respecto al total.
 
 ---
 
