@@ -150,7 +150,7 @@ from .vecindarios import (
     generar_vecino,
     generar_vecino_ids,
 )
-from .metaheuristicas_utils import pesos_intra_bias
+from .metaheuristicas_utils import pesos_inter_bias
 
 
 # =============================================================================
@@ -239,7 +239,7 @@ __all__ = [
     "OPERADORES_POPULARES",
     "OPERADORES_INTRA",
     "OPERADORES_INTER",
-    "pesos_intra_bias",
+    "pesos_inter_bias",
     "generar_vecino",
     "generar_vecino_ids",
 ]

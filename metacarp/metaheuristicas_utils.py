@@ -58,7 +58,7 @@ __all__ = [
     "generar_reporte_detallado",
     "guardar_resultado_csv",
     "construir_contexto_para_corrida",
-    "pesos_intra_bias",
+    "pesos_inter_bias",
 ]
 
 
@@ -647,37 +647,63 @@ def guardar_resultado_csv(
 
 
 # ---------------------------------------------------------------------------
-# Utilidad: pesos_intra_bias
+# Utilidad: pesos_inter_bias
 # ---------------------------------------------------------------------------
+# Conjunto de operadores que mueven tareas DENTRO de una misma ruta. Estos no
+# modifican qué rutas contienen qué tareas, por lo que NO pueden reducir una
+# violación de capacidad por ruta.
 _INTRA_OPS: frozenset[str] = frozenset({"relocate_intra", "swap_intra", "2opt_intra"})
 
 
-def pesos_intra_bias(
+def pesos_inter_bias(
     violacion: float,
     operadores: Sequence[str],
     *,
-    alpha_intra: float = 0.8,
+    alpha_inter: float = 0.8,
 ) -> list[float] | None:
-    """Calcula pesos para ``rng.choices()`` sesgados hacia operadores intra-ruta.
+    """Calcula pesos para ``rng.choices()`` sesgados hacia operadores inter-ruta.
 
-    Cuando la solución actual viola capacidad (``violacion > 0``), devuelve una
-    lista de pesos donde los operadores intra-ruta reciben en conjunto una
-    probabilidad de ``alpha_intra`` y los inter-ruta el resto.
+    Justificación: cuando la solución actual viola capacidad (``violacion > 0``)
+    significa que existe al menos una ruta con DEMASIADA demanda asignada. Para
+    reparar esa violación es necesario REDISTRIBUIR tareas entre rutas, lo cual
+    sólo lo pueden hacer los operadores inter-ruta (``relocate_inter``,
+    ``swap_inter``, ``2opt_star``, ``cross_exchange``). Los operadores intra-ruta
+    únicamente reordenan tareas dentro de una misma ruta y no alteran la
+    demanda total asignada a cada vehículo, por lo que no pueden reducir el
+    exceso de capacidad.
 
-    Si la solución es factible o la lista de operadores es homogénea (solo intra
-    o solo inter), devuelve ``None`` para indicar selección uniforme.
+    Cuando ``violacion > 0``, devuelve una lista de pesos donde los operadores
+    inter-ruta reciben en conjunto una probabilidad de ``alpha_inter`` y los
+    intra-ruta reciben ``(1 - alpha_inter)``.
+
+    Si la solución es factible (``violacion <= 0``) o la lista de operadores es
+    homogénea (solo intra o solo inter), devuelve ``None`` para indicar
+    selección uniforme; así se preserva la retrocompatibilidad cuando no hay
+    nada que reparar.
 
     Args:
         violacion: exceso total de demanda sobre la capacidad (>= 0).
         operadores: lista de nombres de operadores activos en el metaheurístico.
-        alpha_intra: fracción de probabilidad total asignada a intra-ruta (0–1).
+        alpha_inter: fracción de probabilidad total asignada a operadores
+            inter-ruta cuando hay violación de capacidad (0–1). Por defecto
+            0.8: se prioriza fuertemente la reparación inter-ruta sin desechar
+            por completo los reordenamientos intra-ruta.
     """
+    # Solución factible: no hay nada que reparar, devolvemos None para que el
+    # metaheurístico use selección uniforme entre todos los operadores.
     if violacion <= 1e-12:
         return None
+    # Contamos cuántos operadores son intra-ruta y cuántos inter-ruta dentro de
+    # la lista activa que pasó el metaheurístico.
     n_intra = sum(1 for op in operadores if op in _INTRA_OPS)
     n_inter = len(operadores) - n_intra
+    # Si la lista es homogénea (solo intra o solo inter), no tiene sentido
+    # sesgar: devolvemos None para selección uniforme.
     if n_intra == 0 or n_inter == 0:
         return None
-    w_intra = alpha_intra / n_intra
-    w_inter = (1.0 - alpha_intra) / n_inter
+    # Repartimos la masa de probabilidad entre los dos grupos:
+    # - alpha_inter al grupo inter-ruta (donde está la reparación efectiva)
+    # - (1 - alpha_inter) al grupo intra-ruta (refinamiento secundario)
+    w_inter = alpha_inter / n_inter
+    w_intra = (1.0 - alpha_inter) / n_intra
     return [w_intra if op in _INTRA_OPS else w_inter for op in operadores]

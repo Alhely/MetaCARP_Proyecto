@@ -89,7 +89,7 @@ from .metaheuristicas_utils import (
     copiar_solucion_labels,
     generar_reporte_detallado,
     guardar_resultado_csv,
-    pesos_intra_bias,
+    pesos_inter_bias,
     resumen_bks_csv,
     seleccionar_mejor_inicial_rapido,
     solucion_legible_humana,
@@ -194,7 +194,7 @@ def recocido_simulado(
     usar_penalizacion_capacidad: bool = True,  # si True, penaliza violaciones de capacidad
     lambda_capacidad: float | None = None,     # peso λ (None = automático)
     extra_csv: dict[str, object] | None = None,  # columnas adicionales para el CSV
-    alpha_intra: float = 0.8,  # fracción de prob. asignada a ops intra-ruta cuando hay violación
+    alpha_inter: float = 0.8,  # fracción de prob. asignada a ops inter-ruta cuando hay violación
 ) -> RecocidoSimuladoResult:
     """
     Recocido Simulado clásico para minimizar el costo de soluciones CARP.
@@ -307,7 +307,7 @@ def recocido_simulado(
             historial_best.append(costo_para_reporte())
 
         # === BUCLE INTERNO: evaluaciones dentro del nivel de temperatura T ===
-        pesos_ops = pesos_intra_bias(viol_actual, list(operadores), alpha_intra=alpha_intra)
+        pesos_ops = pesos_inter_bias(viol_actual, list(operadores), alpha_inter=alpha_inter)
         for _ in range(iteraciones_por_temperatura):
             iteraciones_totales += 1
 
@@ -508,7 +508,7 @@ def recocido_simulado_desde_instancia(
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
-    alpha_intra: float = 0.8,
+    alpha_inter: float = 0.8,
 ) -> RecocidoSimuladoResult:
     """
     Función de conveniencia: carga todos los recursos necesarios desde el nombre
@@ -548,5 +548,5 @@ def recocido_simulado_desde_instancia(
         usar_penalizacion_capacidad=usar_penalizacion_capacidad,
         lambda_capacidad=lambda_capacidad,
         extra_csv=extra_csv,
-        alpha_intra=alpha_intra,
+        alpha_inter=alpha_inter,
     )

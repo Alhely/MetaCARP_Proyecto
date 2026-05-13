@@ -59,7 +59,7 @@ from .metaheuristicas_utils import (
     copiar_solucion_labels,              # copia una solución a formato de strings
     generar_reporte_detallado,           # genera el texto de reporte final
     guardar_resultado_csv,               # persiste la fila de resultados en CSV
-    pesos_intra_bias,                    # pesos de sesgo intra-ruta por violación de capacidad
+    pesos_inter_bias,                    # pesos de sesgo inter-ruta por violación de capacidad
     resumen_bks_csv,                     # extrae columnas de comparación con BKS
     seleccionar_mejor_inicial_rapido,    # elige la mejor solución inicial
     solucion_legible_humana,             # convierte la solución a texto legible
@@ -185,7 +185,7 @@ def busqueda_tabu(
     usar_penalizacion_capacidad: bool = True,  # si True, penaliza soluciones infactibles
     lambda_capacidad: float | None = None,     # peso λ de la penalización
     extra_csv: dict[str, object] | None = None,  # columnas adicionales para el CSV
-    alpha_intra: float = 0.8,  # fracción de prob. asignada a ops intra-ruta cuando hay violación
+    alpha_inter: float = 0.8,  # fracción de prob. asignada a ops inter-ruta cuando hay violación
 ) -> BusquedaTabuResult:
     """
     Búsqueda Tabú clásica con memoria de corto plazo (short-term memory).
@@ -302,7 +302,7 @@ def busqueda_tabu(
         # Generamos 'tam_vecindario' vecinos y sus movimientos correspondientes.
         vecinos: list[list[list[str]]] = []
         movimientos: list[MovimientoVecindario] = []
-        pesos_ops = pesos_intra_bias(viol_actual, list(operadores), alpha_intra=alpha_intra)
+        pesos_ops = pesos_inter_bias(viol_actual, list(operadores), alpha_inter=alpha_inter)
         for _ in range(tam_vecindario):
             vecino, mov = generar_vecino(
                 sol_actual,
@@ -528,7 +528,7 @@ def busqueda_tabu_desde_instancia(
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
-    alpha_intra: float = 0.8,
+    alpha_inter: float = 0.8,
 ) -> BusquedaTabuResult:
     """
     Función de conveniencia: carga todos los recursos necesarios desde el nombre
@@ -565,5 +565,5 @@ def busqueda_tabu_desde_instancia(
         usar_penalizacion_capacidad=usar_penalizacion_capacidad,
         lambda_capacidad=lambda_capacidad,
         extra_csv=extra_csv,
-        alpha_intra=alpha_intra,
+        alpha_inter=alpha_inter,
     )

@@ -66,7 +66,7 @@ from .metaheuristicas_utils import (
     copiar_solucion_labels,              # copia soluciones a formato string uniforme
     generar_reporte_detallado,           # genera texto de reporte final
     guardar_resultado_csv,               # escribe fila de resultados en CSV
-    pesos_intra_bias,                    # pesos de sesgo intra-ruta por violación de capacidad
+    pesos_inter_bias,                    # pesos de sesgo inter-ruta por violación de capacidad
     resumen_bks_csv,                     # columnas de comparación con BKS
     seleccionar_mejor_inicial_rapido,    # selecciona la mejor solución inicial
     solucion_legible_humana,             # convierte solución a texto legible
@@ -208,7 +208,7 @@ def busqueda_abejas(
     usar_penalizacion_capacidad: bool = True,  # si True, penaliza violaciones de capacidad
     lambda_capacidad: float | None = None,     # peso λ de la penalización (None = automático)
     extra_csv: dict[str, object] | None = None,  # columnas adicionales para el CSV
-    alpha_intra: float = 0.8,  # fracción de prob. asignada a ops intra-ruta cuando hay violación
+    alpha_inter: float = 0.8,  # fracción de prob. asignada a ops inter-ruta cuando hay violación
 ) -> AbejasResult:
     """
     Implementación simplificada de ABC (Artificial Bee Colony) para CARP.
@@ -387,7 +387,7 @@ def busqueda_abejas(
         # Si el vecino es mejor, reemplaza la fuente (exploración greedy local).
         # =====================================================================
         viol_media = sum(fuentes_viol) / len(fuentes_viol) if fuentes_viol else 0.0
-        pesos_ops = pesos_intra_bias(viol_media, list(operadores), alpha_intra=alpha_intra)
+        pesos_ops = pesos_inter_bias(viol_media, list(operadores), alpha_inter=alpha_inter)
         vecinos, movs = _generar_vecinos_lote(
             fuentes_sol,
             rng=rng,
@@ -648,7 +648,7 @@ def busqueda_abejas_desde_instancia(
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
-    alpha_intra: float = 0.8,
+    alpha_inter: float = 0.8,
 ) -> AbejasResult:
     """
     Función de conveniencia que carga todos los recursos necesarios desde el
@@ -681,5 +681,5 @@ def busqueda_abejas_desde_instancia(
         usar_penalizacion_capacidad=usar_penalizacion_capacidad,
         lambda_capacidad=lambda_capacidad,
         extra_csv=extra_csv,
-        alpha_intra=alpha_intra,
+        alpha_inter=alpha_inter,
     )

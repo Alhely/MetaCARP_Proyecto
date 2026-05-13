@@ -74,7 +74,7 @@ from .metaheuristicas_utils import (
     copiar_solucion_labels,
     generar_reporte_detallado,
     guardar_resultado_csv,
-    pesos_intra_bias,
+    pesos_inter_bias,
     resumen_bks_csv,
     seleccionar_mejor_inicial_rapido,
     solucion_legible_humana,
@@ -271,7 +271,7 @@ def cuckoo_search(
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
-    alpha_intra: float = 0.8,  # fracción de prob. asignada a ops intra-ruta cuando hay violación
+    alpha_inter: float = 0.8,  # fracción de prob. asignada a ops inter-ruta cuando hay violación
 ) -> CuckooSearchResult:
     """
     Cuckoo Search clásico adaptado a espacio discreto de rutas CARP.
@@ -445,7 +445,7 @@ def cuckoo_search(
         cuckoos: list[list[list[str]]] = []                      # soluciones cuckoo generadas
         movs_levy: list[list[MovimientoVecindario]] = []          # movimientos aplicados por cuckoo
         for i in range(num_nidos):
-            pesos_i = pesos_intra_bias(nidos_viol[i], list(operadores), alpha_intra=alpha_intra)
+            pesos_i = pesos_inter_bias(nidos_viol[i], list(operadores), alpha_inter=alpha_inter)
             cs, movs_seq = _vuelo_levy_discreto(
                 nidos_sol[i],                    # partimos del nido i
                 rng=rng,
@@ -519,7 +519,7 @@ def cuckoo_search(
         # Generamos nuevas soluciones para reemplazar los peores nidos.
         nuevos: list[list[list[str]]] = []
         movs_abandono: list[list[MovimientoVecindario]] = []
-        pesos_best = pesos_intra_bias(nidos_viol[idx_best], list(operadores), alpha_intra=alpha_intra)
+        pesos_best = pesos_inter_bias(nidos_viol[idx_best], list(operadores), alpha_inter=alpha_inter)
         for _idx in peores:
             # Cada nuevo nido se genera con un vuelo Lévy desde el mejor nido actual.
             ns, ms = _vuelo_levy_discreto(
@@ -670,7 +670,7 @@ def cuckoo_search_desde_instancia(
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
-    alpha_intra: float = 0.8,
+    alpha_inter: float = 0.8,
 ) -> CuckooSearchResult:
     """
     Función de conveniencia: carga todos los recursos desde el nombre de la
@@ -708,5 +708,5 @@ def cuckoo_search_desde_instancia(
         usar_penalizacion_capacidad=usar_penalizacion_capacidad,
         lambda_capacidad=lambda_capacidad,
         extra_csv=extra_csv,
-        alpha_intra=alpha_intra,
+        alpha_inter=alpha_inter,
     )
