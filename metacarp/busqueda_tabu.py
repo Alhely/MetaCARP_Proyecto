@@ -450,39 +450,21 @@ def busqueda_tabu(
             usar_gpu=False,
         )
         # Construimos el diccionario de la fila con todas las columnas del CSV.
+        _bks = resumen_bks_csv(data, costo_mejor)
         fila = {
             "metaheuristica": "busqueda_tabu",
             "instancia": nombre_instancia,
-            "id_corrida": id_corrida or "",
-            "config_id": config_id or "",
+            "bks_referencia": _bks["bks_referencia"],
+            "bks_origen": _bks["bks_origen"],
             "repeticion": repeticion if repeticion is not None else "",
             "semilla": semilla,
-            "backend_evaluacion_solicitado": ctx.backend_solicitado,
-            "backend_evaluacion_real": ctx.backend_real,
             "tiempo_segundos": elapsed,
-            "iteraciones_totales": iteraciones,
-            "vecinos_evaluados": vecinos_evaluados,
-            "movimientos_tabu_bloqueados": bloqueados,
-            "mejoras": mejoras,
-            "usar_penalizacion_capacidad": usar_penalizacion_capacidad,
-            "lambda_capacidad": lam_eff,
-            "n_iniciales_evaluados": n_ini_ev,
-            "iniciales_infactibles_aceptadas": ini_infact,
-            "aceptaciones_solucion_infactible": aceptaciones_sol_infactible,
-            "mejor_solucion_factible_final": mejor_factible_final,
-            "costo_solucion_inicial": costo_ref,
-            "mejor_costo": costo_mejor,
-            "mejora_absoluta": mejora_abs,
-            "mejora_porcentaje_inicial_vs_final": mejora_pct,
-            # ** desempaca un dict: agrega bks_referencia, bks_origen, gap_bks_porcentaje.
-            **resumen_bks_csv(data, costo_mejor),
-            "mejor_solucion_tr_legible": solucion_legible_humana(sol_mejor),
-            "reporte_detalle_deadheading": detalle_txt,
-            "costo_total_desde_reporte": costo_total_reporte,
-            # Agrega las 28 columnas de conteo de operadores (4 categorías × 7 operadores).
+            "iteraciones": iteraciones,
+            "tam_vecindario": tam_vecindario,
+            "tenure_tabu": tenure_tabu,
             **contador.resumen_csv(),
-            # Columnas adicionales que el usuario puede pasar libremente.
-            **(extra_csv or {}),
+            "aceptadas": sum(contador.aceptados.values()),
+            "mejoras": mejoras,
         }
         archivo_csv = guardar_resultado_csv(fila=fila, ruta_csv=ruta)
 
