@@ -138,25 +138,14 @@ Cada metaheurística escribe las columnas de sus propios hiperparámetros. Las c
 
 **Cuckoo:** `iteraciones`, `num_nidos`, `pa_abandono`, `pasos_levy_base`, `beta_levy`
 
-### Métricas de rendimiento
+### Métricas de rendimiento y calidad
 
 | Columna | Descripción |
 |---|---|
-| `tiempo_segundos` | Duración real de la corrida en segundos |
-| `iteraciones_totales` | Iteraciones ejecutadas por el bucle principal |
-| `aceptadas` | Total de movimientos aceptados durante la búsqueda |
-| `mejoras` | Total de veces que se encontró una solución mejor que la anterior |
-| `costo_solucion_inicial` | Costo de la solución con la que arrancó la búsqueda (referencia) |
 | `mejor_costo` | Costo de la mejor solución encontrada |
-| `mejora_absoluta` | `costo_solucion_inicial − mejor_costo` |
-| `mejora_porcentaje_inicial_vs_final` | Mejora relativa respecto a la solución inicial (%) |
-
-### Métricas de calidad respecto al óptimo
-
-| Columna | Descripción |
-|---|---|
-| `bks_referencia` | Valor BKS (*Best Known Solution*) o cota inferior de la literatura |
-| `bks_origen` | Fuente del BKS: `"BKS"`, `"lower_bound"`, etc. |
+| `costo_solucion_inicial` | Costo de la solución con la que arrancó la búsqueda (referencia) |
+| `aceptadas` | Total de movimientos aceptados durante la búsqueda |
+| `mejoras` | Total de veces que se encontró una solución mejor |
 | `gap_bks_porcentaje` | **Métrica principal de tesis:** distancia relativa al BKS en porcentaje |
 
 La métrica `gap_bks_porcentaje` se calcula como:

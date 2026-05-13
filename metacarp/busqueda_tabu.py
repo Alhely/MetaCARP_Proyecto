@@ -468,6 +468,10 @@ def busqueda_tabu(
             **contador.resumen_csv(),
             "aceptadas": sum(contador.aceptados.values()),
             "mejoras": mejoras,
+            "mejor_solucion_factible_final": mejor_factible_final,
+            "mejor_solucion_tr_legible": solucion_legible_humana(sol_mejor),
+            "reporte_detalle_deadheading": detalle_txt,
+            "costo_total_desde_reporte": costo_total_reporte,
         }
         archivo_csv = guardar_resultado_csv(fila=fila, ruta_csv=ruta)
 
