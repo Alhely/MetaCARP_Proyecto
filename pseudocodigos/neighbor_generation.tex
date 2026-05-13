@@ -1,0 +1,458 @@
+\documentclass[12pt, a4paper]{article}
+
+% ============================================================
+%  Packages
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage[ruled, vlined, linesnumbered, english]{algorithm2e}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric}
+
+\geometry{margin=2.5cm}
+
+\title{Neighbor Generation in MetaCARP\\
+       \large All Seven Neighborhood Operators with Worked Examples}
+\author{}
+\date{}
+
+% ============================================================
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ------------------------------------------------------------
+\section{Notation and Representation}
+% ------------------------------------------------------------
+
+A CARP solution $s$ is a set of $K$ routes $s = \{r_1, r_2, \ldots, r_K\}$.
+Each route $r_k = (e_1, e_2, \ldots, e_{n_k})$ is an ordered sequence of
+required edges (tasks), identified by their label (e.g.\ \texttt{TR1},
+\texttt{TR2}, \dots). Depot tokens (\texttt{D}) are stripped before applying
+any operator and re-inserted for cost evaluation.
+
+\begin{itemize}
+    \item $r[i]$: task at position $i$ in route $r$ (0-indexed).
+    \item $r[i{:}j]$: sub-sequence from position $i$ up to and including $j$.
+    \item $r_a$, $r_b$: two distinct routes ($a \neq b$).
+    \item $\mathit{head}(r, c) = r[0{:}c]$, $\mathit{tail}(r, c) = r[c{+}1{:}]$.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{General Neighbor Generation Procedure}
+% ------------------------------------------------------------
+
+Algorithm~\ref{alg:gen-neighbor} describes the master routine called by
+every metaheuristic in each iteration. It selects one operator via weighted
+roulette wheel (weights provided by \textsc{InterBias}) and retries up to
+500 times if the chosen operator is not applicable to the current solution
+(e.g.\ \texttt{2opt\_intra} requires a route with at least 3 tasks).
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{\textsc{GenerateNeighbor} — Master neighbor generation routine}
+\label{alg:gen-neighbor}
+
+\KwIn{Current solution $s$;\; weight vector $w$ (or \texttt{null});\;
+      operator set $\mathcal{O}$;\; random generator $\mathit{rng}$}
+\KwOut{Neighbor solution $s'$;\; movement record $m$}
+
+\BlankLine
+$\mathit{attempts} \leftarrow 0$ \;
+
+\Repeat{a valid neighbor is found}{
+    $\mathit{attempts} \leftarrow \mathit{attempts} + 1$ \;
+    \If{$\mathit{attempts} > 500$}{
+        \textbf{raise} \texttt{RuntimeError} \tcp{solution too small for any operator}
+    }
+
+    \BlankLine
+    \eIf{$w \neq \texttt{null}$}{
+        $\mathit{op} \leftarrow \textsc{RouletteSelect}(\mathcal{O},\, w,\, \mathit{rng})$
+            \tcp{biased selection}
+    }{
+        $\mathit{op} \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{O})$
+            \tcp{uniform selection}
+    }
+
+    \BlankLine
+    $(s',\, m) \leftarrow \textsc{ApplyOperator}(\mathit{op},\, s,\, \mathit{rng})$
+        \tcp{may return \texttt{null} if not applicable}
+}
+
+\Return $(s',\, m)$
+\end{algorithm}
+
+% ------------------------------------------------------------
+\section{Intra-Route Operators}
+% ------------------------------------------------------------
+
+Intra-route operators act on a single route $r_a$.
+They \textbf{never change which tasks belong to which route},
+so they cannot reduce a capacity violation but are safe to apply freely.
+
+% ---- 3.1 Relocate-Intra ----
+\subsection{\texttt{relocate\_intra}}
+
+\textbf{Move.} Remove the task at position $i$ from route $r_a$ and
+re-insert it at position $j \neq i$.
+
+\textbf{Requirement.} $|r_a| \geq 2$.
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{\texttt{relocate\_intra} — Move a task within the same route}
+\label{alg:relocate-intra}
+
+\KwIn{Solution $s$;\; $\mathit{rng}$}
+\KwOut{Neighbor $s'$;\; movement $m$}
+
+\BlankLine
+$\mathcal{C} \leftarrow \{k : |r_k| \geq 2\}$
+    \tcp{routes with at least 2 tasks}
+\lIf{$\mathcal{C} = \emptyset$}{\Return \texttt{null}}
+
+$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$ \;
+$n \leftarrow |r_a|$ \;
+$i \leftarrow \mathit{rng}.\textsc{randrange}(n)$
+    \tcp{source position}
+$j \leftarrow \mathit{rng}.\textsc{randrange}(n)$;\enspace
+    \lIf{$i = j$}{\Return \texttt{null}}
+    \tcp{target position, must differ}
+
+\BlankLine
+$s' \leftarrow \textsc{Copy}(s)$ \;
+$e \leftarrow r'_a.\textsc{pop}(i)$ \tcp{extract task from position $i$}
+$r'_a.\textsc{insert}(j,\, e)$ \tcp{re-insert at position $j$}
+
+$m \leftarrow (\texttt{relocate\_intra},\; a,\; i,\; j)$ \;
+\Return $(s',\, m)$
+\end{algorithm}
+
+\noindent\textbf{Visual example.}
+\[
+    r_a = [\,\mathtt{TR1},\; \mathtt{TR2},\; \mathtt{TR3},\; \mathtt{TR4}\,]
+    \xrightarrow{\;i=2,\; j=0\;}
+    r'_a = [\,\mathtt{TR3},\; \mathtt{TR1},\; \mathtt{TR2},\; \mathtt{TR4}\,]
+\]
+
+% ---- 3.2 Swap-Intra ----
+\subsection{\texttt{swap\_intra}}
+
+\textbf{Move.} Exchange the tasks at positions $i$ and $j$ ($i \neq j$)
+within route $r_a$.
+
+\textbf{Requirement.} $|r_a| \geq 2$.
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{\texttt{swap\_intra} — Swap two tasks within the same route}
+\label{alg:swap-intra}
+
+\KwIn{Solution $s$;\; $\mathit{rng}$}
+\KwOut{Neighbor $s'$;\; movement $m$}
+
+\BlankLine
+$\mathcal{C} \leftarrow \{k : |r_k| \geq 2\}$ \;
+\lIf{$\mathcal{C} = \emptyset$}{\Return \texttt{null}}
+
+$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$ \;
+$(i,\, j) \leftarrow \mathit{rng}.\textsc{sample}(\{0,\ldots,|r_a|-1\},\; 2)$
+    \tcp{two distinct indices, no repetition}
+
+\BlankLine
+$s' \leftarrow \textsc{Copy}(s)$ \;
+$r'_a[i],\; r'_a[j] \leftarrow r'_a[j],\; r'_a[i]$
+    \tcp{simultaneous swap}
+
+$m \leftarrow (\texttt{swap\_intra},\; a,\; i,\; j)$ \;
+\Return $(s',\, m)$
+\end{algorithm}
+
+\noindent\textbf{Visual example.}
+\[
+    r_a = [\,\mathtt{TR1},\; \mathtt{TR2},\; \mathtt{TR3},\; \mathtt{TR4}\,]
+    \xrightarrow{\;i=0,\; j=3\;}
+    r'_a = [\,\mathtt{TR4},\; \mathtt{TR2},\; \mathtt{TR3},\; \mathtt{TR1}\,]
+\]
+
+% ---- 3.3 2opt-Intra ----
+\subsection{\texttt{2opt\_intra}}
+
+\textbf{Move.} Reverse the sub-sequence $r_a[i{:}j]$ (both inclusive), where $i < j$.
+
+\textbf{Requirement.} $|r_a| \geq 3$ (segment of at least 2 tasks).
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{\texttt{2opt\_intra} — Reverse a segment within the same route}
+\label{alg:2opt-intra}
+
+\KwIn{Solution $s$;\; $\mathit{rng}$}
+\KwOut{Neighbor $s'$;\; movement $m$}
+
+\BlankLine
+$\mathcal{C} \leftarrow \{k : |r_k| \geq 3\}$ \;
+\lIf{$\mathcal{C} = \emptyset$}{\Return \texttt{null}}
+
+$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$ \;
+$n \leftarrow |r_a|$ \;
+$i \leftarrow \mathit{rng}.\textsc{randrange}(0,\; n-1)$ \;
+$j \leftarrow \mathit{rng}.\textsc{randrange}(i+1,\; n)$
+    \tcp{$j > i$ always holds}
+
+\BlankLine
+$s' \leftarrow \textsc{Copy}(s)$ \;
+$r'_a[i{:}j] \leftarrow \textsc{Reverse}(r'_a[i{:}j])$
+    \tcp{in-place reversal of the segment}
+
+$m \leftarrow (\texttt{2opt\_intra},\; a,\; i,\; j)$ \;
+\Return $(s',\, m)$
+\end{algorithm}
+
+\noindent\textbf{Visual example.}
+\[
+    r_a = [\,\mathtt{TR1},\; \underbrace{\mathtt{TR2},\; \mathtt{TR3},\; \mathtt{TR4}}_{i=1,\;j=3},\; \mathtt{TR5}\,]
+    \;\longrightarrow\;
+    r'_a = [\,\mathtt{TR1},\; \mathtt{TR4},\; \mathtt{TR3},\; \mathtt{TR2},\; \mathtt{TR5}\,]
+\]
+
+% ------------------------------------------------------------
+\section{Inter-Route Operators}
+% ------------------------------------------------------------
+
+Inter-route operators move tasks \textbf{between two different routes}
+$r_a$ and $r_b$ ($a \neq b$). They can reduce a capacity violation on
+an overloaded route by transferring demand to another route, which is
+why they are preferred (probability $\alpha_{\mathrm{inter}} = 0.80$)
+when \textsc{CapacityViolation}$(s) > 0$.
+
+% ---- 4.1 Relocate-Inter ----
+\subsection{\texttt{relocate\_inter}}
+
+\textbf{Move.} Remove the task at position $i$ of route $r_a$ and
+insert it at position $j$ of route $r_b$ ($a \neq b$).
+
+\textbf{Requirement.} $|r_a| \geq 1$; $r_b$ may be empty.
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{\texttt{relocate\_inter} — Move a task from one route to another}
+\label{alg:relocate-inter}
+
+\KwIn{Solution $s$;\; $\mathit{rng}$}
+\KwOut{Neighbor $s'$;\; movement $m$}
+
+\BlankLine
+$\mathcal{A} \leftarrow \{k : |r_k| \geq 1\}$
+    \tcp{non-empty routes (source candidates)}
+\lIf{$|\mathcal{A}| < 1$ \textbf{ or } $K < 2$}{\Return \texttt{null}}
+
+$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{A})$ \;
+$b \leftarrow \mathit{rng}.\textsc{randrange}(K)$;\enspace
+    \lIf{$a = b$}{\Return \texttt{null}}
+
+$i \leftarrow \mathit{rng}.\textsc{randrange}(|r_a|)$
+    \tcp{position in source route}
+$j \leftarrow \mathit{rng}.\textsc{randrange}(|r_b| + 1)$
+    \tcp{insertion position in target route ($+1$ allows appending)}
+
+\BlankLine
+$s' \leftarrow \textsc{Copy}(s)$ \;
+$e \leftarrow r'_a.\textsc{pop}(i)$ \tcp{extract task}
+$r'_b.\textsc{insert}(j,\, e)$ \tcp{insert into target route}
+
+$m \leftarrow (\texttt{relocate\_inter},\; a,\; b,\; i,\; j)$ \;
+\Return $(s',\, m)$
+\end{algorithm}
+
+\noindent\textbf{Visual example.}
+\[
+    \begin{array}{ll}
+    r_a = [\mathtt{TR1},\; \mathtt{TR2},\; \mathtt{TR3}] & r_b = [\mathtt{TR4},\; \mathtt{TR5}]\\[4pt]
+    \multicolumn{2}{c}{\xrightarrow{\;i=2\;(\mathtt{TR3}),\;\; j=1\;}}\\[4pt]
+    r'_a = [\mathtt{TR1},\; \mathtt{TR2}] & r'_b = [\mathtt{TR4},\; \mathtt{TR3},\; \mathtt{TR5}]
+    \end{array}
+\]
+
+% ---- 4.2 Swap-Inter ----
+\subsection{\texttt{swap\_inter}}
+
+\textbf{Move.} Exchange the task at position $i$ of route $r_a$ with
+the task at position $j$ of route $r_b$.
+
+\textbf{Requirement.} $|r_a| \geq 1$ and $|r_b| \geq 1$.
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{\texttt{swap\_inter} — Swap one task between two routes}
+\label{alg:swap-inter}
+
+\KwIn{Solution $s$;\; $\mathit{rng}$}
+\KwOut{Neighbor $s'$;\; movement $m$}
+
+\BlankLine
+$\mathcal{A} \leftarrow \{k : |r_k| \geq 1\}$ \;
+\lIf{$|\mathcal{A}| < 2$}{\Return \texttt{null}}
+$(a,\, b) \leftarrow \mathit{rng}.\textsc{sample}(\mathcal{A},\; 2)$
+    \tcp{two distinct non-empty routes}
+
+$i \leftarrow \mathit{rng}.\textsc{randrange}(|r_a|)$ \;
+$j \leftarrow \mathit{rng}.\textsc{randrange}(|r_b|)$ \;
+
+\BlankLine
+$s' \leftarrow \textsc{Copy}(s)$ \;
+$r'_a[i],\; r'_b[j] \leftarrow r'_b[j],\; r'_a[i]$
+    \tcp{simultaneous swap across routes}
+
+$m \leftarrow (\texttt{swap\_inter},\; a,\; b,\; i,\; j)$ \;
+\Return $(s',\, m)$
+\end{algorithm}
+
+\noindent\textbf{Visual example.}
+\[
+    \begin{array}{ll}
+    r_a = [\mathtt{TR1},\; \mathtt{TR2}] & r_b = [\mathtt{TR3},\; \mathtt{TR4}]\\[4pt]
+    \multicolumn{2}{c}{\xrightarrow{\;i=0\;(\mathtt{TR1}),\;\; j=1\;(\mathtt{TR4})\;}}\\[4pt]
+    r'_a = [\mathtt{TR4},\; \mathtt{TR2}] & r'_b = [\mathtt{TR3},\; \mathtt{TR1}]
+    \end{array}
+\]
+
+% ---- 4.3 2opt-Star ----
+\subsection{\texttt{2opt\_star}}
+
+\textbf{Move.} Split each route at a cut point and swap their tails.
+Route $r_a$ is split at position $c_a$ into
+$\mathit{head}_a = r_a[0{:}c_a]$ and $\mathit{tail}_a = r_a[c_a{+}1{:}]$.
+Likewise for $r_b$ at $c_b$. The result is:
+\[
+    r'_a = \mathit{head}_a \;\|\; \mathit{tail}_b,
+    \qquad
+    r'_b = \mathit{head}_b \;\|\; \mathit{tail}_a.
+\]
+
+\textbf{Requirement.} $|r_a| \geq 1$ and $|r_b| \geq 1$.
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{\texttt{2opt\_star} — Swap route tails at cut points}
+\label{alg:2opt-star}
+
+\KwIn{Solution $s$;\; $\mathit{rng}$}
+\KwOut{Neighbor $s'$;\; movement $m$}
+
+\BlankLine
+$\mathcal{A} \leftarrow \{k : |r_k| \geq 1\}$ \;
+\lIf{$|\mathcal{A}| < 2$}{\Return \texttt{null}}
+$(a,\, b) \leftarrow \mathit{rng}.\textsc{sample}(\mathcal{A},\; 2)$ \;
+
+$c_a \leftarrow \mathit{rng}.\textsc{randrange}(|r_a|)$
+    \tcp{cut point in $r_a$}
+$c_b \leftarrow \mathit{rng}.\textsc{randrange}(|r_b|)$
+    \tcp{cut point in $r_b$}
+
+\BlankLine
+$s' \leftarrow \textsc{Copy}(s)$ \;
+$\mathit{head}_a,\; \mathit{tail}_a \leftarrow r_a[0{:}c_a{+}1],\; r_a[c_a{+}1{:}]$ \;
+$\mathit{head}_b,\; \mathit{tail}_b \leftarrow r_b[0{:}c_b{+}1],\; r_b[c_b{+}1{:}]$ \;
+$r'_a \leftarrow \mathit{head}_a \;\|\; \mathit{tail}_b$ \;
+$r'_b \leftarrow \mathit{head}_b \;\|\; \mathit{tail}_a$ \;
+
+$m \leftarrow (\texttt{2opt\_star},\; a,\; b,\; c_a,\; c_b)$ \;
+\Return $(s',\, m)$
+\end{algorithm}
+
+\noindent\textbf{Visual example} ($c_a=1$, $c_b=1$):
+\[
+    \begin{array}{ll}
+    r_a = [\mathtt{TR1},\; \underbrace{\mathtt{TR2}}_{\text{head}},\; \overbrace{\mathtt{TR3},\;\mathtt{TR4}}^{\text{tail}}]
+    & r_b = [\mathtt{TR5},\; \underbrace{\mathtt{TR6}}_{\text{head}},\; \overbrace{\mathtt{TR7}}^{\text{tail}}]\\[8pt]
+    \multicolumn{2}{c}{\Downarrow}\\[4pt]
+    r'_a = [\mathtt{TR1},\;\mathtt{TR2},\;\mathtt{TR7}]
+    & r'_b = [\mathtt{TR5},\;\mathtt{TR6},\;\mathtt{TR3},\;\mathtt{TR4}]
+    \end{array}
+\]
+
+% ---- 4.4 Cross-Exchange ----
+\subsection{\texttt{cross\_exchange}}
+
+\textbf{Move.} Extract a contiguous segment $r_a[i{:}j]$ from $r_a$
+and a contiguous segment $r_b[k{:}l]$ from $r_b$, then swap them:
+\[
+    r'_a = r_a[0{:}i] \;\|\; r_b[k{:}l] \;\|\; r_a[j{+}1{:}],
+    \qquad
+    r'_b = r_b[0{:}k] \;\|\; r_a[i{:}j] \;\|\; r_b[l{+}1{:}].
+\]
+
+\textbf{Requirement.} $|r_a| \geq 1$ and $|r_b| \geq 1$.
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{\texttt{cross\_exchange} — Swap contiguous segments between two routes}
+\label{alg:cross-exchange}
+
+\KwIn{Solution $s$;\; $\mathit{rng}$}
+\KwOut{Neighbor $s'$;\; movement $m$}
+
+\BlankLine
+$\mathcal{A} \leftarrow \{k : |r_k| \geq 1\}$ \;
+\lIf{$|\mathcal{A}| < 2$}{\Return \texttt{null}}
+$(a,\, b) \leftarrow \mathit{rng}.\textsc{sample}(\mathcal{A},\; 2)$ \;
+
+$i \leftarrow \mathit{rng}.\textsc{randrange}(|r_a|)$ \;
+$j \leftarrow \mathit{rng}.\textsc{randrange}(i,\; |r_a|)$
+    \tcp{$j \geq i$: segment $[i, j]$ in $r_a$}
+$k \leftarrow \mathit{rng}.\textsc{randrange}(|r_b|)$ \;
+$l \leftarrow \mathit{rng}.\textsc{randrange}(k,\; |r_b|)$
+    \tcp{$l \geq k$: segment $[k, l]$ in $r_b$}
+
+\BlankLine
+$s' \leftarrow \textsc{Copy}(s)$ \;
+$\mathit{seg}_a \leftarrow r_a[i{:}j{+}1]$;\quad
+$\mathit{seg}_b \leftarrow r_b[k{:}l{+}1]$ \;
+$r'_a \leftarrow r_a[0{:}i] \;\|\; \mathit{seg}_b \;\|\; r_a[j{+}1{:}]$ \;
+$r'_b \leftarrow r_b[0{:}k] \;\|\; \mathit{seg}_a \;\|\; r_b[l{+}1{:}]$ \;
+
+$m \leftarrow (\texttt{cross\_exchange},\; a,\; b,\; i,\; j,\; k,\; l)$ \;
+\Return $(s',\, m)$
+\end{algorithm}
+
+\noindent\textbf{Visual example} ($i=1, j=2, k=0, l=1$):
+\[
+    \begin{array}{ll}
+    r_a = [\mathtt{TR1},\; \overbrace{\mathtt{TR2},\;\mathtt{TR3}}^{\mathit{seg}_a},\; \mathtt{TR4}]
+    & r_b = [\overbrace{\mathtt{TR5},\;\mathtt{TR6}}^{\mathit{seg}_b},\; \mathtt{TR7}]\\[8pt]
+    \multicolumn{2}{c}{\Downarrow}\\[4pt]
+    r'_a = [\mathtt{TR1},\;\mathtt{TR5},\;\mathtt{TR6},\;\mathtt{TR4}]
+    & r'_b = [\mathtt{TR2},\;\mathtt{TR3},\;\mathtt{TR7}]
+    \end{array}
+\]
+
+% ------------------------------------------------------------
+\section{Summary Table}
+% ------------------------------------------------------------
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{llccp{5cm}}
+\hline
+\textbf{Operator} & \textbf{Type} & \textbf{Min.\ tasks} & \textbf{Routes} & \textbf{Effect} \\
+\hline
+\texttt{relocate\_intra} & intra & 2 & 1 & Move one task to another position within the same route \\
+\texttt{swap\_intra}     & intra & 2 & 1 & Swap two tasks within the same route \\
+\texttt{2opt\_intra}     & intra & 3 & 1 & Reverse a contiguous segment within the same route \\
+\texttt{relocate\_inter} & inter & 1 & 2 & Move one task from one route to another \\
+\texttt{swap\_inter}     & inter & 1+1 & 2 & Exchange one task between two different routes \\
+\texttt{2opt\_star}      & inter & 1+1 & 2 & Swap the tails of two routes at chosen cut points \\
+\texttt{cross\_exchange} & inter & 1+1 & 2 & Swap contiguous segments between two routes \\
+\hline
+\end{tabular}
+\end{center}
+
+\end{document}
