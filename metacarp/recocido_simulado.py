@@ -187,14 +187,13 @@ def recocido_simulado(
     guardar_csv: bool = False,                # si True, escribe resultados en CSV
     ruta_csv: str | None = None,              # ruta del CSV
     nombre_instancia: str = "instancia",     # nombre para el CSV
-    id_corrida: str | None = None,
-    config_id: str | None = None,
     repeticion: int | None = None,
     root: str | None = None,
     usar_penalizacion_capacidad: bool = True,  # si True, penaliza violaciones de capacidad
     lambda_capacidad: float | None = None,     # peso λ (None = automático)
     extra_csv: dict[str, object] | None = None,  # columnas adicionales para el CSV
     alpha_inter: float = 0.8,  # fracción de prob. asignada a ops inter-ruta cuando hay violación
+    **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
     Recocido Simulado clásico para minimizar el costo de soluciones CARP.
@@ -307,9 +306,16 @@ def recocido_simulado(
             historial_best.append(costo_para_reporte())
 
         # === BUCLE INTERNO: evaluaciones dentro del nivel de temperatura T ===
-        pesos_ops = pesos_inter_bias(viol_actual, list(operadores), alpha_inter=alpha_inter)
+        # NOTA: el sesgo inter-ruta se RECALCULA en cada iteración interna porque
+        # ``viol_actual`` cambia tan pronto se acepta un vecino (incluso uno
+        # infactible aceptado por Metropolis). Si recalculáramos solo una vez por
+        # nivel de temperatura el sesgo quedaría desactualizado durante decenas
+        # de iteraciones y podría sesgar incorrectamente la búsqueda.
         for _ in range(iteraciones_por_temperatura):
             iteraciones_totales += 1
+            pesos_ops = pesos_inter_bias(
+                viol_actual, list(operadores), alpha_inter=alpha_inter
+            )
 
             # Generamos un vecino aleatorio de la solución actual.
             vecino, mov = generar_vecino(
@@ -502,13 +508,12 @@ def recocido_simulado_desde_instancia(
     guardar_historial: bool = True,
     guardar_csv: bool = False,
     ruta_csv: str | None = None,
-    id_corrida: str | None = None,
-    config_id: str | None = None,
     repeticion: int | None = None,
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
     alpha_inter: float = 0.8,
+    **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
     Función de conveniencia: carga todos los recursos necesarios desde el nombre
@@ -541,8 +546,6 @@ def recocido_simulado_desde_instancia(
         guardar_csv=guardar_csv,
         ruta_csv=ruta_csv,
         nombre_instancia=nombre_instancia,
-        id_corrida=id_corrida,
-        config_id=config_id,
         repeticion=repeticion,
         root=root,
         usar_penalizacion_capacidad=usar_penalizacion_capacidad,

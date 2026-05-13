@@ -201,14 +201,13 @@ def busqueda_abejas(
     guardar_csv: bool = False,       # si True, escribe resultados en CSV al finalizar
     ruta_csv: str | None = None,     # ruta del CSV (None = nombre automático)
     nombre_instancia: str = "instancia",  # nombre de la instancia para el CSV
-    id_corrida: str | None = None,   # identificador de corrida
-    config_id: str | None = None,    # identificador de configuración
     repeticion: int | None = None,   # número de repetición del experimento
     root: str | None = None,         # directorio raíz de datos
     usar_penalizacion_capacidad: bool = True,  # si True, penaliza violaciones de capacidad
     lambda_capacidad: float | None = None,     # peso λ de la penalización (None = automático)
     extra_csv: dict[str, object] | None = None,  # columnas adicionales para el CSV
     alpha_inter: float = 0.8,  # fracción de prob. asignada a ops inter-ruta cuando hay violación
+    **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> AbejasResult:
     """
     Implementación simplificada de ABC (Artificial Bee Colony) para CARP.
@@ -381,13 +380,24 @@ def busqueda_abejas(
         if guardar_historial:
             historial_best.append(costo_para_reporte())
 
+        # Función auxiliar local: recalcula el sesgo inter-ruta a partir de la
+        # violación media actual de las fuentes. Se invoca al inicio de cada
+        # fase para que el sesgo refleje el estado real (puede cambiar entre
+        # empleadas → observadoras → scouts a medida que se reemplazan fuentes).
+        def pesos_actuales() -> list[float] | None:
+            viol_media = (
+                sum(fuentes_viol) / len(fuentes_viol) if fuentes_viol else 0.0
+            )
+            return pesos_inter_bias(
+                viol_media, list(operadores), alpha_inter=alpha_inter
+            )
+
         # =====================================================================
         # FASE 1: ABEJAS EMPLEADAS
         # Cada abeja empleada genera un vecino de su fuente asignada.
         # Si el vecino es mejor, reemplaza la fuente (exploración greedy local).
         # =====================================================================
-        viol_media = sum(fuentes_viol) / len(fuentes_viol) if fuentes_viol else 0.0
-        pesos_ops = pesos_inter_bias(viol_media, list(operadores), alpha_inter=alpha_inter)
+        pesos_ops = pesos_actuales()
         vecinos, movs = _generar_vecinos_lote(
             fuentes_sol,
             rng=rng,
@@ -451,6 +461,10 @@ def busqueda_abejas(
         # rng.choices permite seleccionar la misma fuente varias veces (sesgo hacia las buenas).
         idxs = rng.choices(rango_fuentes, weights=probs, k=num_fuentes)
 
+        # Recalculamos el sesgo: la fase de empleadas ya pudo haber reemplazado
+        # fuentes infactibles por factibles (o viceversa), modificando la
+        # violación media. El sesgo inter-ruta debe reflejar el estado actual.
+        pesos_ops = pesos_actuales()
         # Generamos vecinos de las fuentes seleccionadas por las observadoras.
         srcs = [fuentes_sol[i] for i in idxs]
         vecinos, movs = _generar_vecinos_lote(
@@ -503,6 +517,12 @@ def busqueda_abejas(
         # Identificamos las fuentes que superaron el límite de intentos fallidos.
         a_reiniciar = [i for i in rango_fuentes if trials[i] >= limite_abandono]
         if a_reiniciar:
+            # Recalculamos el sesgo antes de la fase scout: las observadoras
+            # también pudieron alterar la violación media. Mantener un sesgo
+            # actualizado es importante porque scouts son la fase que más
+            # exploración hace y queremos que también priorice ops inter-ruta
+            # cuando aún hay violación por reparar.
+            pesos_ops = pesos_actuales()
             # Generamos vecinos de la mejor fuente como "nuevas fuentes de alimento".
             srcs = [base_best] * len(a_reiniciar)
             vecinos, movs_sc = _generar_vecinos_lote(
@@ -642,13 +662,12 @@ def busqueda_abejas_desde_instancia(
     guardar_historial: bool = True,
     guardar_csv: bool = False,
     ruta_csv: str | None = None,
-    id_corrida: str | None = None,
-    config_id: str | None = None,
     repeticion: int | None = None,
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
     alpha_inter: float = 0.8,
+    **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> AbejasResult:
     """
     Función de conveniencia que carga todos los recursos necesarios desde el
@@ -674,8 +693,6 @@ def busqueda_abejas_desde_instancia(
         guardar_csv=guardar_csv,
         ruta_csv=ruta_csv,
         nombre_instancia=nombre_instancia,
-        id_corrida=id_corrida,
-        config_id=config_id,
         repeticion=repeticion,
         root=root,
         usar_penalizacion_capacidad=usar_penalizacion_capacidad,

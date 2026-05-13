@@ -178,14 +178,13 @@ def busqueda_tabu(
     guardar_csv: bool = False,       # si True, escribe resultados al CSV al finalizar
     ruta_csv: str | None = None,     # ruta del archivo CSV (None = nombre automático)
     nombre_instancia: str = "instancia",  # nombre de la instancia para el CSV
-    id_corrida: str | None = None,   # identificador de corrida para el CSV
-    config_id: str | None = None,    # identificador de configuración para el CSV
     repeticion: int | None = None,   # número de repetición dentro de un experimento
     root: str | None = None,         # directorio raíz de los datos
     usar_penalizacion_capacidad: bool = True,  # si True, penaliza soluciones infactibles
     lambda_capacidad: float | None = None,     # peso λ de la penalización
     extra_csv: dict[str, object] | None = None,  # columnas adicionales para el CSV
     alpha_inter: float = 0.8,  # fracción de prob. asignada a ops inter-ruta cuando hay violación
+    **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> BusquedaTabuResult:
     """
     Búsqueda Tabú clásica con memoria de corto plazo (short-term memory).
@@ -522,13 +521,12 @@ def busqueda_tabu_desde_instancia(
     guardar_historial: bool = True,
     guardar_csv: bool = False,
     ruta_csv: str | None = None,
-    id_corrida: str | None = None,
-    config_id: str | None = None,
     repeticion: int | None = None,
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
     alpha_inter: float = 0.8,
+    **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> BusquedaTabuResult:
     """
     Función de conveniencia: carga todos los recursos necesarios desde el nombre
@@ -558,8 +556,6 @@ def busqueda_tabu_desde_instancia(
         guardar_csv=guardar_csv,
         ruta_csv=ruta_csv,
         nombre_instancia=nombre_instancia,
-        id_corrida=id_corrida,
-        config_id=config_id,
         repeticion=repeticion,
         root=root,
         usar_penalizacion_capacidad=usar_penalizacion_capacidad,
