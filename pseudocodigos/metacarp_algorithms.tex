@@ -1,0 +1,374 @@
+\documentclass[12pt, a4paper]{article}
+
+% ============================================================
+%  Packages
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage[ruled, vlined, linesnumbered, english]{algorithm2e}
+\usepackage{geometry}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% ============================================================
+%  Document metadata
+% ============================================================
+\title{Pseudocode — MetaCARP Metaheuristics\\
+       \large Simulated Annealing, Tabu Search, ABC, Cuckoo Search}
+\author{}
+\date{}
+
+% ============================================================
+%  Begin document
+% ============================================================
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ------------------------------------------------------------
+\section{Notation}
+% ------------------------------------------------------------
+
+\begin{itemize}
+    \item $G = (V, E, R)$: CARP instance graph. $V$ = nodes, $E$ = edges, $R \subseteq E$ = required edges.
+    \item $s$: solution — a set of routes $\{r_1, r_2, \ldots, r_k\}$, each a sequence of required edges.
+    \item $s^{*}$: best feasible solution found.
+    \item $\textsc{Cost}(s)$: total traversal cost of solution $s$.
+    \item $\textsc{CapacityViolation}(s)$: total excess demand over vehicle capacity $Q$.
+    \item $f(s) = \textsc{Cost}(s) + \lambda \cdot \textsc{CapacityViolation}(s)$: penalized objective.
+    \item $\mathcal{O} = \mathcal{O}_{\mathrm{intra}} \cup \mathcal{O}_{\mathrm{inter}}$: set of 7 neighborhood operators.
+    \item $\mathcal{O}_{\mathrm{intra}} = \{\texttt{relocate\_intra},\, \texttt{swap\_intra},\, \texttt{2opt\_intra}\}$
+    \item $\mathcal{O}_{\mathrm{inter}} = \{\texttt{relocate\_inter},\, \texttt{swap\_inter},\, \texttt{2opt\_star},\, \texttt{cross\_exchange}\}$
+    \item $\alpha_{\mathrm{inter}} = 0.8$: inter-route bias parameter (fraction of probability mass assigned to inter-route operators when a capacity violation is detected).
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Auxiliary Function: \textsc{InterBias}}
+% ------------------------------------------------------------
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{\textsc{InterBias} — Dynamic inter-route operator bias}
+\label{alg:bias}
+
+\KwIn{Capacity violation $v \geq 0$;\; operator set $\mathcal{O}$;\;
+      bias parameter $\alpha_{\mathrm{inter}} \in (0,1)$}
+\KwOut{Weight vector $w$ over $\mathcal{O}$, or \texttt{null} (uniform selection)}
+
+\BlankLine
+$\mathcal{O}_{\mathrm{inter}} \leftarrow
+    \{\texttt{relocate\_inter},\;\texttt{swap\_inter},\;
+      \texttt{2opt\_star},\;\texttt{cross\_exchange}\}$ \;
+$\mathcal{O}_{\mathrm{intra}} \leftarrow
+    \{\texttt{relocate\_intra},\;\texttt{swap\_intra},\;\texttt{2opt\_intra}\}$ \;
+
+\BlankLine
+\eIf{$v \leq 0$}{
+    \tcp{Feasible solution: uniform selection over all operators}
+    \Return \texttt{null} \;
+}{
+    \tcp{Infeasible solution: bias probability mass towards inter-route operators}
+    $w_{\mathrm{inter}} \leftarrow \dfrac{\alpha_{\mathrm{inter}}}{|\mathcal{O}_{\mathrm{inter}}|}$
+        \tcp{$= 0.20$ per inter-route operator}
+    $w_{\mathrm{intra}} \leftarrow \dfrac{1 - \alpha_{\mathrm{inter}}}{|\mathcal{O}_{\mathrm{intra}}|}$
+        \tcp{$\approx 0.067$ per intra-route operator}
+
+    \BlankLine
+    \ForEach{$o \in \mathcal{O}$}{
+        \eIf{$o \in \mathcal{O}_{\mathrm{inter}}$}{
+            $w[o] \leftarrow w_{\mathrm{inter}}$ \;
+        }{
+            $w[o] \leftarrow w_{\mathrm{intra}}$ \;
+        }
+    }
+    \Return $w$ \;
+}
+\end{algorithm}
+
+\noindent
+\textbf{Correctness check.} When $v > 0$, the weights sum to 1:
+$|\mathcal{O}_{\mathrm{inter}}| \cdot w_{\mathrm{inter}} +
+ |\mathcal{O}_{\mathrm{intra}}| \cdot w_{\mathrm{intra}} =
+ 4 \times 0.20 + 3 \times 0.0\overline{6} = 0.80 + 0.20 = 1$.
+
+% ------------------------------------------------------------
+\section{Simulated Annealing (SA)}
+% ------------------------------------------------------------
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{Simulated Annealing (SA) for CARP}
+\label{alg:sa}
+
+\KwIn{CARP instance $G$;\; parameters $T_{\mathrm{ini}}$, $T_{\mathrm{min}}$,
+      $\alpha$, $\mathit{iter\_temp}$, $\mathit{max\_cool}$, $\lambda$}
+\KwOut{Best solution found $s^{*}$}
+
+\BlankLine
+$s \leftarrow \textsc{InitialSolution}(G)$ \tcp{greedy or random construction}
+$s^{*} \leftarrow s$ \;
+$T \leftarrow T_{\mathrm{ini}}$ \;
+$n_{\mathrm{cool}} \leftarrow 0$ \;
+
+\BlankLine
+\While{$T > T_{\mathrm{min}}$ \textbf{ and } $n_{\mathrm{cool}} < \mathit{max\_cool}$}{
+
+    \For{$it \leftarrow 1$ \KwTo $\mathit{iter\_temp}$}{
+
+        $v \leftarrow \textsc{CapacityViolation}(s)$ \;
+        $w \leftarrow \textsc{InterBias}(v,\;\mathcal{O},\;\alpha_{\mathrm{inter}}{=}0.8)$
+            \tcp{dynamic bias — recomputed every inner iteration}
+        $\mathit{op} \leftarrow \textsc{SelectOperator}(\mathcal{O},\, w)$ \;
+        $s' \leftarrow \textsc{ApplyOperator}(\mathit{op},\, s)$ \;
+
+        \BlankLine
+        $\Delta \leftarrow f(s') - f(s)$ \;
+
+        \If{$\Delta \leq 0$ \textbf{ or }
+            $\mathrm{Uniform}(0,1) < e^{-\Delta / T}$}{
+            $s \leftarrow s'$ \tcp{Metropolis acceptance criterion}
+        }
+
+        \If{$\textsc{Feasible}(s)$ \textbf{ and }
+            $\textsc{Cost}(s) < \textsc{Cost}(s^{*})$}{
+            $s^{*} \leftarrow s$ \;
+        }
+    }
+
+    \BlankLine
+    $T \leftarrow \alpha \cdot T$ \tcp{geometric cooling schedule}
+    $n_{\mathrm{cool}} \leftarrow n_{\mathrm{cool}} + 1$ \;
+}
+
+\BlankLine
+\Return $s^{*}$
+\end{algorithm}
+
+% ------------------------------------------------------------
+\section{Tabu Search (TS)}
+% ------------------------------------------------------------
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{Tabu Search (TS) for CARP}
+\label{alg:tabu}
+
+\KwIn{CARP instance $G$;\; parameters $\mathit{iter\_max}$,
+      $\mathit{neighborhood\_size}$, $\tau$, $\lambda$}
+\KwOut{Best solution found $s^{*}$}
+
+\BlankLine
+$s \leftarrow \textsc{InitialSolution}(G)$ \;
+$s^{*} \leftarrow s$ \;
+$\mathcal{T} \leftarrow \emptyset$ \tcp{tabu list — FIFO queue of length $\tau$}
+$\mathit{iter} \leftarrow 0$ \;
+
+\BlankLine
+\While{$\mathit{iter} < \mathit{iter\_max}$}{
+
+    $v \leftarrow \textsc{CapacityViolation}(s)$ \;
+    $w \leftarrow \textsc{InterBias}(v,\;\mathcal{O},\;\alpha_{\mathrm{inter}}{=}0.8)$
+        \tcp{dynamic bias}
+
+    \BlankLine
+    $\mathcal{N} \leftarrow \emptyset$ \tcp{candidate neighborhood}
+    \For{$k \leftarrow 1$ \KwTo $\mathit{neighborhood\_size}$}{
+        $\mathit{op} \leftarrow \textsc{SelectOperator}(\mathcal{O},\, w)$ \;
+        $s' \leftarrow \textsc{ApplyOperator}(\mathit{op},\, s)$ \;
+        $\mathcal{N} \leftarrow \mathcal{N} \cup \{s'\}$ \;
+    }
+
+    \BlankLine
+    $s_{\mathrm{best}} \leftarrow \texttt{null}$ \;
+    \ForEach{$s' \in \mathcal{N}$}{
+        \If{$s' \notin \mathcal{T}$ \textbf{ or }
+            $\textsc{Cost}(s') < \textsc{Cost}(s^{*})$}{
+            \tcp{aspiration criterion: override tabu if global best improves}
+            \If{$s_{\mathrm{best}} = \texttt{null}$ \textbf{ or }
+                $f(s') < f(s_{\mathrm{best}})$}{
+                $s_{\mathrm{best}} \leftarrow s'$ \;
+            }
+        }
+    }
+
+    \BlankLine
+    \If{$s_{\mathrm{best}} \neq \texttt{null}$}{
+        $s \leftarrow s_{\mathrm{best}}$ \;
+        $\mathcal{T} \leftarrow \mathcal{T} \cup \{s_{\mathrm{best}}\}$ \;
+        \lIf{$|\mathcal{T}| > \tau$}{remove oldest entry from $\mathcal{T}$}
+        \If{$\textsc{Feasible}(s)$ \textbf{ and }
+            $\textsc{Cost}(s) < \textsc{Cost}(s^{*})$}{
+            $s^{*} \leftarrow s$ \;
+        }
+    }
+
+    $\mathit{iter} \leftarrow \mathit{iter} + 1$ \;
+}
+
+\BlankLine
+\Return $s^{*}$
+\end{algorithm}
+
+% ------------------------------------------------------------
+\section{Artificial Bee Colony (ABC)}
+% ------------------------------------------------------------
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{Artificial Bee Colony (ABC) for CARP}
+\label{alg:abc}
+
+\KwIn{CARP instance $G$;\; parameters $\mathit{iter\_max}$,
+      $N_f$, $L$, $\lambda$}
+\KwOut{Best solution found $s^{*}$}
+
+\BlankLine
+\tcp{Initialization}
+\For{$i \leftarrow 1$ \KwTo $N_f$}{
+    $x_i \leftarrow \textsc{InitialSolution}(G)$ \;
+    $f_i \leftarrow \textsc{Cost}(x_i) + \lambda \cdot \textsc{CapacityViolation}(x_i)$ \;
+    $\mathit{cnt}_i \leftarrow 0$ \tcp{stagnation counter}
+}
+$s^{*} \leftarrow \arg\min_{i}\, f_i$ \;
+
+\BlankLine
+\For{$\mathit{iter} \leftarrow 1$ \KwTo $\mathit{iter\_max}$}{
+
+    \tcc{--- Employed Bees Phase ---}
+    \For{$i \leftarrow 1$ \KwTo $N_f$}{
+        $v \leftarrow \textsc{CapacityViolation}(x_i)$ \;
+        $w \leftarrow \textsc{InterBias}(v,\;\mathcal{O},\;\alpha_{\mathrm{inter}}{=}0.8)$ \;
+        $x'_i \leftarrow \textsc{ApplyOperator}(\textsc{SelectOperator}(\mathcal{O},\,w),\; x_i)$ \;
+        $f'_i \leftarrow \textsc{Cost}(x'_i) + \lambda \cdot \textsc{CapacityViolation}(x'_i)$ \;
+        \eIf{$f'_i \leq f_i$}{
+            $x_i \leftarrow x'_i$;\enspace $f_i \leftarrow f'_i$;\enspace
+            $\mathit{cnt}_i \leftarrow 0$ \;
+        }{
+            $\mathit{cnt}_i \leftarrow \mathit{cnt}_i + 1$ \;
+        }
+    }
+
+    \BlankLine
+    \tcc{--- Onlooker Bees Phase (fitness-proportional roulette wheel) ---}
+    $p_i \leftarrow \dfrac{1/(1+f_i)}{\sum_{j=1}^{N_f} 1/(1+f_j)}$
+        \quad for $i = 1,\ldots,N_f$ \tcp{selection probability}
+    \For{$b \leftarrow 1$ \KwTo $N_f$}{
+        $i \leftarrow \textsc{RouletteSelect}(p_1,\ldots,p_{N_f})$ \;
+        $v \leftarrow \textsc{CapacityViolation}(x_i)$ \;
+        $w \leftarrow \textsc{InterBias}(v,\;\mathcal{O},\;\alpha_{\mathrm{inter}}{=}0.8)$ \;
+        $x'_i \leftarrow \textsc{ApplyOperator}(\textsc{SelectOperator}(\mathcal{O},\,w),\; x_i)$ \;
+        $f'_i \leftarrow \textsc{Cost}(x'_i) + \lambda \cdot \textsc{CapacityViolation}(x'_i)$ \;
+        \eIf{$f'_i \leq f_i$}{
+            $x_i \leftarrow x'_i$;\enspace $f_i \leftarrow f'_i$;\enspace
+            $\mathit{cnt}_i \leftarrow 0$ \;
+        }{
+            $\mathit{cnt}_i \leftarrow \mathit{cnt}_i + 1$ \;
+        }
+    }
+
+    \BlankLine
+    \tcc{--- Scout Bees Phase (abandon stagnated food sources) ---}
+    \For{$i \leftarrow 1$ \KwTo $N_f$}{
+        \If{$\mathit{cnt}_i \geq L$}{
+            $x_i \leftarrow \textsc{InitialSolution}(G)$ \tcp{random restart}
+            $f_i \leftarrow \textsc{Cost}(x_i) + \lambda \cdot \textsc{CapacityViolation}(x_i)$ \;
+            $\mathit{cnt}_i \leftarrow 0$ \;
+        }
+    }
+
+    \BlankLine
+    \tcp{Update global best}
+    \For{$i \leftarrow 1$ \KwTo $N_f$}{
+        \If{$\textsc{Feasible}(x_i)$ \textbf{ and }
+            $\textsc{Cost}(x_i) < \textsc{Cost}(s^{*})$}{
+            $s^{*} \leftarrow x_i$ \;
+        }
+    }
+}
+
+\BlankLine
+\Return $s^{*}$
+\end{algorithm}
+
+% ------------------------------------------------------------
+\section{Cuckoo Search (CS)}
+% ------------------------------------------------------------
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{Cuckoo Search (CS) for CARP}
+\label{alg:cs}
+
+\KwIn{CARP instance $G$;\; parameters $\mathit{iter\_max}$,
+      $N$, $p_a$, $\mathit{steps\_base}$, $\beta$, $\lambda$}
+\KwOut{Best solution found $s^{*}$}
+
+\BlankLine
+\tcp{Initialize nest population}
+\For{$i \leftarrow 1$ \KwTo $N$}{
+    $x_i \leftarrow \textsc{InitialSolution}(G)$ \;
+    $f_i \leftarrow \textsc{Cost}(x_i) + \lambda \cdot \textsc{CapacityViolation}(x_i)$ \;
+}
+$s^{*} \leftarrow \arg\min_{i}\, f_i$ \;
+
+\BlankLine
+\For{$\mathit{iter} \leftarrow 1$ \KwTo $\mathit{iter\_max}$}{
+
+    \tcc{--- L\'evy Flight Phase: generate new cuckoo eggs ---}
+    \For{$i \leftarrow 1$ \KwTo $N$}{
+        \tcp{Discrete Lévy flight: number of perturbation steps}
+        $z \leftarrow \mathcal{N}(0,1)$ \;
+        $n_{\mathrm{pert}} \leftarrow 1 +
+            \left\lfloor |z|^{1/\beta} \cdot \mathit{steps\_base} \right\rfloor$ \;
+
+        $x'_i \leftarrow x_i$ \;
+        \For{$p \leftarrow 1$ \KwTo $n_{\mathrm{pert}}$}{
+            $v \leftarrow \textsc{CapacityViolation}(x'_i)$ \;
+            $w \leftarrow \textsc{InterBias}(v,\;\mathcal{O},\;\alpha_{\mathrm{inter}}{=}0.8)$ \;
+            $x'_i \leftarrow \textsc{ApplyOperator}(
+                \textsc{SelectOperator}(\mathcal{O},\,w),\; x'_i)$ \;
+        }
+
+        \BlankLine
+        $j \leftarrow \textsc{Uniform}\{1,\ldots,N\} \setminus \{i\}$
+            \tcp{random host nest}
+        $f'_i \leftarrow \textsc{Cost}(x'_i) + \lambda \cdot \textsc{CapacityViolation}(x'_i)$ \;
+        \If{$f'_i < f_j$}{
+            $x_j \leftarrow x'_i$;\enspace $f_j \leftarrow f'_i$
+                \tcp{cuckoo egg replaces host nest}
+        }
+    }
+
+    \BlankLine
+    \tcc{--- Abandonment Phase: replace worst $p_a$ fraction of nests ---}
+    Sort nests by $f_i$ in descending order \;
+    $n_{\mathrm{aban}} \leftarrow \lfloor p_a \cdot N \rfloor$ \;
+    \For{$k \leftarrow 1$ \KwTo $n_{\mathrm{aban}}$}{
+        $i \leftarrow$ index of the $k$-th worst nest \;
+        $v \leftarrow \textsc{CapacityViolation}(s^{*})$ \;
+        $w \leftarrow \textsc{InterBias}(v,\;\mathcal{O},\;\alpha_{\mathrm{inter}}{=}0.8)$ \;
+        $x_i \leftarrow \textsc{ApplyOperator}(
+            \textsc{SelectOperator}(\mathcal{O},\,w),\; s^{*})$
+            \tcp{perturb best nest}
+        $f_i \leftarrow \textsc{Cost}(x_i) + \lambda \cdot \textsc{CapacityViolation}(x_i)$ \;
+    }
+
+    \BlankLine
+    \tcp{Update global best}
+    \For{$i \leftarrow 1$ \KwTo $N$}{
+        \If{$\textsc{Feasible}(x_i)$ \textbf{ and }
+            $\textsc{Cost}(x_i) < \textsc{Cost}(s^{*})$}{
+            $s^{*} \leftarrow x_i$ \;
+        }
+    }
+}
+
+\BlankLine
+\Return $s^{*}$
+\end{algorithm}
+
+\end{document}
