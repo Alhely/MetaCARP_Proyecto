@@ -104,7 +104,8 @@ $|\mathcal{O}_{\mathrm{inter}}| \cdot w_{\mathrm{inter}} +
 \caption{Simulated Annealing (SA) for CARP}
 \label{alg:sa}
 
-\KwIn{CARP instance $G$;\; parameters $\alpha$, $\lambda$;\;
+\KwIn{CARP instance $G$;\; parameters $\alpha$, $\lambda$,
+      $\mathit{patience}$, $\mathit{reheat\_factor}$;\;
       optionally $T_{\mathrm{ini}}$, $T_{\mathrm{min}}$ (computed from instance if omitted)}
 \KwOut{Best solution found $s^{*}$}
 
@@ -117,9 +118,13 @@ $T_{\mathrm{min}} \leftarrow 20 \cdot d_{\max} / n^{2}$ \tcp{if not provided by 
 $s \leftarrow \textsc{InitialSolution}(G)$ \tcp{greedy or random construction}
 $s^{*} \leftarrow s$ \;
 $T \leftarrow T_{\mathrm{ini}}$ \;
+$\mathit{levels\_no\_improve} \leftarrow 0$ \;
+$n\_reheats \leftarrow 0$ \;
 
 \BlankLine
 \While{$T > T_{\mathrm{min}}$}{
+
+    $c_{\mathrm{before}} \leftarrow \textsc{Cost}(s^{*})$ \;
 
     \For{$it \leftarrow 1$ \KwTo $L$}{
 
@@ -145,6 +150,19 @@ $T \leftarrow T_{\mathrm{ini}}$ \;
 
     \BlankLine
     $T \leftarrow \alpha \cdot T$ \tcp{geometric cooling schedule}
+
+    \BlankLine
+    \eIf{$\textsc{Cost}(s^{*}) < c_{\mathrm{before}}$}{
+        $\mathit{levels\_no\_improve} \leftarrow 0$ \;
+    }{
+        $\mathit{levels\_no\_improve} \leftarrow \mathit{levels\_no\_improve} + 1$ \;
+    }
+    \If{$\mathit{patience} > 0$ \textbf{ and } $\mathit{levels\_no\_improve} \geq \mathit{patience}$}{
+        $T \leftarrow \mathit{reheat\_factor} \cdot T_{\mathrm{ini}}$
+            \tcp{reheat: reset T to explore again}
+        $\mathit{levels\_no\_improve} \leftarrow 0$ \;
+        $n\_reheats \leftarrow n\_reheats + 1$ \;
+    }
 }
 
 \BlankLine

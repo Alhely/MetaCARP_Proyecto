@@ -115,6 +115,114 @@ El algoritmo termina cuando `T` cae por debajo de `temperatura_minima`.
 
 ---
 
+## Recalentamiento (Reheat)
+
+### Por qué el SA se estanca
+
+El enfriamiento geométrico tiene un efecto colateral importante: cuando `T` se acerca a `temperatura_minima`, la probabilidad de aceptar empeoramientos (`exp(-delta / T)`) se vuelve casi nula. En esa fase final el SA se comporta como una búsqueda voraz y, si la solución actual está atrapada en un mínimo local cuya "pared" requiere aceptar empeoramientos no triviales, **el algoritmo se queda atascado sin remedio**. La temperatura ya no le da margen para escapar.
+
+Este fenómeno se observa empíricamente en instancias donde el SA llega a soluciones de calidad muy próximas al BKS (*Best Known Solution*) pero no logra dar el salto final. Por ejemplo, en `gdb19` el SA encuentra costo 63 mientras el BKS es 55. La brecha es pequeña en términos absolutos (8 unidades), pero requiere aceptar movimientos que empeoran la solución en ese mismo orden de magnitud cuando `T` ya está en la fase fría: la probabilidad de Metropolis para `delta = 4` con `T = 0.5` es `exp(-8) ≈ 0.00034`, prácticamente imposible.
+
+### La solución: recalentar
+
+El mecanismo de **reheat** (recalentamiento) resuelve este problema reiniciando parcialmente la temperatura cada vez que se detecta estancamiento.
+
+La **analogía metalúrgica** sigue siendo válida y directa: cuando un metal queda atrapado en un mínimo local de energía (con átomos detenidos en imperfecciones cristalinas), los metalúrgicos lo vuelven a calentar para devolverles movilidad. Al subir la temperatura, los átomos recuperan energía cinética y pueden reorganizarse; al enfriarse de nuevo, tienen otra oportunidad de encontrar la configuración perfecta. En el algoritmo, "calentar" significa subir `T` para reaceptar empeoramientos y permitir que la búsqueda escape del mínimo local.
+
+A diferencia de un reinicio completo (que perdería la información acumulada), el reheat **preserva la mejor solución encontrada** (`mejor_any_s` y `mejor_fact_s` no se reinician), pero permite explorar desde la posición actual de búsqueda con tolerancia renovada a empeoramientos.
+
+### Comportamiento de la temperatura con reheat
+
+Sin reheat, la curva de `T` es una exponencial decreciente monótona. Con reheat, presenta saltos discretos hacia arriba cuando se detecta estancamiento:
+
+```
+T  ^
+   |  T_init
+   |  *
+   |   \
+   |    \                    reheat
+   |     \                    /\
+   |      \                  /  \
+   |       \    plateau     /    \      reheat
+   |        \..............*      \     /\
+   |         \              \      \   /  \
+   |          \              \      \ /    \
+   |           \              \      *      \..........
+   |            \              \              \
+   |  T_min      *--------------*--------------*-----------
+   +--------------------------------------------------> niveles
+```
+
+En cada activación del reheat, `T` salta a `T_init_eff * reheat_factor` y luego vuelve a enfriarse geométricamente. Cada reheat da al algoritmo una nueva "ventana de exploración" durante la cual puede escapar de mínimos locales mediante Metropolis.
+
+### Parámetros del reheat
+
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `patience` | `int` | `50` | Número de niveles de temperatura consecutivos sin mejora del mejor global antes de activar el reheat. Si `patience = 0` el reheat está **desactivado** y se obtiene el SA clásico. Valores típicos: 20–100. |
+| `reheat_factor` | `float` | `0.5` | Fracción de `T_init_eff` a la que se sube la temperatura cuando se activa el reheat. Debe estar en `(0, 1]`. Valores típicos: 0.3–0.7. |
+
+### Activación del reheat (lógica interna)
+
+1. Al inicio de cada nivel externo se captura `mejor_costo_antes_nivel = costo_para_reporte()`.
+2. Se ejecuta el bucle interno (L iteraciones de Metropolis).
+3. Tras el enfriamiento geométrico (`T = T * alpha`), se compara el costo reportable actual contra `mejor_costo_antes_nivel`:
+   - Si hubo mejora: `niveles_sin_mejora = 0`.
+   - Si no hubo mejora: `niveles_sin_mejora += 1`.
+4. Si `patience > 0` y `niveles_sin_mejora >= patience`:
+   - `T = T_init_eff * reheat_factor` (reinicio parcial de la temperatura).
+   - `niveles_sin_mejora = 0`.
+   - `n_reheats += 1`.
+
+### Ejemplos numéricos
+
+Supongamos que `T_init_eff = 1500` (calculado adaptativamente como `20 · d_max / n`).
+
+| Configuración | `reheat_factor` | `T` tras reheat | Efecto |
+|---|---|---|---|
+| Reheat suave | `0.3` | 450 | Solo unas pocas aceptaciones más; explotación predominante. |
+| Reheat estándar | `0.5` | 750 | Equilibrio razonable entre exploración y explotación. |
+| Reheat fuerte | `0.7` | 1050 | Casi como reiniciar; explora mucho de nuevo. |
+| Reheat máximo | `1.0` | 1500 | Equivale a reiniciar la temperatura desde cero. |
+
+### Cuándo usar cada valor de `patience`
+
+| Valor | Cuándo usar |
+|---|---|
+| `0` | Reheat desactivado. Útil para comparar contra el SA clásico o cuando la instancia se resuelve sin estancamiento (BKS alcanzado fácilmente). |
+| `20–40` | Reheat agresivo. Útil en instancias pequeñas donde los niveles tienen pocas iteraciones internas y se quiere diversificar con frecuencia. |
+| `50` | Valor por defecto. Equilibrio típico para instancias medianas. |
+| `60–100` | Reheat conservador. Útil cuando se quiere dar tiempo a la fase de explotación antes de reiniciar; recomendado para instancias grandes. |
+
+### Ejemplo de uso
+
+```python
+from metacarp.recocido_simulado import recocido_simulado_desde_instancia
+
+# SA con reheat activado (default).
+resultado = recocido_simulado_desde_instancia(
+    "gdb19",
+    alpha=0.97,
+    patience=50,        # reheat tras 50 niveles sin mejora
+    reheat_factor=0.5,  # subir T a la mitad de T_init_eff
+    semilla=42,
+)
+print(f"Mejor costo : {resultado.mejor_costo}")
+print(f"Reheats     : {resultado.n_reheats}")
+
+# SA clásico sin reheat (para comparar).
+resultado_clasico = recocido_simulado_desde_instancia(
+    "gdb19",
+    alpha=0.97,
+    patience=0,         # reheat desactivado
+    semilla=42,
+)
+print(f"Costo clasico : {resultado_clasico.mejor_costo}")
+print(f"Reheats       : {resultado_clasico.n_reheats}  # siempre 0")
+```
+
+---
+
 ## Cómo funciona paso a paso
 
 ### Diagrama de flujo ASCII
@@ -147,6 +255,7 @@ mejor_costo = costo_actual
 +-----------------------------------------------------------+
 |  BUCLE EXTERNO: mientras T > T_min                        |
 |                                                           |
+|  mejor_costo_antes_nivel = costo_para_reporte()           |
 |  Registrar historial (T, mejor_costo)                     |
 |  |                                                        |
 |  v                                                        |
@@ -176,6 +285,17 @@ mejor_costo = costo_actual
 |  +-----------------------------------------------------+  |
 |                                                           |
 |  T = T * alpha          (enfriamiento geometrico)         |
+|                                                           |
+|  --- Chequeo de reheat ---                                |
+|  si costo_para_reporte() < mejor_costo_antes_nivel:       |
+|      niveles_sin_mejora = 0                               |
+|  si no:                                                   |
+|      niveles_sin_mejora += 1                              |
+|                                                           |
+|  si patience > 0 y niveles_sin_mejora >= patience:        |
+|      T = T_init_eff * reheat_factor   (recalentamiento)   |
+|      niveles_sin_mejora = 0                               |
+|      n_reheats += 1                                       |
 +-----------------------------------------------------------+
   |
   v
@@ -260,6 +380,8 @@ def recocido_simulado(
 | `usar_penalizacion_capacidad` | `bool` | `True` | Si es `True`, el objetivo incluye una penalizacion por violacion de capacidad: `costo + lambda * violacion`. |
 | `lambda_capacidad` | `float \| None` | `None` | Valor de lambda para la penalizacion de capacidad. Si es `None`, se calcula automaticamente como ~10 veces la mediana de la matriz de distancias. |
 | `extra_csv` | `dict[str, object] \| None` | `None` | Columnas adicionales que se escribiran en el CSV. Util para registrar hiperparametros del experimento. |
+| `patience` | `int` | `50` | Numero de niveles de temperatura consecutivos sin mejora del mejor global antes de activar el reheat (recalentamiento). Si `patience = 0` el reheat esta desactivado y se obtiene el SA clasico. Valores tipicos: 20–100. Debe ser `>= 0`. |
+| `reheat_factor` | `float` | `0.5` | Fraccion de `T_init_eff` a la que se sube la temperatura cuando se activa el reheat. Ej.: con `T_init_eff = 1500` y `reheat_factor = 0.5`, `T` salta a 750. Debe estar en `(0, 1]`. Valores tipicos: 0.3–0.7. |
 
 ### Que retorna
 
@@ -322,6 +444,7 @@ Dataclass inmutable (`frozen=True, slots=True`) que agrupa todos los resultados 
 | `aceptaciones_solucion_infactible` | `int` | Numero de veces que se acepto un vecino que viola capacidad durante la busqueda. |
 | `mejor_solucion_factible_final` | `bool` | `True` si la mejor solucion encontrada respeta todas las restricciones de capacidad. |
 | `archivo_csv` | `str \| None` | Ruta absoluta del CSV guardado, o `None` si `guardar_csv=False`. |
+| `n_reheats` | `int` | Numero de veces que se activo el recalentamiento durante la busqueda. `0` indica que el reheat estaba desactivado (`patience=0`) o que el algoritmo no se estanco lo suficiente para dispararlo. |
 
 ---
 
@@ -340,6 +463,9 @@ resultado = recocido_simulado_desde_instancia(
     # L = n^2 tambien se calcula automaticamente desde el numero de tareas.
     alpha=0.97,
     semilla=42,
+    # Mecanismo de recalentamiento (reheat) — sube T cuando el SA se estanca.
+    patience=50,        # niveles sin mejora antes de recalentar
+    reheat_factor=0.5,  # T se reinicia a la mitad de T_init_eff
     usar_penalizacion_capacidad=True,
     guardar_historial=True,
     guardar_csv=True,
@@ -354,6 +480,7 @@ print(f"Tiempo de ejecucion    : {resultado.tiempo_segundos:.2f} s")
 print(f"Iteraciones totales    : {resultado.iteraciones_totales}")
 print(f"Enfriamientos          : {resultado.enfriamientos_ejecutados}")
 print(f"Vecinos aceptados      : {resultado.aceptadas}")
+print(f"Reheats activados      : {resultado.n_reheats}")
 print(f"Solucion factible      : {resultado.mejor_solucion_factible_final}")
 print()
 print("Operadores que mas mejoraron:")
@@ -393,6 +520,10 @@ resultado = recocido_simulado(
     backend_vecindario="labels",
     guardar_historial=True,
     guardar_csv=False,
+    # Mecanismo de recalentamiento (reheat). Para SA clasico sin reheat
+    # usar patience=0; aqui usamos los valores por defecto.
+    patience=50,
+    reheat_factor=0.5,
     nombre_instancia=nombre,
 )
 

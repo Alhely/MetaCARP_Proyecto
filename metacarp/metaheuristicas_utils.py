@@ -652,6 +652,12 @@ def guardar_resultado_csv(
 # Conjunto de operadores que mueven tareas DENTRO de una misma ruta. Estos no
 # modifican qué rutas contienen qué tareas, por lo que NO pueden reducir una
 # violación de capacidad por ruta.
+#
+# La clasificación se hace POR EXCLUSIÓN: cualquier operador cuyo nombre NO
+# aparezca en este conjunto se trata como inter-ruta. Por eso operadores
+# añadidos posteriormente (como "or_opt_2" y "or_opt_3", que transfieren
+# bloques entre rutas) son detectados automáticamente como inter-ruta sin
+# necesidad de modificar esta lógica.
 _INTRA_OPS: frozenset[str] = frozenset({"relocate_intra", "swap_intra", "2opt_intra"})
 
 
@@ -660,6 +666,7 @@ def pesos_inter_bias(
     operadores: Sequence[str],
     *,
     alpha_inter: float = 0.8,
+    p_inter: float = 0.0,
 ) -> list[float] | None:
     """Calcula pesos para ``rng.choices()`` sesgados hacia operadores inter-ruta.
 
@@ -676,7 +683,12 @@ def pesos_inter_bias(
     inter-ruta reciben en conjunto una probabilidad de ``alpha_inter`` y los
     intra-ruta reciben ``(1 - alpha_inter)``.
 
-    Si la solución es factible (``violacion <= 0``) o la lista de operadores es
+    Cuando la solución es factible (``violacion <= 0``) y ``p_inter > 0``, se
+    aplica un sesgo fijo: los operadores inter-ruta reciben en conjunto
+    ``p_inter`` y los intra-ruta ``(1 - p_inter)``. Esto evita que el algoritmo
+    se quede atrapado en mínimos locales intra-ruta al volverse factible.
+
+    Si la solución es factible y ``p_inter <= 0``, o la lista de operadores es
     homogénea (solo intra o solo inter), devuelve ``None`` para indicar
     selección uniforme; así se preserva la retrocompatibilidad cuando no hay
     nada que reparar.
@@ -688,11 +700,12 @@ def pesos_inter_bias(
             inter-ruta cuando hay violación de capacidad (0–1). Por defecto
             0.8: se prioriza fuertemente la reparación inter-ruta sin desechar
             por completo los reordenamientos intra-ruta.
+        p_inter: fracción fija de probabilidad asignada a operadores inter-ruta
+            cuando la solución es factible (0–1). Por defecto 0.0, que
+            preserva la selección uniforme anterior. Se recomienda
+            ``alpha_inter >= p_inter`` para que la reparación siga siendo más
+            agresiva que la exploración en estado factible.
     """
-    # Solución factible: no hay nada que reparar, devolvemos None para que el
-    # metaheurístico use selección uniforme entre todos los operadores.
-    if violacion <= 1e-12:
-        return None
     # Contamos cuántos operadores son intra-ruta y cuántos inter-ruta dentro de
     # la lista activa que pasó el metaheurístico.
     n_intra = sum(1 for op in operadores if op in _INTRA_OPS)
@@ -701,6 +714,19 @@ def pesos_inter_bias(
     # sesgar: devolvemos None para selección uniforme.
     if n_intra == 0 or n_inter == 0:
         return None
+    # Solución factible: aplicamos el sesgo fijo p_inter si se solicitó, o
+    # devolvemos None (selección uniforme) si p_inter <= 0 para preservar el
+    # comportamiento previo cuando no se desea sesgar en estado factible.
+    if violacion <= 1e-12:
+        if p_inter <= 0.0:
+            return None
+        # Repartimos la masa fija p_inter entre inter-ruta y (1 - p_inter)
+        # entre intra-ruta. Esto garantiza que aun cuando la solución sea
+        # factible, los operadores inter-ruta sigan teniendo probabilidad
+        # suficiente para escapar de mínimos locales.
+        w_inter = p_inter / n_inter
+        w_intra = (1.0 - p_inter) / n_intra
+        return [w_intra if op in _INTRA_OPS else w_inter for op in operadores]
     # Repartimos la masa de probabilidad entre los dos grupos:
     # - alpha_inter al grupo inter-ruta (donde está la reparación efectiva)
     # - (1 - alpha_inter) al grupo intra-ruta (refinamiento secundario)

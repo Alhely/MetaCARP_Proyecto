@@ -37,6 +37,8 @@ __all__ = [
     "op_swap_inter",
     "op_two_opt_star",
     "op_cross_exchange",
+    "op_or_opt_2",
+    "op_or_opt_3",
     "OPERADORES_POPULARES",
     "OPERADORES_INTRA",
     "OPERADORES_INTER",
@@ -408,6 +410,206 @@ def op_cross_exchange(
 
 
 # ------------------------------------------------------------
+# OPERADOR: op_or_opt_2  (Or-opt con bloque de 2 tareas)
+# ------------------------------------------------------------
+# MOVIMIENTO: Extrae un bloque CONSECUTIVO de 2 tareas de la
+# ruta origen (ra) desde la posición i, y lo inserta —en el
+# mismo orden, SIN invertir— en la posición j de la ruta destino
+# (rb). El bloque ocupa las posiciones [i, i+1] de la ruta origen.
+#
+# Si ra == rb (caso intra cuando solo hay una ruta), el bloque
+# se reubica dentro de la misma ruta: primero se extrae y luego
+# se inserta en la nueva posición j (ya ajustada para reflejar
+# el corrimiento de índices).
+#
+# Ejemplo visual (ra distinta de rb, i=1, j=1, k=2):
+#   Antes:  ruta_A=[P, Q, R, S]   ruta_B=[X, Y, Z]   (bloque=[Q, R])
+#   Saca [Q, R] de ruta_A:  ruta_A=[P, S]
+#   Inserta [Q, R] en pos 1 de ruta_B:  ruta_B=[X, Q, R, Y, Z]
+#
+# Por qué es útil: transferir BLOQUES de tareas adyacentes
+# entre rutas genera cambios estructurales más agresivos que
+# mover una sola tarea, ayudando a escapar mínimos locales.
+def op_or_opt_2(
+    sol: Sequence[Sequence[Hashable]],
+    ra: int,   # Índice de la ruta origen
+    i: int,    # Inicio del bloque de 2 tareas en la ruta origen (toma [i, i+1])
+    rb: int,   # Índice de la ruta destino
+    j: int,    # Posición de inserción en la ruta destino
+) -> list[list[str]]:
+    """
+    Or-opt (k=2): mueve un bloque de 2 tareas consecutivas de ra[i..i+1] a rb[j].
+    El bloque se inserta en el mismo orden (no se invierte).
+    """
+    s = _copy_solution(sol)
+    # Extrae el bloque de 2 tareas consecutivas comenzando en la posición i
+    bloque = s[ra][i : i + 2]
+    # Elimina el bloque de la ruta origen
+    del s[ra][i : i + 2]
+    # Inserta cada elemento del bloque en orden a partir de la posición j
+    # (el slicing asignado a un slice vacío inserta sin sobreescribir)
+    s[rb][j:j] = bloque
+    return s  # type: ignore[return-value]
+
+
+# ------------------------------------------------------------
+# OPERADOR: op_or_opt_3  (Or-opt con bloque de 3 tareas)
+# ------------------------------------------------------------
+# MOVIMIENTO: Idéntico a op_or_opt_2 pero con un bloque
+# CONSECUTIVO de 3 tareas (posiciones [i, i+1, i+2] de la ruta
+# origen). Se inserta en el mismo orden en la posición j de la
+# ruta destino.
+#
+# Ejemplo visual (ra distinta de rb, i=0, j=1):
+#   Antes:  ruta_A=[P, Q, R, S]   ruta_B=[X, Y, Z]   (bloque=[P, Q, R])
+#   Saca [P, Q, R] de ruta_A:  ruta_A=[S]
+#   Inserta [P, Q, R] en pos 1 de ruta_B:  ruta_B=[X, P, Q, R, Y, Z]
+#
+# Por qué es útil: bloques de 3 tareas son aún más disruptivos
+# que los de 2 y permiten reestructurar fuertemente la solución.
+def op_or_opt_3(
+    sol: Sequence[Sequence[Hashable]],
+    ra: int,   # Índice de la ruta origen
+    i: int,    # Inicio del bloque de 3 tareas en la ruta origen (toma [i, i+1, i+2])
+    rb: int,   # Índice de la ruta destino
+    j: int,    # Posición de inserción en la ruta destino
+) -> list[list[str]]:
+    """
+    Or-opt (k=3): mueve un bloque de 3 tareas consecutivas de ra[i..i+2] a rb[j].
+    El bloque se inserta en el mismo orden (no se invierte).
+    """
+    s = _copy_solution(sol)
+    # Extrae el bloque de 3 tareas consecutivas comenzando en la posición i
+    bloque = s[ra][i : i + 3]
+    # Elimina el bloque de la ruta origen
+    del s[ra][i : i + 3]
+    # Inserta el bloque en la ruta destino en la posición j (sin invertir)
+    s[rb][j:j] = bloque
+    return s  # type: ignore[return-value]
+
+
+# ------------------------------------------------------------
+# FUNCIÓN AUXILIAR PRIVADA: _or_opt_k
+# ------------------------------------------------------------
+# Generaliza la lógica de selección aleatoria de or_opt_2 y
+# or_opt_3 para un k arbitrario (típicamente k = 2 ó 3).
+#
+# Recibe la solución en formato de ETIQUETAS (puede incluir o no
+# el marcador de depósito), un generador aleatorio y el marcador
+# de depósito. Devuelve:
+#   - La solución vecina con el marcador "D" restaurado al inicio y final.
+#   - Un MovimientoVecindario describiendo el movimiento aplicado.
+#
+# Si no es posible aplicar el operador (porque no hay ninguna
+# ruta con al menos k tareas), devuelve la solución normalizada
+# tal cual y un MovimientoVecindario con ruta_a=None para indicar
+# que NO se realizó cambio.
+def _or_opt_k(
+    solucion: Sequence[Sequence[Hashable]],
+    k: int,
+    rng: random.Random,
+    marcador_depot: str = "D",
+) -> tuple[list[list[str]], MovimientoVecindario]:
+    """
+    Implementación genérica del or-opt con bloque de tamaño k.
+
+    - Selecciona aleatoriamente una ruta origen con al menos k tareas.
+    - Extrae un bloque consecutivo de k tareas en posición aleatoria.
+    - Lo inserta en una posición aleatoria de una ruta destino distinta
+      (si solo hay una ruta, permite inserción intra a otra posición).
+    - El bloque NO se invierte: se inserta en el mismo orden.
+    """
+    # Normaliza eliminando el marcador "D" para operar sobre tareas puras
+    rutas = normalizar_para_vecindario(solucion, marcador_depot=marcador_depot)
+    op_nombre = f"or_opt_{k}"  # "or_opt_2" u "or_opt_3"
+
+    # Rutas candidatas como origen: deben tener al menos k tareas
+    cand_origen = [idx for idx, r in enumerate(rutas) if len(r) >= k]
+    if not cand_origen:
+        # No hay ninguna ruta con suficientes tareas para extraer un bloque:
+        # devolvemos la solución original (sin cambios) y un mov vacío.
+        return (
+            desnormalizar_con_deposito(rutas, marcador_depot=marcador_depot),
+            MovimientoVecindario(operador=op_nombre),
+        )
+
+    ra = rng.choice(cand_origen)
+    # Rutas destino: cualquiera distinta de la origen. Si solo hay una ruta,
+    # se permite reinsertar el bloque dentro de la misma ruta en otra posición.
+    destinos = [x for x in range(len(rutas)) if x != ra]
+    if not destinos:
+        destinos = [ra]
+    rb = rng.choice(destinos)
+
+    na = len(rutas[ra])
+    # Posición de inicio del bloque dentro de la ruta origen
+    i = rng.randrange(0, na - k + 1)
+
+    if rb == ra:
+        # Tras eliminar el bloque, la ruta origen tendrá (na - k) tareas
+        tam_destino_post = na - k
+        if tam_destino_post <= 0:
+            # No queda margen para reinsertar en otra posición distinta
+            return (
+                desnormalizar_con_deposito(rutas, marcador_depot=marcador_depot),
+                MovimientoVecindario(operador=op_nombre),
+            )
+        j = rng.randrange(0, tam_destino_post + 1)
+        # Evita reinsertar exactamente en la misma posición (no genera vecino nuevo)
+        if j == i:
+            # Forzamos un desplazamiento mínimo para garantizar cambio efectivo
+            j = (j + 1) % (tam_destino_post + 1)
+    else:
+        j = rng.randrange(0, len(rutas[rb]) + 1)
+
+    # Aplica el operador correspondiente al tamaño del bloque
+    if k == 2:
+        vec = op_or_opt_2(rutas, ra, i, rb, j)
+    elif k == 3:
+        vec = op_or_opt_3(rutas, ra, i, rb, j)
+    else:
+        # Forma genérica para k arbitrario (extensible a or_opt_k > 3 en el futuro)
+        s = _copy_solution(rutas)
+        bloque = s[ra][i : i + k]
+        del s[ra][i : i + k]
+        s[rb][j:j] = bloque
+        vec = s
+
+    mov = MovimientoVecindario(operador=op_nombre, ruta_a=ra, ruta_b=rb, i=i, j=j, k=k)
+    return desnormalizar_con_deposito(vec, marcador_depot=marcador_depot), mov
+
+
+# ------------------------------------------------------------
+# FUNCIÓN AUXILIAR PRIVADA: _aplicar_or_opt_2
+# ------------------------------------------------------------
+# Envoltura de _or_opt_k con k=2. Útil para llamadas desde
+# código externo que quiera aplicar el operador sin tener que
+# fijar el parámetro k manualmente.
+def _aplicar_or_opt_2(
+    solucion: Sequence[Sequence[Hashable]],
+    rng: random.Random,
+    marcador_depot: str = "D",
+) -> tuple[list[list[str]], MovimientoVecindario]:
+    """Aplica el operador or_opt_2 (bloque de 2 tareas) sobre la solución."""
+    return _or_opt_k(solucion, 2, rng, marcador_depot)
+
+
+# ------------------------------------------------------------
+# FUNCIÓN AUXILIAR PRIVADA: _aplicar_or_opt_3
+# ------------------------------------------------------------
+# Envoltura de _or_opt_k con k=3. Útil para llamadas desde
+# código externo que quiera aplicar el operador sin tener que
+# fijar el parámetro k manualmente.
+def _aplicar_or_opt_3(
+    solucion: Sequence[Sequence[Hashable]],
+    rng: random.Random,
+    marcador_depot: str = "D",
+) -> tuple[list[list[str]], MovimientoVecindario]:
+    """Aplica el operador or_opt_3 (bloque de 3 tareas) sobre la solución."""
+    return _or_opt_k(solucion, 3, rng, marcador_depot)
+
+
+# ------------------------------------------------------------
 # CONSTANTE: OPERADORES_POPULARES
 # ------------------------------------------------------------
 # Tupla con los nombres de todos los operadores disponibles.
@@ -421,11 +623,20 @@ OPERADORES_POPULARES = (
     "swap_inter",
     "2opt_star",
     "cross_exchange",
+    "or_opt_2",
+    "or_opt_3",
 )
 
 # Subconjuntos tipados: útiles para sesgar la selección según propiedades de la solución.
 OPERADORES_INTRA = ("relocate_intra", "swap_intra", "2opt_intra")
-OPERADORES_INTER = ("relocate_inter", "swap_inter", "2opt_star", "cross_exchange")
+OPERADORES_INTER = (
+    "relocate_inter",
+    "swap_inter",
+    "2opt_star",
+    "cross_exchange",
+    "or_opt_2",
+    "or_opt_3",
+)
 
 
 # ------------------------------------------------------------
@@ -489,6 +700,16 @@ def _moved_ids(op: str, rutas: Sequence[Sequence[int]], mov: MovimientoVecindari
         if mov.ruta_b is not None and mov.k is not None and mov.l is not None:
             ids3.extend(rutas[mov.ruta_b][mov.k : mov.l + 1])  # Segmento de la ruta B
         return tuple(ids3)
+
+    # or_opt_2 / or_opt_3: bloque de k tareas consecutivas que se desplaza
+    # desde la ruta origen (ruta_a) comenzando en la posición i. El campo
+    # 'k' del movimiento almacena el tamaño del bloque (2 o 3).
+    if op in {"or_opt_2", "or_opt_3"}:
+        if mov.ruta_a is not None and mov.i is not None and mov.k is not None:
+            k_blk = int(mov.k)
+            i_ini = int(mov.i)
+            return tuple(rutas[mov.ruta_a][i_ini : i_ini + k_blk])  # Bloque desplazado
+        return ()
 
     return ()
 
@@ -652,6 +873,50 @@ def generar_vecino_ids(
             l = rng.randrange(k + 1, nb)     # Fin del segmento en B (l > k)
             vec = op_cross_exchange(rutas, ra, i, j, rb, k, l)
             mov = MovimientoVecindario(op, ruta_a=ra, ruta_b=rb, i=i, j=j, k=k, l=l)
+
+        elif op in ("or_opt_2", "or_opt_3"):
+            # Tamaño del bloque a transferir entre rutas (2 o 3 tareas consecutivas)
+            k_blk = 2 if op == "or_opt_2" else 3
+            # La ruta origen debe tener al menos k_blk tareas para extraer un bloque
+            cand_origen = [x for x in activos if len(rutas[x]) >= k_blk]
+            if not cand_origen:
+                continue
+            ra = rng.choice(cand_origen)
+            # Las rutas destino válidas: cualquiera distinta de la origen.
+            # Si solo hay una ruta total, permitimos inserción intra (en la misma ruta)
+            # como menciona la especificación del operador.
+            destinos = [x for x in range(len(rutas)) if x != ra]
+            if not destinos:
+                destinos = [ra]
+            rb = rng.choice(destinos)
+            na = len(rutas[ra])
+            # Posición de inicio del bloque dentro de la ruta origen
+            i = rng.randrange(0, na - k_blk + 1)
+            # Posición de inserción en la ruta destino.
+            # Si destino == origen, hay que considerar que tras eliminar el bloque
+            # quedarán (na - k_blk) tareas, así que la posición válida va de 0 a (na - k_blk).
+            # Si destino != origen, la posición válida va de 0 a len(rutas[rb]).
+            if rb == ra:
+                # Nº de posiciones posibles después de quitar el bloque
+                tam_destino_post = na - k_blk
+                if tam_destino_post <= 0:
+                    # No queda espacio para una inserción distinta, reintenta
+                    continue
+                j = rng.randrange(0, tam_destino_post + 1)
+                # Evita reinsertar el bloque exactamente en la misma posición
+                # (no genera un vecino distinto)
+                if j == i:
+                    continue
+            else:
+                j = rng.randrange(0, len(rutas[rb]) + 1)
+            # Aplica el operador correspondiente al tamaño del bloque
+            if k_blk == 2:
+                vec = op_or_opt_2(rutas, ra, i, rb, j)
+            else:
+                vec = op_or_opt_3(rutas, ra, i, rb, j)
+            # Registramos el tamaño del bloque en el campo 'k' para que _moved_ids
+            # pueda recuperar el bloque desplazado leyendo rutas[ra][i:i+k_blk].
+            mov = MovimientoVecindario(op, ruta_a=ra, ruta_b=rb, i=i, j=j, k=k_blk)
 
         else:
             raise ValueError(f"Operador desconocido: {op!r}")
@@ -850,6 +1115,42 @@ def generar_vecino(
             l = rng.randrange(k + 1, nb)
             vec = op_cross_exchange(rutas, ra, i, j, rb, k, l)
             mov = MovimientoVecindario(op, ruta_a=ra, ruta_b=rb, i=i, j=j, k=k, l=l)
+
+        elif op in ("or_opt_2", "or_opt_3"):
+            # Tamaño del bloque consecutivo a desplazar (2 o 3 tareas)
+            k_blk = 2 if op == "or_opt_2" else 3
+            # Solo las rutas con al menos k_blk tareas pueden donar un bloque
+            cand_origen = [x for x in activos if len(rutas[x]) >= k_blk]
+            if not cand_origen:
+                continue
+            ra = rng.choice(cand_origen)
+            # Si hay otras rutas, escogemos una distinta como destino;
+            # si solo existe una ruta, se permite inserción intra como caso especial.
+            destinos = [x for x in range(len(rutas)) if x != ra]
+            if not destinos:
+                destinos = [ra]
+            rb = rng.choice(destinos)
+            na = len(rutas[ra])
+            # Inicio del bloque dentro de la ruta origen
+            i = rng.randrange(0, na - k_blk + 1)
+            if rb == ra:
+                # Tras eliminar el bloque, quedan (na - k_blk) tareas en la misma ruta
+                tam_destino_post = na - k_blk
+                if tam_destino_post <= 0:
+                    continue
+                j = rng.randrange(0, tam_destino_post + 1)
+                # Reinsertar en la misma posición no genera vecino distinto
+                if j == i:
+                    continue
+            else:
+                j = rng.randrange(0, len(rutas[rb]) + 1)
+            # Aplica el operador correspondiente al tamaño del bloque
+            if k_blk == 2:
+                vec = op_or_opt_2(rutas, ra, i, rb, j)
+            else:
+                vec = op_or_opt_3(rutas, ra, i, rb, j)
+            # Guardamos k_blk en el campo 'k' del movimiento para trazabilidad
+            mov = MovimientoVecindario(op, ruta_a=ra, ruta_b=rb, i=i, j=j, k=k_blk)
 
         else:
             raise ValueError(f"Operador desconocido: {op!r}")
