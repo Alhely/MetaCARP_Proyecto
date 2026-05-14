@@ -2,12 +2,14 @@
 Corrida SA para instancias seleccionadas.
 
 Configuración:
-    temperatura_inicial = 1500.0  →  fija
-    temperatura_minima  = 1e-3    →  fija
-    alpha               = [0.80, 0.82, ..., 0.98, 0.99]  →  11 valores
-    p_inter             = [0.0, 0.1, 0.2, 0.3, 0.4]      →  5 valores
+    temperatura_inicial = None  →  automática: 20·d_max/n por instancia
+    temperatura_minima  = None  →  automática: 20·d_max/n² por instancia
+    patience            = 5     →  niveles sin mejora antes de reheat (agresivo)
+    reheat_factor       = 0.8   →  fracción de T_init a la que se recalienta (agresivo)
+    alpha               = [0.90]   →  fijo
+    p_inter             = [0.65]   →  fijo
 
-Total: 11 alpha × 5 p_inter × 23 instancias × 2 repeticiones = 2,530 corridas.
+Total: 1 alpha × 1 p_inter × 23 instancias × 2 repeticiones = 46 corridas.
 
 Uso:
     python scripts/run_sa_automatico.py
@@ -29,8 +31,8 @@ INSTANCIAS = [
     "gdb17", "gdb21",
 ]
 
-ALPHAS    = [0.80, 0.82, 0.84, 0.86, 0.88, 0.90, 0.92, 0.94, 0.96, 0.98, 0.99]
-P_INTERS  = [0.4, 0.5, 0.6, 0.7, 0.8]
+ALPHAS    = [0.90]
+P_INTERS  = [0.65]
 
 
 def _parse_args() -> argparse.Namespace:
@@ -44,7 +46,7 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
-    salida_dir = Path(args.salida_dir).expanduser().resolve() / "sa_small_test_pinter"
+    salida_dir = Path(args.salida_dir).expanduser().resolve() / "sa_small_reheatv3"
     salida_dir.mkdir(parents=True, exist_ok=True)
     ydmh = datetime.now().strftime("%Y%d%m%H%M")
 
@@ -53,8 +55,10 @@ def main() -> None:
     print("SA  —  grid search alpha × p_inter")
     print("=" * 80)
     print(f"Instancias   : {len(INSTANCIAS)}")
-    print(f"T_ini        : 1500.0 (fija)")
-    print(f"T_min        : 1e-3   (fija)")
+    print(f"T_ini        : automática (20·d_max/n por instancia)")
+    print(f"T_min        : automática (20·d_max/n² por instancia)")
+    print(f"Patience     : 5 niveles (reheat agresivo)")
+    print(f"Reheat factor: 0.8 (reheat agresivo)")
     print(f"Alpha values : {ALPHAS}")
     print(f"p_inter vals : {P_INTERS}")
     print(f"Semilla      : aleatoria (None)")
@@ -76,10 +80,12 @@ def main() -> None:
                     try:
                         res = recocido_simulado_desde_instancia(
                             instancia,
-                            temperatura_inicial=1500.0,
-                            temperatura_minima=1e-3,
+                            temperatura_inicial=None,
+                            temperatura_minima=None,
                             alpha=alpha,
                             p_inter=p_inter,
+                            patience=5,
+                            reheat_factor=0.8,
                             semilla=None,
                             repeticion=rep,
                             guardar_csv=True,
