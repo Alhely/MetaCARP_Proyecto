@@ -47,14 +47,35 @@ def _default_root() -> Path:
     Si existe la variable de entorno ``CARPTHESIS_ROOT``, se usa esa ruta en
     su lugar (útil para tests o para datos guardados fuera del paquete).
     Los pickles de instancias se buscan en ``<root>/PickleInstances/``.
+
+    Si el paquete está instalado en modo de desarrollo (sin ``PickleInstances``
+    dentro de ``metacarp/``), se sube por la jerarquía de directorios buscando
+    un ancestro que contenga la carpeta de instancias. Esto permite ejecutar
+    el código directamente desde un clone del proyecto sin tener que exportar
+    ``CARPTHESIS_ROOT`` ni pasar ``root=`` explícitamente en cada llamada.
     """
     # Intenta leer la variable de entorno CARPTHESIS_ROOT
     env = os.environ.get("CARPTHESIS_ROOT")
     if env:
         # expanduser() resuelve "~" (home del usuario), resolve() convierte a ruta absoluta
         return Path(env).expanduser().resolve()
-    # Si no hay variable de entorno, usa la carpeta donde está este archivo
-    return _package_dir()
+
+    # Si la carpeta del paquete tiene PickleInstances dentro, usarla directamente.
+    pkg_dir = _package_dir()
+    if (pkg_dir / "PickleInstances").is_dir():
+        return pkg_dir
+
+    # En modo desarrollo los pickles viven en el root del repositorio
+    # (un nivel arriba del paquete). Se camina hacia arriba hasta encontrar
+    # un ancestro que contenga PickleInstances; si no aparece, se cae de vuelta
+    # a la carpeta del paquete para preservar la conducta histórica.
+    for ancestor in pkg_dir.parents:
+        if (ancestor / "PickleInstances").is_dir():
+            return ancestor
+
+    # Si no hay variable de entorno y no se encontró un ancestro adecuado,
+    # se conserva la conducta original: usar la carpeta donde está este archivo.
+    return pkg_dir
 
 
 # -----------------------------------------------------------------------------

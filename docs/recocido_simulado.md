@@ -80,7 +80,7 @@ La siguiente tabla muestra cómo cambia la probabilidad de aceptar un vecino peo
 
 ### Fórmula
 
-Al finalizar cada nivel de temperatura (después de ejecutar `iteraciones_por_temperatura` evaluaciones), la temperatura se reduce multiplicándola por el factor `alpha`:
+Al finalizar cada nivel de temperatura (después de ejecutar `L = n²` evaluaciones, donde `n` es el número de tareas de la instancia), la temperatura se reduce multiplicándola por el factor `alpha`:
 
 ```
 T_nueva = T_actual * alpha
@@ -95,23 +95,23 @@ enfriamientos += 1
 
 ### Interacción entre parámetros
 
-Los cuatro parámetros de temperatura definen juntos la "trayectoria de enfriamiento":
+Los parámetros que definen la "trayectoria de enfriamiento" son:
 
 | Parámetro | Rol |
 |---|---|
-| `temperatura_inicial` | Temperatura de partida. Alta = mucha exploración inicial. |
-| `temperatura_minima` | Umbral de parada. El bucle termina cuando `T < temperatura_minima`. |
+| `n_tareas` | Número de arcos requeridos de la instancia. Se calcula automáticamente. |
+| `L = n²` | Longitud de la cadena de Markov (evaluaciones por nivel de T). Se calcula automáticamente desde n. |
+| `temperatura_inicial` | Temperatura de partida. Si es `None`, se calcula como `5 · d_max / n`. |
+| `temperatura_minima` | Umbral de parada. Si es `None`, se calcula como `20 · d_max / n²`. |
 | `alpha` | Factor de reducción por ciclo. Más alto = enfriamiento más lento = más calidad, más tiempo. |
-| `iteraciones_por_temperatura` | Cuántas evaluaciones se realizan a cada nivel de `T` antes de enfriar. |
-| `max_enfriamientos` | Límite duro de ciclos de enfriamiento, independientemente de `T`. |
 
-El número total de evaluaciones que realiza el algoritmo está acotado por:
+El número total de evaluaciones que realiza el algoritmo es:
 
 ```
-iteraciones_totales <= iteraciones_por_temperatura * max_enfriamientos
+iteraciones_totales = L × n_niveles_temperatura = n² × ceil(log(T_init/T_min) / log(1/alpha))
 ```
 
-En la práctica el algoritmo puede terminar antes si `T` cae por debajo de `temperatura_minima`.
+El algoritmo termina cuando `T` cae por debajo de `temperatura_minima`.
 
 ---
 
@@ -126,10 +126,18 @@ INICIO
 Construir ContextoEvaluacion (una sola vez: matriz Dijkstra + arrays NumPy)
   |
   v
+Calibracion adaptativa desde la instancia:
+  n      = numero de arcos requeridos
+  d_max  = max(matriz Dijkstra)
+  L      = n^2                          (longitud de la cadena de Markov)
+  T_init = 5 * d_max / n                (si no la pasa el usuario)
+  T_min  = 20 * d_max / n^2             (si no la pasa el usuario)
+  |
+  v
 Seleccionar la mejor solución inicial entre las candidatas del pickle
   |
   v
-T = temperatura_inicial
+T = T_init
 sol_actual = sol_inicial
 costo_actual = costo(sol_inicial)
 mejor_solucion = sol_inicial
@@ -137,15 +145,14 @@ mejor_costo = costo_actual
   |
   v
 +-----------------------------------------------------------+
-|  BUCLE EXTERNO: mientras T > temperatura_minima           |
-|                 Y enfriamientos < max_enfriamientos       |
+|  BUCLE EXTERNO: mientras T > T_min                        |
 |                                                           |
 |  Registrar historial (T, mejor_costo)                     |
 |  |                                                        |
 |  v                                                        |
 |  +-----------------------------------------------------+  |
-|  |  BUCLE INTERNO: para cada iter en range(             |  |
-|  |                 iteraciones_por_temperatura)          |  |
+|  |  BUCLE INTERNO: para cada iter en range(L)           |  |
+|  |                       (L = n^2 = adaptativo)         |  |
 |  |                                                      |  |
 |  |  vecino, mov = generar_vecino(sol_actual)            |  |
 |  |  costo_vec  = costo_rapido(vecino, ctx)              |  |
@@ -169,7 +176,6 @@ mejor_costo = costo_actual
 |  +-----------------------------------------------------+  |
 |                                                           |
 |  T = T * alpha          (enfriamiento geometrico)         |
-|  enfriamientos += 1                                       |
 +-----------------------------------------------------------+
   |
   v
@@ -203,11 +209,9 @@ def recocido_simulado(
     data: Mapping[str, Any],
     G: nx.Graph,
     *,
-    temperatura_inicial: float = 1000.0,
-    temperatura_minima: float = 1e-3,
+    temperatura_inicial: float | None = None,
+    temperatura_minima: float | None = None,
     alpha: float = 0.95,
-    iteraciones_por_temperatura: int = 120,
-    max_enfriamientos: int = 250,
     semilla: int | None = None,
     operadores: Iterable[str] = OPERADORES_POPULARES,
     marcador_depot_etiqueta: str | None = None,
@@ -234,11 +238,12 @@ def recocido_simulado(
 | `inicial_obj` | `Any` | — | Objeto pickle con la solucion inicial (puede ser dict, lista u otra estructura anidada). Se extraen todas las soluciones candidatas recursivamente. |
 | `data` | `Mapping[str, Any]` | — | Datos de la instancia CARP: capacidad, demandas, BKS, deposito, etc. Se obtiene con `load_instances`. |
 | `G` | `nx.Graph` | — | Grafo de la instancia cargado desde GEXF. Se usa para construir el contexto si no hay matriz Dijkstra en disco. |
-| `temperatura_inicial` | `float` | `1000.0` | Temperatura de inicio del recocido. Un valor alto permite mucha exploracion inicial. Debe ser `> 0`. |
-| `temperatura_minima` | `float` | `1e-3` | Temperatura de parada. El bucle externo termina cuando `T < temperatura_minima`. Debe ser `> 0`. |
+| `temperatura_inicial` | `float \| None` | `None` | Temperatura de inicio del recocido. Si es `None`, se calcula adaptativamente como `5 · d_max / n`. Si se pasa un valor, debe ser `> 0`. |
+| `temperatura_minima` | `float \| None` | `None` | Temperatura de parada. El bucle externo termina cuando `T < temperatura_minima`. Si es `None`, se calcula adaptativamente como `20 · d_max / n²`. Si se pasa un valor, debe ser `> 0`. |
 | `alpha` | `float` | `0.95` | Factor de enfriamiento geometrico. Debe estar en `(0, 1)`. Un valor cercano a 1 enfria mas lento. |
-| `iteraciones_por_temperatura` | `int` | `120` | Numero de evaluaciones de vecinos por nivel de temperatura. Debe ser `> 0`. |
-| `max_enfriamientos` | `int` | `250` | Limite maximo de reducciones de temperatura. El algoritmo para aunque `T` no haya bajado del minimo. Debe ser `> 0`. |
+| `n_tareas` | `int` (calculado) | — | Numero de arcos requeridos de la instancia. Se obtiene como `len(ctx.u_arr)`. |
+| `d_max` | `float` (calculado) | — | Distancia maxima en la matriz Dijkstra (`ctx.dist`). Se usa para calibrar las temperaturas. |
+| `L` | `int` (calculado) | `n²` | Longitud de la cadena de Markov: numero de evaluaciones de vecinos por nivel de temperatura. Se calcula automaticamente desde `n_tareas`. |
 | `semilla` | `int \| None` | `None` | Semilla para `random.Random`. Si es `None`, la corrida no es reproducible. |
 | `operadores` | `Iterable[str]` | `OPERADORES_POPULARES` | Conjunto de operadores de vecindario habilitados. Ver tabla de operadores en la seccion de vecindarios. |
 | `marcador_depot_etiqueta` | `str \| None` | `None` | Etiqueta del nodo deposito en las rutas (ej. `"D"`). Si es `None`, se lee del contexto. |
@@ -329,11 +334,11 @@ from metacarp.recocido_simulado import recocido_simulado_desde_instancia
 
 resultado = recocido_simulado_desde_instancia(
     "EGL-E1-A",
-    temperatura_inicial=2000.0,
-    temperatura_minima=1e-4,
+    # temperatura_inicial y temperatura_minima se calculan automaticamente:
+    #   T_init = 5 * d_max / n
+    #   T_end  = 20 * d_max / n^2
+    # L = n^2 tambien se calcula automaticamente desde el numero de tareas.
     alpha=0.97,
-    iteraciones_por_temperatura=200,
-    max_enfriamientos=300,
     semilla=42,
     usar_penalizacion_capacidad=True,
     guardar_historial=True,
@@ -374,11 +379,13 @@ resultado = recocido_simulado(
     inicial_obj,
     data,
     G,
-    temperatura_inicial=1000.0,
-    temperatura_minima=1e-3,
+    # Pasar None (o simplemente omitir) -> calculo adaptativo desde la instancia.
+    # temperatura_inicial = 5 * d_max / n
+    # temperatura_minima  = 20 * d_max / n^2
+    # L (longitud de la cadena de Markov) = n^2, tambien adaptativo.
+    temperatura_inicial=None,
+    temperatura_minima=None,
     alpha=0.95,
-    iteraciones_por_temperatura=120,
-    max_enfriamientos=250,
     semilla=7,
     operadores=OPERADORES_POPULARES,
     usar_penalizacion_capacidad=True,
@@ -410,11 +417,32 @@ for i, ruta in enumerate(resultado.mejor_solucion, start=1):
 
 | Parametro | Valor bajo | Valor alto | Efecto principal |
 |---|---|---|---|
-| `temperatura_inicial` | Poca exploracion inicial; puede quedar en minimo local cercano al punto de partida. | Mucha exploracion; acepta casi cualquier vecino al inicio. | Debe ser proporcional al rango de costos esperados. Ver regla practica abajo. |
-| `temperatura_minima` | El algoritmo corre hasta que `T` es extremadamente pequena; mas tiempo. | El algoritmo para antes; menos refinamiento final. | Valores entre `1e-4` y `1.0` suelen ser adecuados. |
+| `temperatura_inicial` | Poca exploracion inicial; puede quedar en minimo local cercano al punto de partida. | Mucha exploracion; acepta casi cualquier vecino al inicio. | Si es `None` se calcula adaptativamente: ver subseccion de calibracion automatica. |
+| `temperatura_minima` | El algoritmo corre hasta que `T` es extremadamente pequena; mas tiempo. | El algoritmo para antes; menos refinamiento final. | Si es `None` se calcula adaptativamente como `20 · d_max / n²`. |
 | `alpha` | Enfriamiento rapido (ej. 0.80). Menos tiempo, menor calidad. | Enfriamiento lento (ej. 0.99). Mas tiempo, mayor calidad. | El valor mas influyente en la calidad de la solucion. Valores tipicos: 0.90 a 0.99. |
-| `iteraciones_por_temperatura` | Pocas evaluaciones por nivel; la temperatura baja rapidamente. | Muchas evaluaciones; mejor muestreo a cada temperatura. | Aumentar si el espacio de busqueda es grande. |
-| `max_enfriamientos` | Termina antes aunque `T` no haya bajado del minimo. | Permite mas ciclos de enfriamiento si el tiempo lo permite. | Limite de seguridad para experimentos con tiempo acotado. |
+
+### Calibracion automatica (adaptativa)
+
+Cuando `temperatura_inicial` o `temperatura_minima` son `None`, el algoritmo
+calcula sus valores desde la propia instancia. Sean:
+
+- `n` = numero de arcos requeridos (tareas) de la instancia (`len(ctx.u_arr)`).
+- `d_max` = distancia maxima en la matriz Dijkstra (`ctx.dist`).
+
+Las formulas (adaptadas de Lourenço et al. al CARP) son:
+
+```
+L       = n^2                  # longitud de la cadena de Markov por nivel de T
+T_init  = 5 · d_max / n        # si temperatura_inicial es None
+T_end   = 20 · d_max / n^2     # si temperatura_minima es None
+```
+
+Estas formulas garantizan que la temperatura inicial sea suficientemente
+alta para permitir mucha exploracion, y que la temperatura minima sea lo
+bastante pequena para que la fase final actue como busqueda voraz. La
+longitud de la cadena de Markov crece cuadraticamente con el numero de
+tareas, lo que da al algoritmo mas iteraciones internas en instancias
+grandes y mantiene corridas rapidas en instancias pequenas.
 
 ### Regla practica para estimar `temperatura_inicial`
 
@@ -438,11 +466,17 @@ Esta estimacion garantiza que al inicio se acepten mejoras del 10 % con probabil
 
 ### Configuraciones de referencia
 
-| Escenario | `temperatura_inicial` | `alpha` | `iteraciones_por_temperatura` | `max_enfriamientos` |
-|---|---|---|---|---|
-| Prueba rapida | `500.0` | `0.90` | `50` | `100` |
-| Produccion estandar | `1000.0` | `0.95` | `120` | `250` |
-| Alta calidad (lento) | `2000.0` | `0.99` | `300` | `500` |
+| Escenario | `temperatura_inicial` | `temperatura_minima` | `alpha` |
+|---|---|---|---|
+| Prueba rapida | adaptativa (`None`) | adaptativa (`None`) | `0.90` |
+| Produccion estandar | adaptativa (`None`) | adaptativa (`None`) | `0.95` |
+| Alta calidad (lento) | adaptativa (`None`) | adaptativa (`None`) | `0.99` |
+
+Notas:
+- La longitud de la cadena de Markov `L = n²` siempre se calcula
+  automaticamente desde la instancia.
+- Para forzar valores especificos de temperatura, pasarlos directamente
+  en lugar de `None`.
 
 ---
 

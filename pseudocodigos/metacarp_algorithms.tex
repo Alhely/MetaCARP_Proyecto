@@ -104,20 +104,24 @@ $|\mathcal{O}_{\mathrm{inter}}| \cdot w_{\mathrm{inter}} +
 \caption{Simulated Annealing (SA) for CARP}
 \label{alg:sa}
 
-\KwIn{CARP instance $G$;\; parameters $T_{\mathrm{ini}}$, $T_{\mathrm{min}}$,
-      $\alpha$, $\mathit{iter\_temp}$, $\mathit{max\_cool}$, $\lambda$}
+\KwIn{CARP instance $G$;\; parameters $\alpha$, $\lambda$;\;
+      optionally $T_{\mathrm{ini}}$, $T_{\mathrm{min}}$ (computed from instance if omitted)}
 \KwOut{Best solution found $s^{*}$}
 
 \BlankLine
+$n \leftarrow |\text{required arcs of } G|$ \tcp{number of tasks}
+$d_{\max} \leftarrow \max_{i,j} \text{dist}(i,j)$ \tcp{longest shortest-path distance}
+$L \leftarrow n^{2}$ \tcp{Markov chain length (adaptive to instance size)}
+$T_{\mathrm{ini}} \leftarrow 5 \cdot d_{\max} / n$ \tcp{if not provided by user}
+$T_{\mathrm{min}} \leftarrow 20 \cdot d_{\max} / n^{2}$ \tcp{if not provided by user}
 $s \leftarrow \textsc{InitialSolution}(G)$ \tcp{greedy or random construction}
 $s^{*} \leftarrow s$ \;
 $T \leftarrow T_{\mathrm{ini}}$ \;
-$n_{\mathrm{cool}} \leftarrow 0$ \;
 
 \BlankLine
-\While{$T > T_{\mathrm{min}}$ \textbf{ and } $n_{\mathrm{cool}} < \mathit{max\_cool}$}{
+\While{$T > T_{\mathrm{min}}$}{
 
-    \For{$it \leftarrow 1$ \KwTo $\mathit{iter\_temp}$}{
+    \For{$it \leftarrow 1$ \KwTo $L$}{
 
         $v \leftarrow \textsc{CapacityViolation}(s)$ \;
         $w \leftarrow \textsc{InterBias}(v,\;\mathcal{O},\;\alpha_{\mathrm{inter}}{=}0.8)$
@@ -141,7 +145,6 @@ $n_{\mathrm{cool}} \leftarrow 0$ \;
 
     \BlankLine
     $T \leftarrow \alpha \cdot T$ \tcp{geometric cooling schedule}
-    $n_{\mathrm{cool}} \leftarrow n_{\mathrm{cool}} + 1$ \;
 }
 
 \BlankLine

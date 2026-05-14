@@ -8,7 +8,7 @@
 
 **Instancia.** Un problema CARP concreto: un grafo con aristas que tienen demanda y una capacidad de vehículo. Las instancias se identifican por nombre (ej. `gdb1`, `kshs3`) y se cargan desde `PickleInstances/` mediante `InstanceStore`.
 
-**Configuración.** Una combinación específica de hiperparámetros para una metaheurística. Por ejemplo, SA con `temperatura_inicial=300.0`, `alpha=0.95`, `iteraciones_por_temperatura=80`, `max_enfriamientos=100`. El script construye todas las configuraciones posibles mediante un grid search (producto cartesiano de los valores candidatos de cada parámetro).
+**Configuración.** Una combinación específica de hiperparámetros para una metaheurística. Por ejemplo, SA con `temperatura_inicial=None` (calibración automática desde la instancia) y `alpha=0.92`. El script construye todas las configuraciones posibles mediante un grid search (producto cartesiano de los valores candidatos de cada parámetro).
 
 **Corrida.** La ejecución de una metaheurística sobre una instancia con una configuración y semilla determinadas. Cada corrida produce exactamente una fila en el CSV de salida.
 
@@ -24,55 +24,55 @@
 
 | Parámetro | Valores candidatos | Cardinalidad |
 |---|---|---|
-| `temperatura_inicial` | 150.0, 300.0, 500.0, 800.0 | 4 |
+| `temperatura_inicial` | None, 300.0, 500.0, 800.0 | 4 |
 | `temperatura_minima` | 1e-3 | 1 |
-| `alpha` | 0.90, 0.93, 0.95, 0.97 | 4 |
-| `iteraciones_por_temperatura` | 40, 80, 120 | 3 |
-| `max_enfriamientos` | 60, 100 | 2 |
+| `alpha` | 0.80, 0.82, 0.84, 0.86, 0.88, 0.90, 0.92, 0.94, 0.96, 0.98, 0.99 | 11 |
 
-**Total de configuraciones:** 4 × 1 × 4 × 3 × 2 = **96**
+`temperatura_inicial=None` activa la calibración automática: el valor se calcula como `5 · d_max / n`, donde `n` es el número de arcos requeridos de la instancia y `d_max` es la distancia máxima en la matriz Dijkstra. `temperatura_minima=1e-3` es siempre fijo.
+
+**Total de configuraciones:** 4 × 1 × 11 = **44**
 
 ### Búsqueda Tabú (`tabu`)
 
 | Parámetro | Valores candidatos | Cardinalidad |
 |---|---|---|
-| `iteraciones` | 500, 700, 1000 | 3 |
-| `tam_vecindario` | 20, 30, 40, 60 | 4 |
-| `tenure_tabu` | 10, 15, 20, 30 | 4 |
+| `iteraciones` | 400, 700 | 2 |
+| `tam_vecindario` | 25, 40, 60 | 3 |
+| `tenure_tabu` | 7, 15, 25 | 3 |
 
-**Total de configuraciones:** 3 × 4 × 4 = **48**
+**Total de configuraciones:** 2 × 3 × 3 = **18**
 
 ### Colonia de Abejas (`abejas`)
 
 | Parámetro | Valores candidatos | Cardinalidad |
 |---|---|---|
-| `iteraciones` | 500, 700, 1000 | 3 |
-| `num_fuentes` | 10, 20, 30, 40 | 4 |
-| `limite_abandono` | 15, 30, 45, 60 | 4 |
+| `iteraciones` | 300, 600 | 2 |
+| `num_fuentes` | 10, 20, 30 | 3 |
+| `limite_abandono` | 20, 40, 60 | 3 |
 
-**Total de configuraciones:** 3 × 4 × 4 = **48**
+**Total de configuraciones:** 2 × 3 × 3 = **18**
 
 ### Cuckoo Search (`cuckoo`)
 
 | Parámetro | Valores candidatos | Cardinalidad |
 |---|---|---|
-| `iteraciones` | 500, 750, 1000 | 3 |
+| `iteraciones` | 400, 700 | 2 |
 | `num_nidos` | 15, 25, 35 | 3 |
-| `pa_abandono` | 0.15, 0.25, 0.35 | 3 |
-| `pasos_levy_base` | 2, 3, 5 | 3 |
-| `beta_levy` | 1.2, 1.5 | 2 |
+| `pa_abandono` | 0.20, 0.25, 0.30 | 3 |
+| `pasos_levy_base` | 3 | 1 |
+| `beta_levy` | 1.5 | 1 |
 
-**Total de configuraciones:** 3 × 3 × 3 × 3 × 2 = **162**
+**Total de configuraciones:** 2 × 3 × 3 × 1 × 1 = **18**
 
 ### Resumen de configuraciones totales
 
 | Metaheurística | Alias | Configuraciones |
 |---|---|---|
-| Recocido Simulado | `sa` | 96 |
-| Búsqueda Tabú | `tabu` | 48 |
-| Colonia de Abejas | `abejas` | 48 |
-| Cuckoo Search | `cuckoo` | 162 |
-| **Total** | | **354** |
+| Recocido Simulado | `sa` | 44 |
+| Búsqueda Tabú | `tabu` | 18 |
+| Colonia de Abejas | `abejas` | 18 |
+| Cuckoo Search | `cuckoo` | 18 |
+| **Total** | | **98** |
 
 ---
 
@@ -130,7 +130,7 @@ Donde `ydmh` es un timestamp fijo al inicio de la campaña con formato `%Y%d%m%H
 
 Cada metaheurística escribe las columnas de sus propios hiperparámetros. Las columnas presentes dependen del algoritmo ejecutado.
 
-**SA:** `temperatura_inicial`, `temperatura_minima`, `alpha`, `iteraciones_por_temperatura`, `max_enfriamientos`
+**SA:** `temperatura_inicial`, `temperatura_minima`, `alpha`, `L` (longitud de cadena de Markov, calculado como `n²`; no se escribe en el CSV como hiperparámetro configurable). `temperatura_inicial` y `temperatura_minima` pueden aparecer como `None` cuando se usó calibración automática.
 
 **Tabu:** `iteraciones`, `tam_vecindario`, `tenure_tabu`
 
@@ -220,12 +220,12 @@ corridas_totales = Σ(meta ∈ metas) (configs_meta × repeticiones) × num_inst
 **Ejemplo de campaña completa** con 23 instancias, 2 repeticiones, las cuatro metaheurísticas:
 
 ```
-SA:     96 configs × 2 reps × 23 instancias =  4 416 corridas
-Tabu:   48 configs × 2 reps × 23 instancias =  2 208 corridas
-Abejas: 48 configs × 2 reps × 23 instancias =  2 208 corridas
-Cuckoo: 162 configs × 2 reps × 23 instancias = 7 452 corridas
+SA:     44 configs × 2 reps × 23 instancias = 2 024 corridas
+Tabu:   18 configs × 2 reps × 23 instancias =   828 corridas
+Abejas: 18 configs × 2 reps × 23 instancias =   828 corridas
+Cuckoo: 18 configs × 2 reps × 23 instancias =   828 corridas
 ─────────────────────────────────────────────────────────────
-Total:                                         16 284 corridas
+Total:                                          4 508 corridas
 ```
 
 El script imprime `Corridas planeadas: <N>` al inicio de la ejecución para que sea posible estimar el tiempo total antes de lanzar la campaña completa.
@@ -248,7 +248,7 @@ CARPTHESIS_ROOT=/home/alhely/Desktop/MetaCARP_Proyecto \
   --experimento prueba
 ```
 
-Ejecuta SA sobre `gdb1` con todas sus 96 configuraciones (1 repetición cada una). Produce un único CSV en `scripts/testing_20260512/sa/`.
+Ejecuta SA sobre `gdb1` con todas sus 44 configuraciones (1 repetición cada una). Produce un único CSV en `scripts/testing_20260512/sa/`.
 
 ### Campaña SA sobre 23 instancias con GPU
 
@@ -313,7 +313,7 @@ column -t -s, scripts/testing_20260512/sa/sa_gdb1_prueba_*.csv | less -S
     └── cuckoo_<instancia>_<experimento>_<ydmh>.csv
 ```
 
-Dentro de cada CSV, cada fila es una corrida. Para una instancia ejecutada con SA (96 configuraciones × 2 repeticiones), el CSV tendrá 192 filas.
+Dentro de cada CSV, cada fila es una corrida. Para una instancia ejecutada con SA (44 configuraciones × 2 repeticiones), el CSV tendrá 88 filas.
 
 ---
 

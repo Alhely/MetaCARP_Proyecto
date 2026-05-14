@@ -54,25 +54,23 @@ def _grid(param_space: dict[str, list[object]]) -> list[dict[str, object]]:
 
 def _construir_runners() -> dict[str, MetaRunner]:
     """
-    Espacio de búsqueda reducido y justificado por literatura CARP.
-    Total: 72 configs × 23 instancias × 2 repeticiones = 3,312 corridas.
+    Espacio de búsqueda justificado por literatura CARP.
+    Total: 98 configs × 23 instancias × 2 repeticiones = 4,508 corridas.
 
-    Criterio de diseño: diseño balanceado (18 configs por algoritmo) para
-    comparaciones estadísticas justas (Friedman/Wilcoxon) entre metaheurísticas.
+    SA: 4 valores de T_ini (incluye None = automático) × 1 T_min × 11 alpha = 44 configs.
+    Tabu / Abejas / Cuckoo: 18 configs cada uno (diseño balanceado).
     """
     # SA: alpha es el parámetro más sensible (Lourenço et al. 2003).
-    # T0 calibrada para aceptar ~80% de movimientos deteriorantes (Kirkpatrick 1983).
-    # max_enfriamientos fijado en 100: con alpha=0.95 y T0=500, a los 100 niveles
-    # T≈3 (prácticamente convergido para instancias GDB/KSHS).
+    # temperatura_inicial=None activa la calibración adaptativa: T_ini = 5·d_max/n.
+    # T0 fijas calibradas para aceptar ~80% de movimientos deteriorantes (Kirkpatrick 1983).
+    # alpha barre 0.80–0.99 en pasos de 0.02 para cubrir enfriamiento rápido y lento.
     sa_space = _grid(
         {
-            "temperatura_inicial": [300.0, 500.0, 800.0],
+            "temperatura_inicial": [None, 300.0, 500.0, 800.0],
             "temperatura_minima": [1e-3],
-            "alpha": [0.92, 0.95, 0.98],
-            "iteraciones_por_temperatura": [80, 120],
-            "max_enfriamientos": [100],
+            "alpha": [0.80, 0.82, 0.84, 0.86, 0.88, 0.90, 0.92, 0.94, 0.96, 0.98, 0.99],
         }
-    )  # 3 × 1 × 3 × 2 × 1 = 18 configs
+    )  # 4 × 1 × 11 = 44 configs
 
     # Tabu: tenure ~ sqrt(n) recomendado para CARP (Hertz & Mittaz 2001).
     # tam_vecindario cubre 15-40% de los movimientos posibles (Gendreau et al. 1994).

@@ -506,7 +506,7 @@ def demo_metaheuristicas() -> None:
         codigo=(
             "recocido_simulado_desde_instancia("
             f"'{INSTANCIA}', temperatura_inicial=150.0, temperatura_minima=1e-3, "
-            "alpha=0.93, iteraciones_por_temperatura=40, max_enfriamientos=25, "
+            "alpha=0.93, "
             f"semilla={SEED}, guardar_csv=GUARDAR_CSV_DEMO)"
         ),
         fn=lambda: recocido_simulado_desde_instancia(
@@ -514,14 +514,12 @@ def demo_metaheuristicas() -> None:
             temperatura_inicial=150.0,
             temperatura_minima=1e-3,
             alpha=0.93,
-            iteraciones_por_temperatura=40,
-            max_enfriamientos=25,
             semilla=SEED,
             guardar_csv=GUARDAR_CSV_DEMO,
         ),
     )
     print(
-        f"- SA: mejor_costo={sa.mejor_costo} | gap={sa.gap_porcentaje:.4f}% | "
+        f"- SA: mejor_costo={sa.mejor_costo} | mejora={sa.mejora_porcentaje_inicial_vs_final:.4f}% | "
         f"tiempo={sa.tiempo_segundos:.4f}s | csv={sa.archivo_csv}"
     )
 

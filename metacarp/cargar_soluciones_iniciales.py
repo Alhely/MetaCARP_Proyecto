@@ -46,7 +46,10 @@ def _resolve_root(root: str | os.PathLike[str] | None) -> Path:
 
     1. Si se pasó ``root`` explícitamente, úsalo.
     2. Si existe la variable de entorno ``CARPTHESIS_ROOT``, úsala.
-    3. Si ninguna aplica, usa la carpeta del paquete.
+    3. Si la carpeta del paquete contiene ``InitialSolution``, úsala.
+    4. Si un ancestro del paquete contiene ``InitialSolution`` (modo
+       desarrollo con datos en el root del repo), úsalo.
+    5. Como último recurso, usa la carpeta del paquete.
 
     Misma lógica que en cargar_grafos.py y cargar_matrices.py para coherencia.
     """
@@ -55,7 +58,18 @@ def _resolve_root(root: str | os.PathLike[str] | None) -> Path:
     env = os.environ.get("CARPTHESIS_ROOT")
     if env:
         return Path(env).expanduser().resolve()
-    return _package_dir()
+    pkg_dir = _package_dir()
+    # Si la carpeta del paquete ya tiene la carpeta de soluciones iniciales,
+    # usarla directamente sin escanear ancestros.
+    for name in ("InitialSolution", "initialsolution", "initial_solution"):
+        if (pkg_dir / name).is_dir():
+            return pkg_dir
+    # Modo desarrollo: buscar un ancestro que contenga la carpeta de datos.
+    for ancestor in pkg_dir.parents:
+        for name in ("InitialSolution", "initialsolution", "initial_solution"):
+            if (ancestor / name).is_dir():
+                return ancestor
+    return pkg_dir
 
 
 def _initial_solution_dir(data_root: Path) -> Path:

@@ -49,14 +49,25 @@ def _resolve_root(root: str | os.PathLike[str] | None) -> Path:
 
     1. Si se pasó ``root`` explícitamente, úsalo.
     2. Si existe la variable de entorno ``CARPTHESIS_ROOT``, úsala.
-    3. Si ninguna aplica, usa la carpeta del paquete.
+    3. Si la carpeta del paquete contiene ``Grafos``, úsala.
+    4. Si un ancestro del paquete contiene ``Grafos`` (modo desarrollo
+       con datos en el root del repo), úsalo.
+    5. Como último recurso, usa la carpeta del paquete.
     """
     if root is not None:
         return Path(root).expanduser().resolve()
     env = os.environ.get("CARPTHESIS_ROOT")
     if env:
         return Path(env).expanduser().resolve()
-    return _package_dir()
+    pkg_dir = _package_dir()
+    # Si la carpeta del paquete ya tiene Grafos/grafos, usarla directamente.
+    if (pkg_dir / "Grafos").is_dir() or (pkg_dir / "grafos").is_dir():
+        return pkg_dir
+    # Modo desarrollo: buscar un ancestro que contenga la carpeta de datos.
+    for ancestor in pkg_dir.parents:
+        if (ancestor / "Grafos").is_dir() or (ancestor / "grafos").is_dir():
+            return ancestor
+    return pkg_dir
 
 
 def _grafos_dir(data_root: Path) -> Path:

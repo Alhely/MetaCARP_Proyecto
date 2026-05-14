@@ -562,7 +562,7 @@ usa.
 | Busqueda Tabu | `busqueda_tabu.py` | 400 | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`tam_vecindario=25` por iteracion) |
 | Abejas (ABC) | `abejas.py` | 250 | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`num_fuentes=16` empleadas + observadoras) |
 | Cuckoo Search | `cuckoo_search.py` | 260 | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`num_nidos=20` cuckoos) |
-| Recocido Simulado (SA) | `recocido_simulado.py` | `max_enfriamientos=250` niveles × `iteraciones_por_temperatura=120` | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | No (1 vecino por evaluacion) |
+| Recocido Simulado (SA) | `recocido_simulado.py` | `L = n²` iteraciones por nivel (adaptativo a la instancia) | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | No (1 vecino por evaluacion) |
 
 ### Detalle por metaheuristica
 
@@ -594,8 +594,9 @@ usa.
 **Recocido Simulado** (`recocido_simulado`):
 - Genera 1 vecino por evaluacion.
 - Acepta siempre si mejora; si empeora, acepta con probabilidad `exp(-delta/T)`.
-- `T` decrece geometricamente por factor `alpha` (por defecto 0.95) en cada nivel.
-- Parametros de temperatura: `temperatura_inicial=1000.0`, `temperatura_minima=1e-3`.
+- `T` decrece geometricamente por factor `alpha` en cada nivel; la condicion de parada es `T < temperatura_minima`.
+- La longitud de la cadena de Markov es `L = n²`, donde `n` es el numero de arcos requeridos de la instancia.
+- `temperatura_inicial` y `temperatura_minima` pueden fijarse manualmente o calcularse de forma automatica desde la instancia (`temperatura_inicial = 5 · d_max / n`, `temperatura_minima = 20 · d_max / n²`).
 
 ---
 

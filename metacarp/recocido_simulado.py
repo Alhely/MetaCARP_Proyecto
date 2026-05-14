@@ -39,6 +39,23 @@ La temperatura se reduce en cada "nivel" multiplicando por alpha (0 < alpha < 1)
 Valores típicos de alpha: 0.90 – 0.99. Un alpha más alto significa un
 enfriamiento más lento (mejor calidad, más tiempo de cómputo).
 
+Calibración adaptativa desde la instancia
+-----------------------------------------
+La longitud de la cadena de Markov L y las temperaturas por defecto se
+calculan automáticamente desde la instancia (adaptado de Lourenço et al.
+para CARP). Sea ``n`` el número de arcos requeridos y ``d_max`` la
+distancia máxima en la matriz Dijkstra:
+
+- L = n²              → longitud de la cadena de Markov (iteraciones por
+  nivel de temperatura), reemplaza al antiguo ``iteraciones_por_temperatura``.
+- T_init = 5 · d_max / n   → temperatura inicial por defecto (si el usuario
+  no la especifica).
+- T_end  = 20 · d_max / n² → temperatura mínima por defecto (si el usuario
+  no la especifica).
+
+El usuario puede pasar ``temperatura_inicial`` y ``temperatura_minima`` con
+valores concretos para sobrescribir el cálculo automático.
+
 Optimización de evaluación
 --------------------------
 Construye un :class:`ContextoEvaluacion` (matriz Dijkstra densa + arrays por id
@@ -70,6 +87,8 @@ from typing import Any, Literal
 
 # Biblioteca de grafos.
 import networkx as nx
+# NumPy: necesario para la calibración adaptativa (cálculo de d_max sobre la matriz Dijkstra).
+import numpy as np
 
 # Importaciones internas del paquete metacarp:
 from .busqueda_indices import build_search_encoding  # codificación para vecindario por ids
@@ -173,12 +192,10 @@ def recocido_simulado(
     data: Mapping[str, Any],
     G: nx.Graph,
     *,
-    temperatura_inicial: float = 1000.0,      # temperatura de inicio (alta = mucha exploración)
-    temperatura_minima: float = 1e-3,         # temperatura de parada (baja = solo mejoras)
-    alpha: float = 0.95,                      # factor de enfriamiento geométrico (0 < alpha < 1)
-    iteraciones_por_temperatura: int = 120,   # evaluaciones por nivel de temperatura
-    max_enfriamientos: int = 250,             # límite de reducciones de temperatura
-    semilla: int | None = None,               # semilla para reproducibilidad
+    temperatura_inicial: float | None = None,  # None = calcular automáticamente como 5·d_max/n
+    temperatura_minima: float | None = None,   # None = calcular automáticamente como 20·d_max/n²
+    alpha: float = 0.95,                       # factor de enfriamiento geométrico (0 < alpha < 1)
+    semilla: int | None = None,                # semilla para reproducibilidad
     operadores: Iterable[str] = OPERADORES_POPULARES,  # operadores de vecindario habilitados
     marcador_depot_etiqueta: str | None = None,  # etiqueta del nodo depósito
     usar_gpu: bool = False,                   # flag de GPU (solo para trazabilidad en SA)
@@ -200,23 +217,29 @@ def recocido_simulado(
 
     Estructura del algoritmo:
     - Bucle externo: niveles de temperatura (de T_inicial hasta T_minima).
-    - Bucle interno: 'iteraciones_por_temperatura' evaluaciones por nivel.
+    - Bucle interno: L evaluaciones por nivel, donde L = n² (n = número de
+      arcos requeridos de la instancia).
     - En cada evaluación: genera un vecino, decide si aceptarlo (Metropolis).
     - Al finalizar cada nivel: T = alpha × T (enfriamiento geométrico).
 
-    Criterio de parada: T < temperatura_minima O enfriamientos >= max_enfriamientos.
+    Criterio de parada: T < temperatura_minima.
+
+    Calibración adaptativa: si ``temperatura_inicial`` o ``temperatura_minima``
+    son ``None``, se calculan desde la instancia con las fórmulas:
+        L       = n²
+        T_init  = 5 · d_max / n
+        T_end   = 20 · d_max / n²
+    donde n = número de tareas (arcos requeridos) y d_max = distancia máxima
+    en la matriz Dijkstra.
     """
     # Validaciones de parámetros.
-    if temperatura_inicial <= 0:
+    # Solo validamos los valores de temperatura si el usuario los pasó explícitamente.
+    if temperatura_inicial is not None and temperatura_inicial <= 0:
         raise ValueError("temperatura_inicial debe ser > 0.")
-    if temperatura_minima <= 0:
+    if temperatura_minima is not None and temperatura_minima <= 0:
         raise ValueError("temperatura_minima debe ser > 0.")
     if not (0.0 < alpha < 1.0):
         raise ValueError("alpha debe estar en (0, 1).")
-    if iteraciones_por_temperatura <= 0:
-        raise ValueError("iteraciones_por_temperatura debe ser > 0.")
-    if max_enfriamientos <= 0:
-        raise ValueError("max_enfriamientos debe ser > 0.")
 
     # Generador aleatorio reproducible.
     rng = random.Random(semilla)
@@ -238,6 +261,17 @@ def recocido_simulado(
         if lambda_capacidad is not None
         else lambda_penal_capacidad_por_defecto(ctx)
     )
+
+    # Calibración adaptativa desde la instancia (adaptada de Lourenço et al. para CARP).
+    # n = número de arcos requeridos; d_max = distancia máxima en la matriz Dijkstra.
+    n_tareas = int(len(ctx.u_arr))  # número de tareas (arcos requeridos)
+    _dist_finita = ctx.dist[ctx.dist < np.inf]
+    d_max = float(_dist_finita.max()) if len(_dist_finita) > 0 else 1.0
+    # L = n² iteraciones por nivel (longitud de la cadena de Markov escalada a la instancia).
+    L = n_tareas * n_tareas
+    # Temperaturas calculadas si el usuario no las especificó.
+    T_init_eff = float(temperatura_inicial) if temperatura_inicial is not None else 5.0 * d_max / n_tareas
+    T_min_eff  = float(temperatura_minima)  if temperatura_minima  is not None else 20.0 * d_max / (n_tareas * n_tareas)
 
     # Selección de la mejor solución inicial entre las candidatas.
     sel_ini = seleccionar_mejor_inicial_rapido(
@@ -272,9 +306,9 @@ def recocido_simulado(
         encoding = build_search_encoding(data)
 
     # Temperatura inicial del recocido (variable que decrece con cada nivel).
-    T = float(temperatura_inicial)
+    T = T_init_eff
     iteraciones_totales = 0  # total de vecinos evaluados
-    enfriamientos = 0        # número de reducciones de temperatura ejecutadas
+    enfriamientos = 0        # número de reducciones de temperatura ejecutadas (solo conteo)
     aceptadas = 0            # vecinos aceptados (mejores + peores)
     mejoras = 0              # veces que el mejor global mejoró
     ultimo_mov_aceptado: MovimientoVecindario | None = None
@@ -298,8 +332,8 @@ def recocido_simulado(
     costo_mejor = costo_para_reporte()
 
     # === BUCLE EXTERNO: niveles de temperatura (enfriamiento) ===
-    # Se repite mientras T no baje del mínimo Y no se excedan los enfriamientos máximos.
-    while T > temperatura_minima and enfriamientos < max_enfriamientos:
+    # Se repite mientras T no baje del mínimo (criterio de parada puro del SA clásico).
+    while T > T_min_eff:
         if guardar_historial:
             # Registramos la temperatura y el mejor costo al inicio de este nivel.
             historial_temp.append(T)
@@ -311,7 +345,7 @@ def recocido_simulado(
         # infactible aceptado por Metropolis). Si recalculáramos solo una vez por
         # nivel de temperatura el sesgo quedaría desactualizado durante decenas
         # de iteraciones y podría sesgar incorrectamente la búsqueda.
-        for _ in range(iteraciones_por_temperatura):
+        for _ in range(L):
             iteraciones_totales += 1
             pesos_ops = pesos_inter_bias(
                 viol_actual, list(operadores), alpha_inter=alpha_inter
@@ -447,8 +481,11 @@ def recocido_simulado(
             "temperatura_inicial": temperatura_inicial,
             "temperatura_minima": temperatura_minima,
             "alpha": alpha,
-            "iteraciones_por_temperatura": iteraciones_por_temperatura,
-            "max_enfriamientos": max_enfriamientos,
+            "n_tareas": n_tareas,
+            "d_max": d_max,
+            "L_cadena_markov": L,
+            "temperatura_inicial_efectiva": T_init_eff,
+            "temperatura_minima_efectiva": T_min_eff,
             **contador.resumen_csv(),
             "aceptadas": aceptadas,
             "mejoras": mejoras,
@@ -495,11 +532,9 @@ def recocido_simulado_desde_instancia(
     nombre_instancia: str,
     *,
     root: str | None = None,
-    temperatura_inicial: float = 1000.0,
-    temperatura_minima: float = 1e-3,
+    temperatura_inicial: float | None = None,
+    temperatura_minima: float | None = None,
     alpha: float = 0.95,
-    iteraciones_por_temperatura: int = 120,
-    max_enfriamientos: int = 250,
     semilla: int | None = None,
     operadores: Iterable[str] = OPERADORES_POPULARES,
     marcador_depot_etiqueta: str | None = None,
@@ -535,8 +570,6 @@ def recocido_simulado_desde_instancia(
         temperatura_inicial=temperatura_inicial,
         temperatura_minima=temperatura_minima,
         alpha=alpha,
-        iteraciones_por_temperatura=iteraciones_por_temperatura,
-        max_enfriamientos=max_enfriamientos,
         semilla=semilla,
         operadores=operadores,
         marcador_depot_etiqueta=marcador_depot_etiqueta,
