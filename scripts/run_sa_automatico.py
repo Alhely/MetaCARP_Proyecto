@@ -5,6 +5,8 @@ Configuración:
     temperatura_inicial         = None  →  automática: 20·d_max/n por instancia
     temperatura_minima          = None  →  automática: 20·d_max/n² por instancia
     iteraciones_por_temperatura = None  →  automático: n² por instancia
+    patience                    = 10    →  niveles sin mejora antes de reheat
+    reheat_factor               = 0.5   →  fracción de T_init a la que se recalienta
     alpha   = [0.80, 0.82, ..., 0.98, 0.99]  →  11 valores
     p_inter = [0.4, 0.5, 0.6, 0.7, 0.8]      →  5 valores
 
@@ -45,18 +47,20 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
-    salida_dir = Path(args.salida_dir).expanduser().resolve() / "sa_small_simple"
+    salida_dir = Path(args.salida_dir).expanduser().resolve() / "sa_small_instances_reheat"
     salida_dir.mkdir(parents=True, exist_ok=True)
     ydmh = datetime.now().strftime("%Y%d%m%H%M")
 
     total = len(INSTANCIAS) * len(ALPHAS) * len(P_INTERS) * args.repeticiones
     print("=" * 80)
-    print("SA  —  grid search alpha × p_inter")
+    print("SA  —  grid search alpha × p_inter  (con reheat)")
     print("=" * 80)
     print(f"Instancias                  : {len(INSTANCIAS)}")
     print(f"T_ini                       : automática (20·d_max/n por instancia)")
     print(f"T_min                       : automática (20·d_max/n² por instancia)")
     print(f"iteraciones_por_temperatura : None (adaptativo: n²)")
+    print(f"Patience                    : 10 niveles sin mejora")
+    print(f"Reheat factor               : 0.5 (T sube al 50% de T_init)")
     print(f"Alpha values                : {ALPHAS}")
     print(f"p_inter vals                : {P_INTERS}")
     print(f"Semilla                     : aleatoria (None)")
@@ -82,7 +86,8 @@ def main() -> None:
                             temperatura_minima=None,
                             alpha=alpha,
                             p_inter=p_inter,
-                            iteraciones_por_temperatura=None,
+                            patience=10,
+                            reheat_factor=0.5,
                             semilla=None,
                             repeticion=rep,
                             guardar_csv=True,
