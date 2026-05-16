@@ -47,7 +47,7 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
-    salida_dir = Path(args.salida_dir).expanduser().resolve() / "sa_small_instances_reheat"
+    salida_dir = Path(args.salida_dir).expanduser().resolve() / "sa_small_instances_reheat_w_patience"
     salida_dir.mkdir(parents=True, exist_ok=True)
     ydmh = datetime.now().strftime("%Y%d%m%H%M")
 

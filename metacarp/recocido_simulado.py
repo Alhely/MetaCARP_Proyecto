@@ -85,6 +85,23 @@ El reheat preserva la mejor solución encontrada (``mejor_any_s`` y
 ``mejor_fact_s`` no se reinician), pero permite escapar del mínimo local desde
 la posición actual de búsqueda subiendo la tolerancia a empeoramientos.
 
+Criterio de parada por reheats consecutivos sin mejora:
+
+Además del criterio clásico ``T < T_min``, existe un criterio de parada
+temprana basado en el conteo de reheats consecutivos que no produjeron mejora
+en el mejor global. El parámetro ``max_reheats_sin_mejora`` controla cuántos
+reheats seguidos sin avance se toleran antes de detener la búsqueda:
+
+- Cada vez que se activa un reheat, se compara el mejor costo reportable
+  actual con el que había en el momento del reheat anterior. Si no mejoró,
+  el contador ``reheats_sin_mejora_global`` se incrementa; si mejoró, se
+  reinicia a 0.
+- Cuando ``reheats_sin_mejora_global >= max_reheats_sin_mejora`` (y
+  ``max_reheats_sin_mejora > 0``), el bucle externo se interrumpe y se
+  devuelve la mejor solución encontrada hasta ese momento.
+- Si ``max_reheats_sin_mejora = 0`` (valor por defecto), el criterio está
+  desactivado y el SA corre hasta ``T < T_min`` como siempre.
+
 Calibración adaptativa desde la instancia
 -----------------------------------------
 La longitud de la cadena de Markov L y las temperaturas por defecto se
@@ -242,6 +259,10 @@ class RecocidoSimuladoResult:
     # ningún reinicio de temperatura. Un valor alto sugiere estancamiento
     # frecuente y puede indicar que conviene revisar la calibración del SA.
     n_reheats: int = 0
+    # Número de reheats consecutivos al final de la corrida que no produjeron
+    # mejora en el mejor global. Si max_reheats_sin_mejora > 0 y este valor
+    # llegó al umbral, la corrida terminó por parada temprana (no por T < T_min).
+    reheats_sin_mejora_global: int = 0
 
 
 def recocido_simulado(
@@ -249,7 +270,7 @@ def recocido_simulado(
     data: Mapping[str, Any],
     G: nx.Graph,
     *,
-    temperatura_inicial: float | None = None,  # None = calcular automáticamente como 5·d_max/n
+    temperatura_inicial: float | None = None,  # None = calcular automáticamente como 20·d_max/n
     temperatura_minima: float | None = None,   # None = calcular automáticamente como 20·d_max/n²
     alpha: float = 0.95,                       # factor de enfriamiento geométrico (0 < alpha < 1)
     semilla: int | None = None,                # semilla para reproducibilidad
@@ -270,6 +291,7 @@ def recocido_simulado(
     p_inter: float = 0.6,  # fracción fija de probabilidad para operadores inter-ruta (activa incluso en soluciones factibles)
     patience: int = 50,    # niveles sin mejora antes de reheat (0 = desactivado)
     reheat_factor: float = 0.5,  # fracción de T_init_eff a la que se recalienta al activar el reheat
+    max_reheats_sin_mejora: int = 0,  # reheats consecutivos sin mejorar antes de parar (0 = desactivado)
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
@@ -333,6 +355,11 @@ def recocido_simulado(
     # el sentido del "reheat parcial".
     if not (0.0 < reheat_factor <= 1.0):
         raise ValueError("reheat_factor debe estar en (0, 1].")
+    # max_reheats_sin_mejora puede ser 0 (criterio desactivado) o un entero positivo.
+    # Si es > 0, define cuántos reheats consecutivos sin mejorar el mejor global
+    # se toleran antes de interrumpir el bucle externo del SA.
+    if max_reheats_sin_mejora < 0:
+        raise ValueError("max_reheats_sin_mejora debe ser >= 0 (0 = criterio desactivado).")
 
     # Generador aleatorio reproducible.
     rng = random.Random(semilla)
@@ -420,6 +447,18 @@ def recocido_simulado(
     # reinicios (señal de estancamiento crónico) o casi ninguno (señal de
     # buena calibración inicial).
     n_reheats = 0
+    # --- Estado del criterio de parada por reheats sin mejora ---
+    # reheats_sin_mejora_global: contador de reheats CONSECUTIVOS en los que
+    # el mejor global no mejoró respecto al snapshot tomado en el reheat
+    # inmediatamente anterior. Cuando este contador alcanza
+    # max_reheats_sin_mejora (si max_reheats_sin_mejora > 0), el bucle
+    # externo se interrumpe con `break` (parada temprana).
+    reheats_sin_mejora_global = 0
+    # _costo_en_ultimo_reheat: snapshot del mejor costo reportable en el
+    # momento del último reheat. Sirve para detectar si entre dos reheats
+    # consecutivos hubo o no mejora. Se inicializa a +inf para que el primer
+    # reheat siempre cuente como "con mejora" (no incrementa el contador).
+    _costo_en_ultimo_reheat: float = float("inf")
 
     # Etiqueta del depósito para los operadores de vecindario.
     md_op = marcador_depot_etiqueta or ctx.marcador_depot
@@ -606,6 +645,31 @@ def recocido_simulado(
             # Registramos el reheat en el contador global de la corrida.
             n_reheats += 1
 
+            # --- Criterio de parada por reheats consecutivos sin mejora ---
+            # Comparamos el mejor costo reportable actual contra el costo
+            # registrado en el reheat anterior. Si NO mejoró, el reheat actual
+            # cuenta como "reheat sin mejora": se incrementa el contador. Si SÍ
+            # mejoró, se reinicia el contador a 0 porque la racha de reheats
+            # estériles se rompió. En la primera activación, _costo_en_ultimo_reheat
+            # vale +inf, por lo que siempre se interpreta como "hubo mejora".
+            costo_reporte_actual = costo_para_reporte()
+            if costo_reporte_actual < _costo_en_ultimo_reheat - 1e-12:
+                reheats_sin_mejora_global = 0
+            else:
+                reheats_sin_mejora_global += 1
+            # Actualizamos el snapshot para que el próximo reheat se compare
+            # contra el costo de este reheat (no contra el costo inicial).
+            _costo_en_ultimo_reheat = costo_reporte_actual
+
+            # Parada temprana: si se alcanza el umbral de reheats sin mejora,
+            # interrumpimos el bucle externo. El criterio se activa solo si
+            # max_reheats_sin_mejora > 0 (valor 0 → criterio desactivado).
+            if (
+                max_reheats_sin_mejora > 0
+                and reheats_sin_mejora_global >= max_reheats_sin_mejora
+            ):
+                break
+
     # === FIN DEL BUCLE EXTERNO ===
 
     # Tiempo total de la corrida.
@@ -651,6 +715,9 @@ def recocido_simulado(
             "patience": patience,
             "reheat_factor": reheat_factor,
             "n_reheats": n_reheats,
+            # Criterio de parada por reheats sin mejora.
+            "max_reheats_sin_mejora": max_reheats_sin_mejora,
+            "reheats_sin_mejora_global": reheats_sin_mejora_global,
             "n_tareas": n_tareas,
             "d_max": d_max,
             "L_cadena_markov": L,
@@ -699,6 +766,8 @@ def recocido_simulado(
         archivo_csv=archivo_csv,
         # Conteo total de reheats activados durante esta corrida.
         n_reheats=n_reheats,
+        # Reheats consecutivos sin mejora al terminar (criterio de parada temprana).
+        reheats_sin_mejora_global=reheats_sin_mejora_global,
     )
 
 
@@ -725,6 +794,7 @@ def recocido_simulado_desde_instancia(
     p_inter: float = 0.6,  # fracción fija de probabilidad para operadores inter-ruta (activa incluso en soluciones factibles)
     patience: int = 50,    # niveles sin mejora antes de reheat (0 = desactivado)
     reheat_factor: float = 0.5,  # fracción de T_init_eff a la que se recalienta al activar el reheat
+    max_reheats_sin_mejora: int = 0,  # reheats consecutivos sin mejorar antes de parar (0 = desactivado)
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
@@ -765,4 +835,5 @@ def recocido_simulado_desde_instancia(
         p_inter=p_inter,
         patience=patience,
         reheat_factor=reheat_factor,
+        max_reheats_sin_mejora=max_reheats_sin_mejora,
     )

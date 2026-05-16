@@ -10,7 +10,7 @@ paquete.
 ## Tabla de contenidos
 
 1. [Introducción conceptual](#1-introducción-conceptual)
-2. [Los 7 operadores de vecindad](#2-los-7-operadores-de-vecindad)
+2. [Los 9 operadores de vecindad](#2-los-9-operadores-de-vecindad)
 3. [La estructura `MovimientoVecindario`](#3-la-estructura-movimientovecindario)
 4. [Las funciones `generar_vecino` y `generar_vecino_ids`](#4-las-funciones-generar_vecino-y-generar_vecino_ids)
 5. [Ejemplo completo de uso](#5-ejemplo-completo-de-uso)
@@ -86,9 +86,9 @@ Al devolver el vecino, `desnormalizar_con_deposito` los restaura si
 
 ---
 
-## 2. Los 7 operadores de vecindad
+## 2. Los 9 operadores de vecindad
 
-El módulo `vecindarios.py` implementa 7 operadores agrupados en dos familias. Todos se
+El módulo `vecindarios.py` implementa 9 operadores agrupados en dos familias. Todos se
 listan en la constante `OPERADORES_POPULARES`:
 
 ```python
@@ -100,6 +100,8 @@ OPERADORES_POPULARES = (
     "swap_inter",
     "2opt_star",
     "cross_exchange",
+    "or_opt_2",
+    "or_opt_3",
 )
 ```
 
@@ -298,6 +300,61 @@ Después: ruta_A' = [ TR1, TR5, TR6, TR4 ]
 **Cuándo conviene**: cuando bloques de tareas adyacentes tienen mejor encaje en la
 ruta contraria. Genera vecinos más disruptivos que `swap_inter` (que solo mueve una
 tarea a la vez), por lo que es útil para escapar de mínimos locales profundos.
+
+---
+
+### 2.8 `or_opt_2` — Reubicación de par inter-ruta
+
+**Tipo**: inter-ruta
+
+**Descripcion**: extrae un bloque de **2 tareas consecutivas** en la posición `i` de
+la ruta origen `ra` y lo inserta en la posición `j` de la ruta destino `rb` (diferente
+a `ra`). Las dos tareas mantienen su orden relativo al moverse.
+
+**Requisito**: la ruta origen debe tener al menos 2 tareas. `ra != rb`.
+
+**Diagrama antes/después** (ruta A: 4 tareas, ruta B: 2 tareas; `i=1`, `j=1`):
+
+```
+Antes:   ruta_A = [ TR1, TR2, TR3, TR4 ]    ruta_B = [ TR5, TR6 ]
+                                    ← pop ruta_A[1:3]: extrae [TR2, TR3]
+         ruta_A = [ TR1, TR4 ]
+                                    ← insert ruta_B[1]: inserta [TR2, TR3] en posición 1
+Después: ruta_A = [ TR1, TR4 ]    ruta_B = [ TR5, TR2, TR3, TR6 ]
+```
+
+**Cuándo conviene**: cuando dos tareas consecutivas de una ruta tienen mejor afinidad
+geográfica con las tareas de otra ruta. Más potente que `relocate_inter` porque mueve
+un bloque completo, lo que puede reducir el deadheading en ambas rutas simultáneamente.
+Es un operador Or-opt clásico (Tsitsiklis, 1992) extendido al dominio multi-ruta.
+
+---
+
+### 2.9 `or_opt_3` — Reubicación de trío inter-ruta
+
+**Tipo**: inter-ruta
+
+**Descripcion**: extrae un bloque de **3 tareas consecutivas** en la posición `i` de
+la ruta origen `ra` y lo inserta en la posición `j` de la ruta destino `rb` (diferente
+a `ra`). Las tres tareas mantienen su orden relativo.
+
+**Requisito**: la ruta origen debe tener al menos 3 tareas. `ra != rb`.
+
+**Diagrama antes/después** (ruta A: 5 tareas, ruta B: 2 tareas; `i=1`, `j=0`):
+
+```
+Antes:   ruta_A = [ TR1, TR2, TR3, TR4, TR5 ]    ruta_B = [ TR6, TR7 ]
+                                    ← pop ruta_A[1:4]: extrae [TR2, TR3, TR4]
+         ruta_A = [ TR1, TR5 ]
+                                    ← insert ruta_B[0]: inserta [TR2, TR3, TR4] en posición 0
+Después: ruta_A = [ TR1, TR5 ]    ruta_B = [ TR2, TR3, TR4, TR6, TR7 ]
+```
+
+**Cuándo conviene**: para mover subsecuencias largas entre rutas cuando tres tareas
+consecutivas forman un bloque geográficamente compacto que encaja mejor en otra ruta.
+Es el movimiento más disruptivo de la familia Or-opt: puede reestructurar la distribución
+de tareas significativamente, útil para escapar de mínimos locales profundos que los
+operadores de una sola tarea no pueden salvar.
 
 ---
 
@@ -562,7 +619,7 @@ usa.
 | Busqueda Tabu | `busqueda_tabu.py` | 400 | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`tam_vecindario=25` por iteracion) |
 | Abejas (ABC) | `abejas.py` | 250 | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`num_fuentes=16` empleadas + observadoras) |
 | Cuckoo Search | `cuckoo_search.py` | 260 | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`num_nidos=20` cuckoos) |
-| Recocido Simulado (SA) | `recocido_simulado.py` | `L = n²` iteraciones por nivel (adaptativo a la instancia) | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | No (1 vecino por evaluacion) |
+| Recocido Simulado (SA) | `recocido_simulado.py` | `L = n²` iteraciones por nivel (adaptativo a la instancia) | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) con selección por dado (`p_inter`) | No (1 vecino por evaluacion) |
 
 ### Detalle por metaheuristica
 
@@ -596,13 +653,14 @@ usa.
 - Acepta siempre si mejora; si empeora, acepta con probabilidad `exp(-delta/T)`.
 - `T` decrece geometricamente por factor `alpha` en cada nivel; la condicion de parada es `T < temperatura_minima`.
 - La longitud de la cadena de Markov es `L = n²`, donde `n` es el numero de arcos requeridos de la instancia.
-- `temperatura_inicial` y `temperatura_minima` pueden fijarse manualmente o calcularse de forma automatica desde la instancia (`temperatura_inicial = 5 · d_max / n`, `temperatura_minima = 20 · d_max / n²`).
+- `temperatura_inicial` y `temperatura_minima` pueden fijarse manualmente o calcularse de forma automatica desde la instancia (`temperatura_inicial = 20 · d_max / n`, `temperatura_minima = 20 · d_max / n²`).
+- **Mecanismo de dado (`p_inter`)**: antes de elegir el operador en cada iteracion, se lanza un numero aleatorio en `[0,1)`. Si es menor que `p_efectiva` (= `alpha_inter = 0.8` cuando la solucion viola capacidad, o `p_inter` cuando es factible), se elige del grupo inter-ruta; en caso contrario, del grupo intra-ruta. Esto equilibra diversificacion (entre rutas) e intensificacion (dentro de ruta).
 
 ---
 
 ## 7. Referencia rápida
 
-### Tabla resumen de los 7 operadores
+### Tabla resumen de los 9 operadores
 
 | Nombre | Tipo | Complejidad del movimiento | Cuándo preferirlo |
 |---|---|---|---|
@@ -613,6 +671,8 @@ usa.
 | `swap_inter` | Inter-ruta | Intercambia 1 tarea de cada ruta. Ambas rutas conservan su cardinalidad. | Para redistribuir tareas entre rutas sin cambiar su tamano. Menos disruptivo que relocate. |
 | `2opt_star` | Inter-ruta | Intercambia las colas de dos rutas desde un punto de corte. | Cuando dos rutas se cruzan en su segunda mitad y el intercambio de colas elimina el cruce. |
 | `cross_exchange` | Inter-ruta | Intercambia un segmento de tareas de cada ruta. Los segmentos pueden tener tamanos distintos. | Para mover bloques de tareas adyacentes entre rutas. El operador mas disruptivo; util para escapar de minimos locales profundos. |
+| `or_opt_2` | Inter-ruta | Mueve un bloque de 2 tareas consecutivas de una ruta a otra. Requiere >= 2 tareas en la ruta origen. | Cuando un par de tareas consecutivas tiene mejor afinidad geografica con otra ruta. Mas potente que relocate_inter al mover el bloque completo. |
+| `or_opt_3` | Inter-ruta | Mueve un bloque de 3 tareas consecutivas de una ruta a otra. Requiere >= 3 tareas en la ruta origen. | Cuando tres tareas consecutivas forman un bloque geograficamente compacto que encaja mejor en otra ruta. El mas disruptivo de la familia Or-opt. |
 
 ### Tabla de requisitos minimos por operador
 
@@ -625,6 +685,8 @@ usa.
 | `swap_inter` | 2 no vacias distintas | >= 1 en `ruta_a` y `ruta_b` |
 | `2opt_star` | 2 no vacias distintas | >= 1 en `ruta_a` y `ruta_b` |
 | `cross_exchange` | 2 con al menos 2 tareas cada una | >= 2 en `ruta_a` y `ruta_b` |
+| `or_opt_2` | 1 no vacia (origen), 1 cualquiera (destino) | >= 2 en `ruta_a` |
+| `or_opt_3` | 1 no vacia (origen), 1 cualquiera (destino) | >= 3 en `ruta_a` |
 
 Si los requisitos no se cumplen para el operador elegido aleatoriamente, la funcion
 `generar_vecino` (y `generar_vecino_ids`) reintenta con otro operador. El limite de

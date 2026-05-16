@@ -101,7 +101,7 @@ Los parámetros que definen la "trayectoria de enfriamiento" son:
 |---|---|
 | `n_tareas` | Número de arcos requeridos de la instancia. Se calcula automáticamente. |
 | `L = n²` | Longitud de la cadena de Markov (evaluaciones por nivel de T). Se calcula automáticamente desde n. |
-| `temperatura_inicial` | Temperatura de partida. Si es `None`, se calcula como `5 · d_max / n`. |
+| `temperatura_inicial` | Temperatura de partida. Si es `None`, se calcula como `20 · d_max / n`. |
 | `temperatura_minima` | Umbral de parada. Si es `None`, se calcula como `20 · d_max / n²`. |
 | `alpha` | Factor de reducción por ciclo. Más alto = enfriamiento más lento = más calidad, más tiempo. |
 
@@ -194,6 +194,51 @@ Supongamos que `T_init_eff = 1500` (calculado adaptativamente como `20 · d_max 
 | `50` | Valor por defecto. Equilibrio típico para instancias medianas. |
 | `60–100` | Reheat conservador. Útil cuando se quiere dar tiempo a la fase de explotación antes de reiniciar; recomendado para instancias grandes. |
 
+### Criterio de parada por reheats consecutivos sin mejora
+
+Ademas del criterio clasico (`T < temperatura_minima`), el SA admite un criterio
+de parada temprana basado en el numero de reheats consecutivos que no produjeron
+ninguna mejora en el mejor global. Sirve para detectar cuando el reheat ya no
+aporta diversificacion efectiva y la corrida se ha vuelto un gasto de tiempo.
+
+**Parametro**: `max_reheats_sin_mejora` (default `0` = desactivado).
+
+**Logica de activacion**:
+
+1. Cada vez que se activa un reheat (`n_reheats += 1`), se compara el mejor
+   costo reportable actual contra el costo registrado en el reheat anterior
+   (`_costo_en_ultimo_reheat`, inicializado a `+inf`).
+2. Si **mejoro** entre los dos reheats: `reheats_sin_mejora_global = 0`
+   (se rompio la racha de reheats esteriles).
+3. Si **no mejoro**: `reheats_sin_mejora_global += 1`.
+4. Se actualiza `_costo_en_ultimo_reheat = costo_actual` para la proxima
+   comparacion.
+5. Si `max_reheats_sin_mejora > 0` y
+   `reheats_sin_mejora_global >= max_reheats_sin_mejora`,
+   se interrumpe el bucle externo (`break`) y se devuelve la mejor solucion
+   encontrada hasta ese momento.
+
+**Importante**: la primera activacion del reheat siempre cuenta como "con
+mejora" (porque `_costo_en_ultimo_reheat = +inf` inicialmente), por lo que el
+contador `reheats_sin_mejora_global` empieza efectivamente a contar desde
+el segundo reheat consecutivo.
+
+**Diferencia con `patience`**:
+
+| Parametro | Granularidad | Que mide |
+|---|---|---|
+| `patience` | Niveles de T | Niveles sin mejora antes de **disparar** un reheat. Es el detonante del reheat. |
+| `max_reheats_sin_mejora` | Reheats | Reheats consecutivos sin mejora antes de **parar** el algoritmo. Es el criterio de fin de busqueda. |
+
+**Cuando usarlo**:
+
+| Valor | Cuando usar |
+|---|---|
+| `0` | Default. El SA corre hasta `T < T_min`. Util para corridas de calibracion o para garantizar un esfuerzo total fijo. |
+| `3` | Parada agresiva. Si tres reheats seguidos no producen mejora, se interrumpe. Util para experimentos donde se prioriza el tiempo de computo. |
+| `5–10` | Parada moderada. Da margen para que el reheat eventualmente acierte con una nueva region prometedora. Recomendado para instancias medianas. |
+| `>10` | Parada muy conservadora; en la practica casi nunca se dispara. Equivale a `0` para corridas tipicas. |
+
 ### Ejemplo de uso
 
 ```python
@@ -203,12 +248,14 @@ from metacarp.recocido_simulado import recocido_simulado_desde_instancia
 resultado = recocido_simulado_desde_instancia(
     "gdb19",
     alpha=0.97,
-    patience=50,        # reheat tras 50 niveles sin mejora
-    reheat_factor=0.5,  # subir T a la mitad de T_init_eff
+    patience=50,             # reheat tras 50 niveles sin mejora
+    reheat_factor=0.5,       # subir T a la mitad de T_init_eff
+    max_reheats_sin_mejora=5,  # parada temprana tras 5 reheats esteriles
     semilla=42,
 )
-print(f"Mejor costo : {resultado.mejor_costo}")
-print(f"Reheats     : {resultado.n_reheats}")
+print(f"Mejor costo                 : {resultado.mejor_costo}")
+print(f"Reheats activados           : {resultado.n_reheats}")
+print(f"Reheats consecutivos s/mejora: {resultado.reheats_sin_mejora_global}")
 
 # SA clásico sin reheat (para comparar).
 resultado_clasico = recocido_simulado_desde_instancia(
@@ -238,7 +285,7 @@ Calibracion adaptativa desde la instancia:
   n      = numero de arcos requeridos
   d_max  = max(matriz Dijkstra)
   L      = n^2                          (longitud de la cadena de Markov)
-  T_init = 5 * d_max / n                (si no la pasa el usuario)
+  T_init = 20 * d_max / n               (si no la pasa el usuario)
   T_min  = 20 * d_max / n^2             (si no la pasa el usuario)
   |
   v
@@ -263,7 +310,17 @@ mejor_costo = costo_actual
 |  |  BUCLE INTERNO: para cada iter en range(L)           |  |
 |  |                       (L = n^2 = adaptativo)         |  |
 |  |                                                      |  |
-|  |  vecino, mov = generar_vecino(sol_actual)            |  |
+|  |  -- Dado p_inter: seleccion de grupo de operador --  |  |
+|  |  p_efec = alpha_inter si viol_actual > 0             |  |
+|  |           p_inter     si solucion factible            |  |
+|  |  si rng.random() < p_efec → grupo = ops_inter        |  |
+|  |                              (relocate/swap/2opt*/   |  |
+|  |                               cross/or_opt_2/3)      |  |
+|  |  si no                    → grupo = ops_intra        |  |
+|  |                              (relocate/swap/2opt)    |  |
+|  |                                                      |  |
+|  |  vecino, mov = generar_vecino(sol_actual,            |  |
+|  |                               operadores=grupo)      |  |
 |  |  costo_vec  = costo_rapido(vecino, ctx)              |  |
 |  |  viol_vec   = exceso_capacidad_rapido(vecino, ctx)   |  |
 |  |  obj_actual = costo_actual + lambda * viol_actual    |  |
@@ -296,6 +353,17 @@ mejor_costo = costo_actual
 |      T = T_init_eff * reheat_factor   (recalentamiento)   |
 |      niveles_sin_mejora = 0                               |
 |      n_reheats += 1                                       |
+|                                                           |
+|      --- Criterio de parada por reheats sin mejora ---    |
+|      si costo_actual_reporte < _costo_en_ultimo_reheat:   |
+|          reheats_sin_mejora_global = 0                    |
+|      si no:                                               |
+|          reheats_sin_mejora_global += 1                   |
+|      _costo_en_ultimo_reheat = costo_actual_reporte       |
+|                                                           |
+|      si max_reheats_sin_mejora > 0 y                      |
+|         reheats_sin_mejora_global >= max_reheats_sin_mejora: |
+|          break    (parada temprana del bucle externo)    |
 +-----------------------------------------------------------+
   |
   v
@@ -348,6 +416,11 @@ def recocido_simulado(
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
+    alpha_inter: float = 0.8,
+    p_inter: float = 0.6,
+    patience: int = 50,
+    reheat_factor: float = 0.5,
+    max_reheats_sin_mejora: int = 0,
 ) -> RecocidoSimuladoResult:
 ```
 
@@ -358,7 +431,7 @@ def recocido_simulado(
 | `inicial_obj` | `Any` | — | Objeto pickle con la solucion inicial (puede ser dict, lista u otra estructura anidada). Se extraen todas las soluciones candidatas recursivamente. |
 | `data` | `Mapping[str, Any]` | — | Datos de la instancia CARP: capacidad, demandas, BKS, deposito, etc. Se obtiene con `load_instances`. |
 | `G` | `nx.Graph` | — | Grafo de la instancia cargado desde GEXF. Se usa para construir el contexto si no hay matriz Dijkstra en disco. |
-| `temperatura_inicial` | `float \| None` | `None` | Temperatura de inicio del recocido. Si es `None`, se calcula adaptativamente como `5 · d_max / n`. Si se pasa un valor, debe ser `> 0`. |
+| `temperatura_inicial` | `float \| None` | `None` | Temperatura de inicio del recocido. Si es `None`, se calcula adaptativamente como `20 · d_max / n`. Si se pasa un valor, debe ser `> 0`. |
 | `temperatura_minima` | `float \| None` | `None` | Temperatura de parada. El bucle externo termina cuando `T < temperatura_minima`. Si es `None`, se calcula adaptativamente como `20 · d_max / n²`. Si se pasa un valor, debe ser `> 0`. |
 | `alpha` | `float` | `0.95` | Factor de enfriamiento geometrico. Debe estar en `(0, 1)`. Un valor cercano a 1 enfria mas lento. |
 | `n_tareas` | `int` (calculado) | — | Numero de arcos requeridos de la instancia. Se obtiene como `len(ctx.u_arr)`. |
@@ -380,8 +453,11 @@ def recocido_simulado(
 | `usar_penalizacion_capacidad` | `bool` | `True` | Si es `True`, el objetivo incluye una penalizacion por violacion de capacidad: `costo + lambda * violacion`. |
 | `lambda_capacidad` | `float \| None` | `None` | Valor de lambda para la penalizacion de capacidad. Si es `None`, se calcula automaticamente como ~10 veces la mediana de la matriz de distancias. |
 | `extra_csv` | `dict[str, object] \| None` | `None` | Columnas adicionales que se escribiran en el CSV. Util para registrar hiperparametros del experimento. |
+| `alpha_inter` | `float` | `0.8` | Probabilidad de elegir del grupo inter-ruta cuando la solucion actual **viola** la restriccion de capacidad. Un valor alto (0.8) fuerza movimientos inter-ruta para redistribuir carga y reducir la violacion. Debe estar en `(0, 1)`. |
+| `p_inter` | `float` | `0.6` | Probabilidad de elegir del grupo inter-ruta cuando la solucion es **factible** (mecanismo de dado). En cada iteracion interna se genera un numero aleatorio: si es menor que `p_inter`, se elige un operador inter-ruta; si no, uno intra-ruta. Valores tipicos: 0.4–0.8. |
 | `patience` | `int` | `50` | Numero de niveles de temperatura consecutivos sin mejora del mejor global antes de activar el reheat (recalentamiento). Si `patience = 0` el reheat esta desactivado y se obtiene el SA clasico. Valores tipicos: 20–100. Debe ser `>= 0`. |
 | `reheat_factor` | `float` | `0.5` | Fraccion de `T_init_eff` a la que se sube la temperatura cuando se activa el reheat. Ej.: con `T_init_eff = 1500` y `reheat_factor = 0.5`, `T` salta a 750. Debe estar en `(0, 1]`. Valores tipicos: 0.3–0.7. |
+| `max_reheats_sin_mejora` | `int` | `0` | Criterio de parada temprana basado en reheats consecutivos sin mejorar el mejor global. Si `> 0`, define cuantos reheats seguidos sin avance se toleran antes de interrumpir el bucle externo. Si `= 0` (default), el criterio esta desactivado y el SA corre hasta que `T < temperatura_minima`. Valores tipicos: 3–10. Util cuando el reheat ya no aporta diversificacion efectiva y se quiere ahorrar tiempo. |
 
 ### Que retorna
 
@@ -445,6 +521,7 @@ Dataclass inmutable (`frozen=True, slots=True`) que agrupa todos los resultados 
 | `mejor_solucion_factible_final` | `bool` | `True` si la mejor solucion encontrada respeta todas las restricciones de capacidad. |
 | `archivo_csv` | `str \| None` | Ruta absoluta del CSV guardado, o `None` si `guardar_csv=False`. |
 | `n_reheats` | `int` | Numero de veces que se activo el recalentamiento durante la busqueda. `0` indica que el reheat estaba desactivado (`patience=0`) o que el algoritmo no se estanco lo suficiente para dispararlo. |
+| `reheats_sin_mejora_global` | `int` | Numero de reheats consecutivos al final de la corrida que no produjeron mejora del mejor global. Si `max_reheats_sin_mejora > 0` y este valor llego al umbral, la corrida termino por parada temprana (no por `T < T_min`). |
 
 ---
 
@@ -548,7 +625,7 @@ for i, ruta in enumerate(resultado.mejor_solucion, start=1):
 
 | Parametro | Valor bajo | Valor alto | Efecto principal |
 |---|---|---|---|
-| `temperatura_inicial` | Poca exploracion inicial; puede quedar en minimo local cercano al punto de partida. | Mucha exploracion; acepta casi cualquier vecino al inicio. | Si es `None` se calcula adaptativamente: ver subseccion de calibracion automatica. |
+| `temperatura_inicial` | Poca exploracion inicial; puede quedar en minimo local cercano al punto de partida. | Mucha exploracion; acepta casi cualquier vecino al inicio. | Si es `None` se calcula adaptativamente como `20 · d_max / n`. |
 | `temperatura_minima` | El algoritmo corre hasta que `T` es extremadamente pequena; mas tiempo. | El algoritmo para antes; menos refinamiento final. | Si es `None` se calcula adaptativamente como `20 · d_max / n²`. |
 | `alpha` | Enfriamiento rapido (ej. 0.80). Menos tiempo, menor calidad. | Enfriamiento lento (ej. 0.99). Mas tiempo, mayor calidad. | El valor mas influyente en la calidad de la solucion. Valores tipicos: 0.90 a 0.99. |
 
@@ -564,7 +641,7 @@ Las formulas (adaptadas de Lourenço et al. al CARP) son:
 
 ```
 L       = n^2                  # longitud de la cadena de Markov por nivel de T
-T_init  = 5 · d_max / n        # si temperatura_inicial es None
+T_init  = 20 · d_max / n       # si temperatura_inicial es None
 T_end   = 20 · d_max / n^2     # si temperatura_minima es None
 ```
 
@@ -658,10 +735,19 @@ OPERADORES_POPULARES = (
     "swap_inter",       # Intercambia una tarea entre dos rutas distintas
     "2opt_star",        # Intercambia las colas de dos rutas a partir de un punto de corte
     "cross_exchange",   # Intercambia segmentos completos entre dos rutas
+    "or_opt_2",         # Mueve un bloque de 2 tareas consecutivas a otra ruta
+    "or_opt_3",         # Mueve un bloque de 3 tareas consecutivas a otra ruta
 )
 ```
 
-En cada iteracion, `generar_vecino` elige uno de estos operadores al azar y lo aplica a la solucion actual, produciendo un vecino y un objeto `MovimientoVecindario` que describe exactamente que cambio se realizo (operador, rutas involucradas, indices, etiquetas de tareas movidas).
+En el SA, el operador no se elige directamente de esta lista de forma uniforme. En su
+lugar se usa el **mecanismo de dado (`p_inter`)**: se lanza un numero aleatorio y,
+dependiendo de si supera `p_inter` (o `alpha_inter` en caso de infactibilidad), se
+elige aleatoriamente dentro del grupo inter-ruta
+(`relocate_inter`, `swap_inter`, `2opt_star`, `cross_exchange`, `or_opt_2`, `or_opt_3`)
+o del grupo intra-ruta (`relocate_intra`, `swap_intra`, `2opt_intra`).
+Luego `generar_vecino` aplica ese operador a la solucion actual, produciendo un vecino
+y un objeto `MovimientoVecindario` que describe exactamente que cambio se realizo.
 
 Se puede restringir el conjunto de operadores pasando una lista personalizada al parametro `operadores`:
 

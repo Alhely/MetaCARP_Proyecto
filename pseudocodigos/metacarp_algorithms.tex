@@ -40,60 +40,62 @@
     \item $\textsc{Cost}(s)$: total traversal cost of solution $s$.
     \item $\textsc{CapacityViolation}(s)$: total excess demand over vehicle capacity $Q$.
     \item $f(s) = \textsc{Cost}(s) + \lambda \cdot \textsc{CapacityViolation}(s)$: penalized objective.
-    \item $\mathcal{O} = \mathcal{O}_{\mathrm{intra}} \cup \mathcal{O}_{\mathrm{inter}}$: set of 7 neighborhood operators.
+    \item $\mathcal{O} = \mathcal{O}_{\mathrm{intra}} \cup \mathcal{O}_{\mathrm{inter}}$: set of 9 neighborhood operators.
     \item $\mathcal{O}_{\mathrm{intra}} = \{\texttt{relocate\_intra},\, \texttt{swap\_intra},\, \texttt{2opt\_intra}\}$
-    \item $\mathcal{O}_{\mathrm{inter}} = \{\texttt{relocate\_inter},\, \texttt{swap\_inter},\, \texttt{2opt\_star},\, \texttt{cross\_exchange}\}$
-    \item $\alpha_{\mathrm{inter}} = 0.8$: inter-route bias parameter (fraction of probability mass assigned to inter-route operators when a capacity violation is detected).
+    \item $\mathcal{O}_{\mathrm{inter}} = \{\texttt{relocate\_inter},\, \texttt{swap\_inter},\, \texttt{2opt\_star},\, \texttt{cross\_exchange},\, \texttt{or\_opt\_2},\, \texttt{or\_opt\_3}\}$
+    \item $\alpha_{\mathrm{inter}} = 0.8$: inter-route bias when a capacity violation is detected (used as $p_{\mathrm{efec}}$ in the dice mechanism).
+    \item $p_{\mathrm{inter}} \in [0,1]$: inter-route probability when the solution is feasible (dice mechanism parameter).
 \end{itemize}
 
 % ------------------------------------------------------------
-\section{Auxiliary Function: \textsc{InterBias}}
+\section{Auxiliary Function: \textsc{DiceSelection}}
 % ------------------------------------------------------------
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\textsc{InterBias} — Dynamic inter-route operator bias}
-\label{alg:bias}
+\caption{\textsc{DiceSelection} — Dice-based operator group selection}
+\label{alg:dice}
 
-\KwIn{Capacity violation $v \geq 0$;\; operator set $\mathcal{O}$;\;
-      bias parameter $\alpha_{\mathrm{inter}} \in (0,1)$}
-\KwOut{Weight vector $w$ over $\mathcal{O}$, or \texttt{null} (uniform selection)}
-
-\BlankLine
-$\mathcal{O}_{\mathrm{inter}} \leftarrow
-    \{\texttt{relocate\_inter},\;\texttt{swap\_inter},\;
-      \texttt{2opt\_star},\;\texttt{cross\_exchange}\}$ \;
-$\mathcal{O}_{\mathrm{intra}} \leftarrow
-    \{\texttt{relocate\_intra},\;\texttt{swap\_intra},\;\texttt{2opt\_intra}\}$ \;
+\KwIn{Capacity violation $v \geq 0$;\;
+      inter-route group $\mathcal{O}_{\mathrm{inter}}$;\;
+      intra-route group $\mathcal{O}_{\mathrm{intra}}$;\;
+      bias $\alpha_{\mathrm{inter}} \in (0,1)$;\;
+      inter-route probability $p_{\mathrm{inter}} \in [0,1]$}
+\KwOut{Operator group $\mathcal{O}_{\mathrm{chosen}} \subseteq \mathcal{O}$}
 
 \BlankLine
-\eIf{$v \leq 0$}{
-    \tcp{Feasible solution: uniform selection over all operators}
-    \Return \texttt{null} \;
+\tcp{Effective probability depends on feasibility of current solution}
+\eIf{$v > 0$}{
+    $p_{\mathrm{efec}} \leftarrow \alpha_{\mathrm{inter}}$
+        \tcp{infeasible: force more inter-route moves to reduce violation}
 }{
-    \tcp{Infeasible solution: bias probability mass towards inter-route operators}
-    $w_{\mathrm{inter}} \leftarrow \dfrac{\alpha_{\mathrm{inter}}}{|\mathcal{O}_{\mathrm{inter}}|}$
-        \tcp{$= 0.20$ per inter-route operator}
-    $w_{\mathrm{intra}} \leftarrow \dfrac{1 - \alpha_{\mathrm{inter}}}{|\mathcal{O}_{\mathrm{intra}}|}$
-        \tcp{$\approx 0.067$ per intra-route operator}
-
-    \BlankLine
-    \ForEach{$o \in \mathcal{O}$}{
-        \eIf{$o \in \mathcal{O}_{\mathrm{inter}}$}{
-            $w[o] \leftarrow w_{\mathrm{inter}}$ \;
-        }{
-            $w[o] \leftarrow w_{\mathrm{intra}}$ \;
-        }
-    }
-    \Return $w$ \;
+    $p_{\mathrm{efec}} \leftarrow p_{\mathrm{inter}}$
+        \tcp{feasible: use the user-configured probability}
 }
+
+\BlankLine
+\tcp{Coin flip: choose operator group}
+$u \leftarrow \mathrm{Uniform}(0, 1)$ \;
+\eIf{$u < p_{\mathrm{efec}}$ \textbf{ and } $\mathcal{O}_{\mathrm{inter}} \neq \emptyset$}{
+    $\mathcal{O}_{\mathrm{chosen}} \leftarrow \mathcal{O}_{\mathrm{inter}}$
+        \tcp{select uniformly from inter-route operators}
+}{
+    \eIf{$\mathcal{O}_{\mathrm{intra}} \neq \emptyset$}{
+        $\mathcal{O}_{\mathrm{chosen}} \leftarrow \mathcal{O}_{\mathrm{intra}}$
+            \tcp{select uniformly from intra-route operators}
+    }{
+        $\mathcal{O}_{\mathrm{chosen}} \leftarrow \mathcal{O}$
+            \tcp{fallback: use all operators}
+    }
+}
+\Return $\mathcal{O}_{\mathrm{chosen}}$ \;
 \end{algorithm}
 
 \noindent
-\textbf{Correctness check.} When $v > 0$, the weights sum to 1:
-$|\mathcal{O}_{\mathrm{inter}}| \cdot w_{\mathrm{inter}} +
- |\mathcal{O}_{\mathrm{intra}}| \cdot w_{\mathrm{intra}} =
- 4 \times 0.20 + 3 \times 0.0\overline{6} = 0.80 + 0.20 = 1$.
+\textbf{Note.} The actual operator applied is chosen \emph{uniformly at random}
+from $\mathcal{O}_{\mathrm{chosen}}$, so all operators in the selected group have equal
+probability of being applied. The dice only decides \emph{which group} to draw from,
+not which specific operator.
 
 % ------------------------------------------------------------
 \section{Simulated Annealing (SA)}
@@ -105,7 +107,9 @@ $|\mathcal{O}_{\mathrm{inter}}| \cdot w_{\mathrm{inter}} +
 \label{alg:sa}
 
 \KwIn{CARP instance $G$;\; parameters $\alpha$, $\lambda$,
-      $\mathit{patience}$, $\mathit{reheat\_factor}$;\;
+      $\mathit{patience}$, $\mathit{reheat\_factor}$,
+      $\alpha_{\mathrm{inter}}$, $p_{\mathrm{inter}}$,
+      $\mathit{max\_reheats\_no\_improve}$;\;
       optionally $T_{\mathrm{ini}}$, $T_{\mathrm{min}}$ (computed from instance if omitted)}
 \KwOut{Best solution found $s^{*}$}
 
@@ -113,13 +117,17 @@ $|\mathcal{O}_{\mathrm{inter}}| \cdot w_{\mathrm{inter}} +
 $n \leftarrow |\text{required arcs of } G|$ \tcp{number of tasks}
 $d_{\max} \leftarrow \max_{i,j} \text{dist}(i,j)$ \tcp{longest shortest-path distance}
 $L \leftarrow n^{2}$ \tcp{Markov chain length (adaptive to instance size)}
-$T_{\mathrm{ini}} \leftarrow 5 \cdot d_{\max} / n$ \tcp{if not provided by user}
+$T_{\mathrm{ini}} \leftarrow 20 \cdot d_{\max} / n$ \tcp{if not provided by user}
 $T_{\mathrm{min}} \leftarrow 20 \cdot d_{\max} / n^{2}$ \tcp{if not provided by user}
 $s \leftarrow \textsc{InitialSolution}(G)$ \tcp{greedy or random construction}
 $s^{*} \leftarrow s$ \;
 $T \leftarrow T_{\mathrm{ini}}$ \;
 $\mathit{levels\_no\_improve} \leftarrow 0$ \;
 $n\_reheats \leftarrow 0$ \;
+$\mathit{reheats\_no\_improve} \leftarrow 0$
+    \tcp{consecutive reheats with no global improvement}
+$\mathit{cost\_at\_last\_reheat} \leftarrow +\infty$
+    \tcp{best cost snapshot at the previous reheat}
 
 \BlankLine
 \While{$T > T_{\mathrm{min}}$}{
@@ -129,9 +137,12 @@ $n\_reheats \leftarrow 0$ \;
     \For{$it \leftarrow 1$ \KwTo $L$}{
 
         $v \leftarrow \textsc{CapacityViolation}(s)$ \;
-        $w \leftarrow \textsc{InterBias}(v,\;\mathcal{O},\;\alpha_{\mathrm{inter}}{=}0.8)$
-            \tcp{dynamic bias — recomputed every inner iteration}
-        $\mathit{op} \leftarrow \textsc{SelectOperator}(\mathcal{O},\, w)$ \;
+        $\mathcal{O}_{\mathrm{chosen}} \leftarrow
+            \textsc{DiceSelection}(v,\;\mathcal{O}_{\mathrm{inter}},\;\mathcal{O}_{\mathrm{intra}},\;
+            \alpha_{\mathrm{inter}},\;p_{\mathrm{inter}})$
+            \tcp{coin flip selects inter- or intra-route group}
+        $\mathit{op} \leftarrow \textsc{SelectOperator}(\mathcal{O}_{\mathrm{chosen}})$
+            \tcp{uniform draw from chosen group}
         $s' \leftarrow \textsc{ApplyOperator}(\mathit{op},\, s)$ \;
 
         \BlankLine
@@ -162,6 +173,23 @@ $n\_reheats \leftarrow 0$ \;
             \tcp{reheat: reset T to explore again}
         $\mathit{levels\_no\_improve} \leftarrow 0$ \;
         $n\_reheats \leftarrow n\_reheats + 1$ \;
+
+        \BlankLine
+        \tcp{Early-stop check: count consecutive reheats with no improvement}
+        \eIf{$\textsc{Cost}(s^{*}) < \mathit{cost\_at\_last\_reheat}$}{
+            $\mathit{reheats\_no\_improve} \leftarrow 0$
+                \tcp{streak broken: progress made since previous reheat}
+        }{
+            $\mathit{reheats\_no\_improve} \leftarrow \mathit{reheats\_no\_improve} + 1$ \;
+        }
+        $\mathit{cost\_at\_last\_reheat} \leftarrow \textsc{Cost}(s^{*})$ \;
+
+        \BlankLine
+        \If{$\mathit{max\_reheats\_no\_improve} > 0$ \textbf{ and }
+            $\mathit{reheats\_no\_improve} \geq \mathit{max\_reheats\_no\_improve}$}{
+            \textbf{break}
+                \tcp{early stopping: too many sterile reheats}
+        }
     }
 }
 
@@ -192,13 +220,15 @@ $\mathit{iter} \leftarrow 0$ \;
 \While{$\mathit{iter} < \mathit{iter\_max}$}{
 
     $v \leftarrow \textsc{CapacityViolation}(s)$ \;
-    $w \leftarrow \textsc{InterBias}(v,\;\mathcal{O},\;\alpha_{\mathrm{inter}}{=}0.8)$
-        \tcp{dynamic bias}
+    $\mathcal{O}_{\mathrm{chosen}} \leftarrow
+        \textsc{DiceSelection}(v,\;\mathcal{O}_{\mathrm{inter}},\;\mathcal{O}_{\mathrm{intra}},\;
+        \alpha_{\mathrm{inter}},\;p_{\mathrm{inter}})$
+        \tcp{dynamic group selection}
 
     \BlankLine
     $\mathcal{N} \leftarrow \emptyset$ \tcp{candidate neighborhood}
     \For{$k \leftarrow 1$ \KwTo $\mathit{neighborhood\_size}$}{
-        $\mathit{op} \leftarrow \textsc{SelectOperator}(\mathcal{O},\, w)$ \;
+        $\mathit{op} \leftarrow \textsc{SelectOperator}(\mathcal{O}_{\mathrm{chosen}})$ \;
         $s' \leftarrow \textsc{ApplyOperator}(\mathit{op},\, s)$ \;
         $\mathcal{N} \leftarrow \mathcal{N} \cup \{s'\}$ \;
     }
