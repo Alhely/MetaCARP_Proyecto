@@ -535,7 +535,7 @@ from metacarp.recocido_simulado import recocido_simulado_desde_instancia
 resultado = recocido_simulado_desde_instancia(
     "EGL-E1-A",
     # temperatura_inicial y temperatura_minima se calculan automaticamente:
-    #   T_init = 5 * d_max / n
+    #   T_init = 20 * d_max / n
     #   T_end  = 20 * d_max / n^2
     # L = n^2 tambien se calcula automaticamente desde el numero de tareas.
     alpha=0.97,
@@ -584,7 +584,7 @@ resultado = recocido_simulado(
     data,
     G,
     # Pasar None (o simplemente omitir) -> calculo adaptativo desde la instancia.
-    # temperatura_inicial = 5 * d_max / n
+    # temperatura_inicial = 20 * d_max / n
     # temperatura_minima  = 20 * d_max / n^2
     # L (longitud de la cadena de Markov) = n^2, tambien adaptativo.
     temperatura_inicial=None,

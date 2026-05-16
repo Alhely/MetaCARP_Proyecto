@@ -304,12 +304,15 @@ def recocido_simulado(
     - En cada evaluación: genera un vecino, decide si aceptarlo (Metropolis).
     - Al finalizar cada nivel: T = alpha × T (enfriamiento geométrico).
 
-    Criterio de parada: T < temperatura_minima.
+    Criterios de parada:
+        - Clásico: T < temperatura_minima.
+        - Temprano (opcional): max_reheats_sin_mejora > 0 y se acumulan ese
+          número de reheats consecutivos sin mejora del mejor global.
 
     Calibración adaptativa: si ``temperatura_inicial`` o ``temperatura_minima``
     son ``None``, se calculan desde la instancia con las fórmulas:
         L       = n²
-        T_init  = 5 · d_max / n
+        T_init  = 20 · d_max / n
         T_end   = 20 · d_max / n²
     donde n = número de tareas (arcos requeridos) y d_max = distancia máxima
     en la matriz Dijkstra.
@@ -336,6 +339,16 @@ def recocido_simulado(
             cuando se activa el reheat. Por ejemplo, ``reheat_factor=0.5`` con
             ``T_init_eff=1500`` reinicia T a 750. Debe estar en el intervalo
             ``(0, 1]``. Valores típicos: 0.3 a 0.7.
+
+    Criterio de parada por reheats sin mejora:
+        max_reheats_sin_mejora: número de reheats CONSECUTIVOS sin mejorar
+            el mejor global antes de interrumpir el bucle externo. Si es 0
+            (default) el criterio queda desactivado y el SA corre hasta
+            ``T < temperatura_minima``. Si es > 0, tras cada reheat se compara
+            el costo reportable actual con el del reheat anterior; si no
+            mejora, el contador ``reheats_sin_mejora_global`` se incrementa
+            y, al alcanzar ``max_reheats_sin_mejora``, se hace ``break`` del
+            bucle externo (parada temprana). Valores típicos: 3–10.
     """
     # Validaciones de parámetros.
     # Solo validamos los valores de temperatura si el usuario los pasó explícitamente.

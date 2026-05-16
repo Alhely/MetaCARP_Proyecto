@@ -213,7 +213,7 @@ def cuckoo_search(
 | `pasos_levy_base` | `int` | `3` | Escala base del número de perturbaciones en el vuelo de Lévy. Valores más altos producen saltos más largos en promedio. |
 | `beta_levy` | `float` | `1.5` | Parámetro de forma de la distribución de Lévy discreta. Valor clásico de la literatura. Si se pasa un valor <= 0, se usa 1.5 automáticamente. |
 | `semilla` | `int \| None` | `None` | Semilla del generador aleatorio. Si `None`, la ejecución no es reproducible. |
-| `operadores` | `Iterable[str]` | `OPERADORES_POPULARES` | Nombres de los operadores de vecindario habilitados. Por defecto, los 7 operadores definidos en `vecindarios.py`. |
+| `operadores` | `Iterable[str]` | `OPERADORES_POPULARES` | Nombres de los operadores de vecindario habilitados. Por defecto, los 9 operadores definidos en `vecindarios.py`. |
 | `marcador_depot_etiqueta` | `str \| None` | `None` | Etiqueta del nodo depósito en las rutas (p.ej. `"D"`). Si `None`, se toma del contexto de evaluación. |
 | `usar_gpu` | `bool` | `False` | Si `True` y CuPy está disponible, la evaluación en lote se realiza en GPU. |
 | `backend_vecindario` | `Literal["labels", "ids"]` | `"labels"` | Modo de generación de vecinos. `"ids"` opera sobre representación entera (más rápido para instancias grandes). |

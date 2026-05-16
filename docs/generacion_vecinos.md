@@ -1,7 +1,7 @@
 # Generación de vecinos en MetaCARP
 
 Este documento describe en detalle el sistema de generación de vecinos del proyecto
-MetaCARP: desde la representación de una solución, pasando por los 7 operadores de
+MetaCARP: desde la representación de una solución, pasando por los 9 operadores de
 vecindad disponibles, hasta la integración completa con las metaheurísticas del
 paquete.
 

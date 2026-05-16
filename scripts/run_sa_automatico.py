@@ -3,10 +3,11 @@ Corrida SA para instancias seleccionadas.
 
 Configuración:
     temperatura_inicial         = None  →  automática: 20·d_max/n por instancia
-    temperatura_minima          = None  →  automática: 20·d_max/n² por instancia
+    temperatura_minima          = 1e-3  →  fija para todas las instancias
     iteraciones_por_temperatura = None  →  automático: n² por instancia
     patience                    = 10    →  niveles sin mejora antes de reheat
     reheat_factor               = 0.5   →  fracción de T_init a la que se recalienta
+    max_reheats_sin_mejora      = 5     →  reheats consecutivos sin mejora antes de parar
     alpha   = [0.80, 0.82, ..., 0.98, 0.99]  →  11 valores
     p_inter = [0.4, 0.5, 0.6, 0.7, 0.8]      →  5 valores
 
@@ -57,10 +58,11 @@ def main() -> None:
     print("=" * 80)
     print(f"Instancias                  : {len(INSTANCIAS)}")
     print(f"T_ini                       : automática (20·d_max/n por instancia)")
-    print(f"T_min                       : automática (20·d_max/n² por instancia)")
+    print(f"T_min                       : 1e-3 (fija)")
     print(f"iteraciones_por_temperatura : None (adaptativo: n²)")
     print(f"Patience                    : 10 niveles sin mejora")
     print(f"Reheat factor               : 0.5 (T sube al 50% de T_init)")
+    print(f"max_reheats_sin_mejora      : 5 (parada temprana tras 5 reheats estériles)")
     print(f"Alpha values                : {ALPHAS}")
     print(f"p_inter vals                : {P_INTERS}")
     print(f"Semilla                     : aleatoria (None)")
@@ -83,11 +85,12 @@ def main() -> None:
                         res = recocido_simulado_desde_instancia(
                             instancia,
                             temperatura_inicial=None,
-                            temperatura_minima=None,
+                            temperatura_minima=1e-3,
                             alpha=alpha,
                             p_inter=p_inter,
                             patience=10,
                             reheat_factor=0.5,
+                            max_reheats_sin_mejora=5,
                             semilla=None,
                             repeticion=rep,
                             guardar_csv=True,

@@ -28,7 +28,7 @@
 | `temperatura_minima` | 1e-3 | 1 |
 | `alpha` | 0.80, 0.82, 0.84, 0.86, 0.88, 0.90, 0.92, 0.94, 0.96, 0.98, 0.99 | 11 |
 
-`temperatura_inicial=None` activa la calibración automática: el valor se calcula como `5 · d_max / n`, donde `n` es el número de arcos requeridos de la instancia y `d_max` es la distancia máxima en la matriz Dijkstra. `temperatura_minima=1e-3` es siempre fijo.
+`temperatura_inicial=None` activa la calibración automática: el valor se calcula como `20 · d_max / n`, donde `n` es el número de arcos requeridos de la instancia y `d_max` es la distancia máxima en la matriz Dijkstra. `temperatura_minima=1e-3` es siempre fijo.
 
 **Total de configuraciones:** 4 × 1 × 11 = **44**
 
@@ -158,7 +158,7 @@ Un valor de 0 indica que el algoritmo alcanzó el óptimo conocido. Un valor de 
 
 ### Columnas de operadores de vecindario
 
-El sistema registra las estadísticas de los 7 operadores de vecindario en 4 categorías, produciendo 28 columnas. Los operadores son:
+El sistema registra las estadísticas de los 9 operadores de vecindario en 4 categorías, produciendo 36 columnas. Los operadores son:
 
 | Operador | Tipo | Descripción |
 |---|---|---|
@@ -169,6 +169,8 @@ El sistema registra las estadísticas de los 7 operadores de vecindario en 4 cat
 | `swap_inter` | inter-ruta | Intercambia una tarea entre dos rutas distintas |
 | `2opt_star` | inter-ruta | Reencadena segmentos finales de dos rutas |
 | `cross_exchange` | inter-ruta | Intercambia segmentos completos entre dos rutas |
+| `or_opt_2` | inter-ruta | Mueve un bloque de 2 tareas consecutivas a otra ruta |
+| `or_opt_3` | inter-ruta | Mueve un bloque de 3 tareas consecutivas a otra ruta |
 
 Las cuatro categorías de estadísticas registradas para cada operador:
 
@@ -323,4 +325,4 @@ Dentro de cada CSV, cada fila es una corrida. Para una instancia ejecutada con S
 - `docs/busqueda_tabu.md` — descripción detallada de Búsqueda Tabú
 - `docs/colonia_abejas.md` — descripción detallada de ABC
 - `docs/cuckoo_search.md` — descripción detallada de Cuckoo Search
-- `docs/generacion_vecinos.md` — catálogo de los 7 operadores de vecindario
+- `docs/generacion_vecinos.md` — catálogo de los 9 operadores de vecindario
