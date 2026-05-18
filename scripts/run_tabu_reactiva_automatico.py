@@ -24,8 +24,18 @@ Configuración (grid search AMPLIO sobre 4 parámetros de RTS):
         factor_reduccion           ∈ {0.85, 0.9, 0.95}
 
     operadores  = OPERADORES_POPULARES (9 operadores)
-    semilla     = derivada determinista por tarea (--semilla-base)
+    semilla     = ALEATORIA del sistema (NO determinista)
     repeticiones = 5 (configurable por CLI)
+
+NOTA SOBRE LA AUSENCIA DE SEMILLA FIJA:
+Las repeticiones EXISTEN para medir la robustez de cada configuración a la
+aleatoriedad inherente de la metaheurística (solución inicial aleatoria,
+selección de vecinos, movimientos de escape). Si fijáramos una semilla
+determinista por tarea, las 5 repeticiones de cada combinación serían 5
+mediciones IDÉNTICAS — no aportarían información estadística. Una buena
+configuración debe converger a buenos óptimos SIN IMPORTAR el punto de
+partida ni la trayectoria aleatoria que tome. Por eso aquí cada corrida
+muestrea libremente del espacio aleatorio del sistema.
 
 Total: 5 * 4 * 5 * 3 = 300 combos × 23 instancias × 5 reps = 34,500 corridas.
 
@@ -36,22 +46,21 @@ Para REDUCIR el grid, basta con pasar overrides single-value por CLI:
 
 Paralelismo (--workers N)
 -------------------------
-Cada combinación (instancia, factor_aumento, umbral_escape, repetición) es
-una tarea INDEPENDIENTE: no comparte estado con las demás y solo lee la
-instancia desde disco. Esto las hace trivialmente paralelizables con
-``ProcessPoolExecutor``. El flag ``--workers N`` controla cuántos procesos
-se lanzan en paralelo:
-    --workers 1   → ejecución secuencial (modo reproducible "clásico";
-                    útil para debugging porque stdout no se mezcla).
+Cada combinación (instancia, factor_aumento, umbral_escape, p_inter,
+factor_reduccion, repetición) es una tarea INDEPENDIENTE: no comparte
+estado con las demás y solo lee la instancia desde disco. Esto las hace
+trivialmente paralelizables con ``ProcessPoolExecutor``. El flag
+``--workers N`` controla cuántos procesos se lanzan en paralelo:
+    --workers 1   → ejecución secuencial (útil para depurar y porque
+                    stdout no se mezcla entre tareas).
     --workers N   → N procesos en paralelo (default: os.cpu_count()).
 
-Reproducibilidad de cada corrida:
-    Cada tarea recibe su propia ``semilla`` determinista derivada de
-    ``(instancia, factor_aumento, umbral_escape, repeticion)``. El ORDEN
-    de finalización en paralelo no es determinista, pero el RESULTADO
-    numérico de cada corrida individual sí lo es porque depende solo de
-    su semilla. Pasando ``--semilla-base`` se obtiene un grid reproducible
-    bit-a-bit en sucesivas ejecuciones.
+Reproducibilidad:
+    NO hay reproducibilidad bit-a-bit por diseño (ver nota arriba sobre la
+    ausencia de semilla fija). Sin embargo, sí hay reproducibilidad
+    ESTADÍSTICA: con 5 repeticiones por configuración, las medias y
+    desviaciones de costo, mejora, número de escapes, etc. convergen a
+    valores estables que sí son comparables entre experimentos.
 
 Concurrencia de E/S:
     Para evitar carreras al escribir el CSV, cada worker escribe su fila en
@@ -62,10 +71,9 @@ Concurrencia de E/S:
 
 Uso:
     python scripts/run_tabu_reactiva_automatico.py
-    python scripts/run_tabu_reactiva_automatico.py --salida-dir resultados_tabu_reactiva
-    python scripts/run_tabu_reactiva_automatico.py --repeticiones 3
-    python scripts/run_tabu_reactiva_automatico.py --workers 1   # secuencial
-    python scripts/run_tabu_reactiva_automatico.py --workers 8   # 8 procesos
+    python scripts/run_tabu_reactiva_automatico.py --salida-dir experimentos/reactive_tabu_grid_pinter
+    python scripts/run_tabu_reactiva_automatico.py --repeticiones 5
+    python scripts/run_tabu_reactiva_automatico.py --workers 8
 """
 from __future__ import annotations
 
@@ -120,7 +128,12 @@ class TareaRTS:
     factor_aumento: float
     umbral_escape: int
     repeticion: int
-    semilla: int                              # semilla determinista por tarea
+    # NOTA: NO hay campo ``semilla``. Cada corrida se ejecuta con semilla
+    # aleatoria del sistema (la metaheurística internamente crea su propio
+    # ``random.Random()``). Esto es deliberado: las "repeticiones" SOLO son
+    # informativas si cada una muestrea una trayectoria distinta del espacio
+    # aleatorio. Una semilla determinista por tarea las convertiría en
+    # mediciones idénticas, sin valor estadístico.
     iteraciones_max: int | None
     max_iter_sin_mejora: int | None
     tam_vecindario: int | None
@@ -129,47 +142,6 @@ class TareaRTS:
     p_inter: float | None
     root: str | None
     ruta_csv_parcial: str                     # cada tarea escribe a su propio archivo
-
-
-def _derivar_semilla(
-    base: int,
-    instancia: str,
-    factor_aumento: float,
-    umbral_escape: int,
-    p_inter: float,
-    factor_reduccion: float,
-    repeticion: int,
-) -> int:
-    """
-    Calcula una semilla determinista para una corrida concreta.
-
-    ¿Por qué un hash y no un contador global?
-    - Un contador global obligaría a serializar la enumeración antes del
-      paralelismo y rompería la reproducibilidad si se cambia el orden de
-      lanzamiento. Usando un hash de los parámetros propios de la tarea,
-      cada corrida es REPRODUCIBLE de forma independiente sin importar el
-      orden de ejecución.
-    - Limitamos el hash a 31 bits para que random.Random lo acepte sin
-      problemas con backends que esperen ints "razonables".
-    - Los floats se cuantizan ×100 antes de hashear porque la representación
-      binaria de los floats puede variar entre versiones de Python o entre
-      arquitecturas; multiplicar ×100 y truncar a int los convierte en una
-      clave estable (ej. 0.6 -> 60, 0.85 -> 85).
-    - Incluimos p_inter y factor_reduccion en el hash porque ahora son
-      dimensiones del grid: si dos tareas comparten todo excepto p_inter,
-      deben recibir semillas distintas (de lo contrario explorarían la
-      misma secuencia de números aleatorios y los resultados serían
-      artificialmente correlacionados).
-    """
-    h = base
-    for ch in instancia:
-        h = (h * 1000003) ^ ord(ch)
-    h = (h * 1000003) ^ int(round(factor_aumento * 100))
-    h = (h * 1000003) ^ int(umbral_escape)
-    h = (h * 1000003) ^ int(round(p_inter * 100))
-    h = (h * 1000003) ^ int(round(factor_reduccion * 100))
-    h = (h * 1000003) ^ int(repeticion)
-    return h & 0x7FFFFFFF  # mantenemos solo los 31 bits inferiores
 
 
 def _ejecutar_tarea(tarea: TareaRTS) -> tuple[TareaRTS, str, dict | None, str | None]:
@@ -194,7 +166,10 @@ def _ejecutar_tarea(tarea: TareaRTS) -> tuple[TareaRTS, str, dict | None, str | 
             factor_aumento=tarea.factor_aumento,
             factor_reduccion=tarea.factor_reduccion,
             umbral_repeticiones_escape=tarea.umbral_escape,
-            semilla=tarea.semilla,
+            # semilla=None: cada repetición usa una trayectoria aleatoria
+            # distinta del sistema. Esto es lo que permite que las
+            # repeticiones tengan valor estadístico.
+            semilla=None,
             repeticion=tarea.repeticion,
             guardar_csv=True,
             ruta_csv=tarea.ruta_csv_parcial,
@@ -312,22 +287,22 @@ def _parse_args() -> argparse.Namespace:
         help="Número de procesos paralelos. 1 = modo secuencial. "
              "Default = os.cpu_count().",
     )
-    # --semilla-base raíz para derivar semillas deterministas por tarea.
-    # Con la misma --semilla-base, el grid completo es reproducible bit-a-bit.
-    parser.add_argument(
-        "--semilla-base",
-        type=int,
-        default=0,
-        help="Semilla raíz usada para derivar semillas deterministas por tarea.",
-    )
+    # No exponemos ``--semilla-base``: las semillas son aleatorias del sistema
+    # para que las repeticiones reflejen la variabilidad real de la
+    # metaheurística (ver nota en la dataclass ``TareaRTS``).
     return parser.parse_args()
 
 
 def main() -> None:
     """Punto de entrada principal del script de experimentos."""
     args = _parse_args()
-    # Subcarpeta dedicada para distinguir los resultados de RTS de los del TS simple.
-    salida_dir = Path(args.salida_dir).expanduser().resolve() / "tabu_reactive_small_20260517"
+    # ``--salida-dir`` apunta DIRECTAMENTE al folder final donde se escriben
+    # los CSV consolidados (un archivo por instancia). Antes el script añadía
+    # automáticamente una subcarpeta fija "tabu_reactive_small_<fecha>", lo
+    # que dificultaba comparar experimentos lanzados en distintos días o
+    # con distintos grids. Ahora el nombre del folder lo elige el usuario:
+    #     --salida-dir experimentos/reactive_tabu_grid_pinter
+    salida_dir = Path(args.salida_dir).expanduser().resolve()
     salida_dir.mkdir(parents=True, exist_ok=True)
     # Subcarpeta para los CSV parciales de los workers (siempre, aunque sea modo secuencial).
     dir_parciales = salida_dir / "_partials"
@@ -368,10 +343,6 @@ def main() -> None:
                                 factor_aumento=f_aum,
                                 umbral_escape=umbral,
                                 repeticion=rep,
-                                semilla=_derivar_semilla(
-                                    args.semilla_base, instancia, f_aum,
-                                    umbral, p_int, f_red, rep,
-                                ),
                                 iteraciones_max=args.iteraciones_max,
                                 max_iter_sin_mejora=args.max_iter_sin_mejora,
                                 tam_vecindario=args.tam_vecindario,
@@ -394,7 +365,7 @@ def main() -> None:
     print(f"umbral_escape values        : {UMBRALES_ESCAPE}")
     print(f"p_inter values              : {p_inter_values}")
     print(f"factor_reduccion values     : {f_red_values}")
-    print(f"Semilla base                : {args.semilla_base} (derivada por tarea)")
+    print(f"Semilla                     : aleatoria del sistema (cada repetición es independiente)")
     print(f"Repeticiones                : {args.repeticiones}")
     print(f"Workers                     : {args.workers}")
     print(f"Corridas                    : {total}")
