@@ -6,7 +6,7 @@ Versión REACTIVA de TS:
 - Memoria de soluciones visitadas (hash canónico) para detectar ciclos.
 - Mecanismo de escape por movimientos aleatorios + limpieza de memoria.
 
-Configuración (grid search sobre los parámetros más importantes de RTS):
+Configuración (grid search AMPLIO sobre 4 parámetros de RTS):
 
     iteraciones_max                  = instance-aware (20·n) salvo override
     max_iter_sin_mejora              = instance-aware (5·n)  salvo override
@@ -17,15 +17,22 @@ Configuración (grid search sobre los parámetros más importantes de RTS):
     iter_sin_repeticion_para_reducir = instance-aware (2·sqrt(n), min 5)
     num_movimientos_escape           = instance-aware (max(3, n//10))
 
-    Grid:
-        factor_aumento             ∈ {1.1, 1.2, 1.3}
-        umbral_repeticiones_escape ∈ {2, 3, 5}
+    Grid (4 dimensiones):
+        factor_aumento             ∈ {1.05, 1.1, 1.2, 1.3, 1.4}
+        umbral_repeticiones_escape ∈ {2, 3, 5, 8}
+        p_inter                    ∈ {0.4, 0.5, 0.6, 0.7, 0.8}
+        factor_reduccion           ∈ {0.85, 0.9, 0.95}
 
     operadores  = OPERADORES_POPULARES (9 operadores)
-    semilla     = aleatoria (None)
-    repeticiones = 2 (configurable por CLI)
+    semilla     = derivada determinista por tarea (--semilla-base)
+    repeticiones = 5 (configurable por CLI)
 
-Total: 3 factores × 3 umbrales × 23 instancias × 2 repeticiones = 414 corridas.
+Total: 5 * 4 * 5 * 3 = 300 combos × 23 instancias × 5 reps = 34,500 corridas.
+
+Para REDUCIR el grid, basta con pasar overrides single-value por CLI:
+    --p-inter 0.6           → fija p_inter, solo barre las otras 3 dimensiones.
+    --factor-reduccion 0.9  → fija factor_reduccion, solo barre las otras 3.
+    --p-inter 0.6 --factor-reduccion 0.9 → vuelve al grid compacto 2D.
 
 Paralelismo (--workers N)
 -------------------------
@@ -82,12 +89,24 @@ INSTANCIAS = [
     "gdb17", "gdb21",
 ]
 
-# Grid search sobre los dos parámetros más característicos de RTS:
+# Grid search amplio sobre 4 dimensiones:
 # - factor_aumento: cuán agresivo es el crecimiento del tenure al detectar ciclos.
 # - umbral_repeticiones_escape: cuántas veces hay que ver la misma solución
 #   antes de disparar el mecanismo de escape (movimientos aleatorios).
-FACTORES_AUMENTO = [1.1, 1.2, 1.3]
-UMBRALES_ESCAPE = [2, 3, 5]
+# - p_inter: probabilidad de elegir un operador INTER-ruta cuando la solución
+#   actual es factible. Controla el balance exploración inter/intra-ruta.
+#   Default canónico de SA es 0.6; barremos un espectro amplio para estudiar
+#   si RTS responde mejor con más exploración entre rutas (>0.6) o con más
+#   refinamiento intra-ruta (<0.6).
+# - factor_reduccion: multiplicador para encoger el tenure cuando la búsqueda
+#   no detecta repeticiones por mucho tiempo. Battiti & Tecchiolli usan 0.9,
+#   pero 0.85 fuerza encogimiento más agresivo y 0.95 lo hace casi pasivo.
+#
+# Total grid: 5 * 4 * 5 * 3 = 300 combos × 23 instancias × N repeticiones.
+FACTORES_AUMENTO   = [1.05, 1.1, 1.2, 1.3, 1.4]
+UMBRALES_ESCAPE    = [2, 3, 5, 8]
+P_INTERS           = [0.4, 0.5, 0.6, 0.7, 0.8]
+FACTORES_REDUCCION = [0.85, 0.9, 0.95]
 
 
 # --- DATACLASS DE TAREA ---
@@ -117,6 +136,8 @@ def _derivar_semilla(
     instancia: str,
     factor_aumento: float,
     umbral_escape: int,
+    p_inter: float,
+    factor_reduccion: float,
     repeticion: int,
 ) -> int:
     """
@@ -130,14 +151,23 @@ def _derivar_semilla(
       orden de ejecución.
     - Limitamos el hash a 31 bits para que random.Random lo acepte sin
       problemas con backends que esperen ints "razonables".
-    - ``factor_aumento`` se cuantiza ×100 para que ser parte estable del
-      hash (los floats hashean de forma inestable entre versiones).
+    - Los floats se cuantizan ×100 antes de hashear porque la representación
+      binaria de los floats puede variar entre versiones de Python o entre
+      arquitecturas; multiplicar ×100 y truncar a int los convierte en una
+      clave estable (ej. 0.6 -> 60, 0.85 -> 85).
+    - Incluimos p_inter y factor_reduccion en el hash porque ahora son
+      dimensiones del grid: si dos tareas comparten todo excepto p_inter,
+      deben recibir semillas distintas (de lo contrario explorarían la
+      misma secuencia de números aleatorios y los resultados serían
+      artificialmente correlacionados).
     """
     h = base
     for ch in instancia:
         h = (h * 1000003) ^ ord(ch)
     h = (h * 1000003) ^ int(round(factor_aumento * 100))
     h = (h * 1000003) ^ int(umbral_escape)
+    h = (h * 1000003) ^ int(round(p_inter * 100))
+    h = (h * 1000003) ^ int(round(factor_reduccion * 100))
     h = (h * 1000003) ^ int(repeticion)
     return h & 0x7FFFFFFF  # mantenemos solo los 31 bits inferiores
 
@@ -241,7 +271,7 @@ def _parse_args() -> argparse.Namespace:
         description="Reactive Tabu Search — grid search sobre factor_aumento y umbral_escape."
     )
     parser.add_argument("--salida-dir",   type=str, default="experimentos")
-    parser.add_argument("--repeticiones", type=int, default=2)
+    parser.add_argument("--repeticiones", type=int, default=5)
     parser.add_argument("--experimento",  type=str, default="tabu_reactiva_auto")
     parser.add_argument("--root",         type=str, default=None)
     # Overrides opcionales: si no se pasan, se usan los defaults instance-aware
@@ -252,8 +282,12 @@ def _parse_args() -> argparse.Namespace:
                         help="Si no se pasa, se calcula como 5·n por instancia.")
     parser.add_argument("--tam-vecindario",      type=int, default=None,
                         help="Si no se pasa, se calcula como max(20, 2·n) por instancia.")
-    parser.add_argument("--factor-reduccion",    type=float, default=0.9,
-                        help="Factor multiplicativo de reducción del tenure (default 0.9).")
+    # IMPORTANTE: default None significa "barrer la lista FACTORES_REDUCCION".
+    # Si se pasa un valor (--factor-reduccion 0.9), ese valor FIJA la dimensión
+    # y se ignora la lista. Mismo patrón que --p-inter.
+    parser.add_argument("--factor-reduccion",    type=float, default=None,
+                        help="Factor de reducción del tenure. "
+                             "None = barrer lista [0.85, 0.9, 0.95].")
     # Parámetros del sesgo inter/intra (compatibilidad con SA y TS simple).
     # Default None = usar el valor canónico de SA (alpha_inter=0.8, p_inter=0.6).
     # Permitimos override por CLI por si se desea explorar otros valores en
@@ -301,35 +335,52 @@ def main() -> None:
     # Marca de tiempo: año-día-mes-hora-minuto, mismo formato que SA / TS simple.
     ydmh = datetime.now().strftime("%Y%d%m%H%M")
 
+    # --- RESOLUCIÓN DE LAS DIMENSIONES DEL GRID ---
+    # Si el usuario pasa un override single-value por CLI (--p-inter 0.6 o
+    # --factor-reduccion 0.9), ese valor SUSTITUYE a la lista completa del
+    # grid: la dimensión correspondiente queda fijada a un solo punto.
+    # Esto permite dos modos de uso sin tocar el código:
+    #   - Grid completo:        no pasar --p-inter ni --factor-reduccion.
+    #   - Fijar p_inter a 0.6:  --p-inter 0.6 (entonces solo se barre el resto).
+    # Para alpha_inter no hay grid (no es un parámetro central de RTS según
+    # el reporte previo); se queda como un solo valor (override o default).
+    p_inter_values  = [args.p_inter]        if args.p_inter        is not None else P_INTERS
+    f_red_values    = [args.factor_reduccion] if args.factor_reduccion is not None else FACTORES_REDUCCION
+
     # --- CONSTRUCCIÓN DE LA LISTA DE TAREAS ---
-    # Una tarea por (instancia, factor_aumento, umbral_escape, repeticion).
-    # Independientes entre sí: aptas para paralelizar.
+    # Una tarea por (instancia, factor_aumento, umbral_escape, p_inter,
+    # factor_reduccion, repeticion). Cada tarea es independiente: comparte
+    # solo lectura de la instancia desde disco. Esto las hace trivialmente
+    # paralelizables con ProcessPoolExecutor.
     tareas: list[TareaRTS] = []
     for instancia in INSTANCIAS:
         for f_aum in FACTORES_AUMENTO:
             for umbral in UMBRALES_ESCAPE:
-                for rep in range(1, args.repeticiones + 1):
-                    idx = len(tareas)
-                    parcial = dir_parciales / (
-                        f"tabu_reactiva_{instancia}_{os.getpid()}_{idx}.csv"
-                    )
-                    tareas.append(TareaRTS(
-                        instancia=instancia,
-                        factor_aumento=f_aum,
-                        umbral_escape=umbral,
-                        repeticion=rep,
-                        semilla=_derivar_semilla(
-                            args.semilla_base, instancia, f_aum, umbral, rep
-                        ),
-                        iteraciones_max=args.iteraciones_max,
-                        max_iter_sin_mejora=args.max_iter_sin_mejora,
-                        tam_vecindario=args.tam_vecindario,
-                        factor_reduccion=args.factor_reduccion,
-                        alpha_inter=args.alpha_inter,
-                        p_inter=args.p_inter,
-                        root=args.root,
-                        ruta_csv_parcial=str(parcial),
-                    ))
+                for p_int in p_inter_values:
+                    for f_red in f_red_values:
+                        for rep in range(1, args.repeticiones + 1):
+                            idx = len(tareas)
+                            parcial = dir_parciales / (
+                                f"tabu_reactiva_{instancia}_{os.getpid()}_{idx}.csv"
+                            )
+                            tareas.append(TareaRTS(
+                                instancia=instancia,
+                                factor_aumento=f_aum,
+                                umbral_escape=umbral,
+                                repeticion=rep,
+                                semilla=_derivar_semilla(
+                                    args.semilla_base, instancia, f_aum,
+                                    umbral, p_int, f_red, rep,
+                                ),
+                                iteraciones_max=args.iteraciones_max,
+                                max_iter_sin_mejora=args.max_iter_sin_mejora,
+                                tam_vecindario=args.tam_vecindario,
+                                factor_reduccion=f_red,
+                                alpha_inter=args.alpha_inter,
+                                p_inter=p_int,
+                                root=args.root,
+                                ruta_csv_parcial=str(parcial),
+                            ))
 
     total = len(tareas)
     print("=" * 80)
@@ -341,7 +392,8 @@ def main() -> None:
     print(f"tam_vecindario              : {args.tam_vecindario if args.tam_vecindario else 'instance-aware (2·n)'}")
     print(f"factor_aumento values       : {FACTORES_AUMENTO}")
     print(f"umbral_escape values        : {UMBRALES_ESCAPE}")
-    print(f"factor_reduccion            : {args.factor_reduccion}")
+    print(f"p_inter values              : {p_inter_values}")
+    print(f"factor_reduccion values     : {f_red_values}")
     print(f"Semilla base                : {args.semilla_base} (derivada por tarea)")
     print(f"Repeticiones                : {args.repeticiones}")
     print(f"Workers                     : {args.workers}")
@@ -361,7 +413,10 @@ def main() -> None:
             if estado == "ok" and info is not None:
                 print(
                     f"  [{tarea.instancia}] f_aum={tarea.factor_aumento:.2f} "
-                    f"umb={tarea.umbral_escape} rep={tarea.repeticion} "
+                    f"umb={tarea.umbral_escape} "
+                    f"pInt={tarea.p_inter:.2f} "
+                    f"fRed={tarea.factor_reduccion:.2f} "
+                    f"rep={tarea.repeticion} "
                     f"| costo={info['costo']:.4f} "
                     f"| mejora={info['mejora']:.2f}% "
                     f"| iter={info['iter']} "
@@ -374,7 +429,10 @@ def main() -> None:
             else:
                 print(
                     f"  [{tarea.instancia}] f_aum={tarea.factor_aumento:.2f} "
-                    f"umb={tarea.umbral_escape} rep={tarea.repeticion} | FAIL: {err}"
+                    f"umb={tarea.umbral_escape} "
+                    f"pInt={tarea.p_inter:.2f} "
+                    f"fRed={tarea.factor_reduccion:.2f} "
+                    f"rep={tarea.repeticion} | FAIL: {err}"
                 )
                 total_fail += 1
     else:
