@@ -172,6 +172,7 @@ from .metaheuristicas_utils import (
     generar_reporte_detallado,
     guardar_resultado_csv,
     resumen_bks_csv,
+    seleccionar_grupo_operadores_inter_intra,
     seleccionar_mejor_inicial_rapido,
     solucion_legible_humana,
 )
@@ -488,6 +489,22 @@ def recocido_simulado(
     )
     costo_mejor = costo_para_reporte()
 
+    # --- PRECÓMPUTO DE PARTICIONES DE OPERADORES (movido FUERA del bucle externo) ---
+    # ¿Por qué precomputar aquí y no dentro del while T > T_min_eff?
+    # Los operadores activos NUNCA cambian durante una corrida de SA: ni la
+    # lista ``operadores`` ni las constantes ``OPERADORES_INTRA / INTER`` se
+    # modifican entre niveles de temperatura. Recalcular estas tres listas en
+    # cada nivel era trabajo redundante (O(|operadores|) repetido cientos de
+    # veces). Al subirlas al ámbito de inicialización, las construimos una
+    # SOLA vez por corrida y luego solo se LEEN dentro del hot path. Esta
+    # optimización deja a SA alineado con la convención que ya usan TS simple
+    # y RTS, donde estas particiones se calculan una sola vez antes del bucle
+    # principal. El comportamiento numérico (semilla, decisiones, costos) es
+    # idéntico al previo: solo cambiamos cuándo se construyen las listas.
+    _ops_intra = [op for op in operadores if op in OPERADORES_INTRA]
+    _ops_inter = [op for op in operadores if op in OPERADORES_INTER]
+    _ops_fallback = list(operadores)  # snapshot estable para el caso degenerado
+
     # === BUCLE EXTERNO: niveles de temperatura (enfriamiento) ===
     # Se repite mientras T no baje del mínimo (criterio de parada puro del SA clásico).
     while T > T_min_eff:
@@ -514,8 +531,14 @@ def recocido_simulado(
         # p_inter) como umbral, para favorecer la reparación redistribuyendo
         # demanda entre rutas. El umbral se recalcula cada iteración porque
         # viol_actual puede cambiar tras cada Metropolis.
-        _ops_intra = [op for op in operadores if op in OPERADORES_INTRA]
-        _ops_inter = [op for op in operadores if op in OPERADORES_INTER]
+        #
+        # La mecánica concreta (Bernoulli + selección de grupo) está encapsulada
+        # en ``seleccionar_grupo_operadores_inter_intra`` para que SA, TS simple
+        # y RTS compartan exactamente la misma fórmula matemática (un único
+        # rng.random() por iteración, mismas ramas de decisión).
+        # NOTA: las particiones ``_ops_intra / _ops_inter / _ops_fallback``
+        # ahora se construyen UNA sola vez antes del bucle externo (ver bloque
+        # de precómputo arriba). Aquí solo se LEEN del ámbito envolvente.
         for _ in range(L):
             iteraciones_totales += 1
 
@@ -523,16 +546,18 @@ def recocido_simulado(
             # El dado elige el GRUPO; generar_vecino selecciona el operador
             # concreto dentro del grupo y maneja los reintentos internamente.
             # Esto evita que un solo operador inaplicable agote los reintentos.
-            p_efectiva = alpha_inter if viol_actual > 1e-12 else p_inter
-            if rng.random() < p_efectiva and _ops_inter:
-                # Lanzamiento exitoso: grupo inter-ruta completo.
-                op_elegido = _ops_inter
-            elif _ops_intra:
-                # Lanzamiento fallido: grupo intra-ruta completo.
-                op_elegido = _ops_intra
-            else:
-                # Fallback: cualquier operador disponible (caso degenerado).
-                op_elegido = list(operadores)
+            # El segundo retorno (``_hubo_viol``) se ignora aquí porque el SA
+            # no necesita contar iteraciones-con-violación a este nivel; los
+            # consumidores TS sí lo aprovechan.
+            op_elegido, _hubo_viol = seleccionar_grupo_operadores_inter_intra(
+                rng,
+                viol_actual,
+                _ops_intra,
+                _ops_inter,
+                _ops_fallback,
+                alpha_inter=alpha_inter,
+                p_inter=p_inter,
+            )
 
             # Generamos un vecino aleatorio de la solución actual.
             vecino, mov = generar_vecino(
@@ -613,11 +638,17 @@ def recocido_simulado(
                     mejoras += 1
                     contador.registrar_mejora(mov.operador)
 
-                # Actualizamos sol_mejor y costo_mejor.
-                sol_mejor = copiar_solucion_labels(
-                    mejor_fact_s if mejor_fact_s is not None else mejor_any_s
-                )
-                costo_mejor = despues_rep
+                # NOTA DE OPTIMIZACIÓN: aquí ANTES se reasignaban ``sol_mejor`` y
+                # ``costo_mejor`` en cada aceptación. Esa escritura era trabajo
+                # desperdiciado porque dichas variables NO se leen en ningún
+                # punto de este bucle interno ni del bucle externo antes de su
+                # regeneración final (líneas 716–717, tras el while). Las dos
+                # fuentes de verdad realmente usadas son ``mejor_any_s`` /
+                # ``mejor_fact_s`` (que sí se mantienen actualizadas), por lo
+                # que basta con una única regeneración al terminar la búsqueda.
+                # Eliminamos las reasignaciones intra-bucle para evitar copias
+                # innecesarias de listas en el hot path; el resultado final es
+                # bit-a-bit idéntico al anterior.
 
         # --- Enfriamiento geométrico ---
         # T_nueva = alpha × T_actual

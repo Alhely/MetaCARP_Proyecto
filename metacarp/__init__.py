@@ -92,6 +92,24 @@ from .factibilidad import (
 # de mínimos locales.
 from .busqueda_tabu import BusquedaTabuResult, busqueda_tabu, busqueda_tabu_desde_instancia
 
+# Búsqueda Tabú SIMPLE: versión minimalista (lista FIFO, best-non-tabú, aspiración
+# clásica) pensada como referencia didáctica de TS para la tesis.
+from .busqueda_tabu_simple import (
+    BusquedaTabuSimpleResult,
+    busqueda_tabu_simple,
+    busqueda_tabu_simple_desde_instancia,
+)
+
+# Búsqueda Tabú REACTIVA: Reactive Tabu Search de Battiti & Tecchiolli (1994),
+# con tenure dinámico, memoria de soluciones visitadas y mecanismo de escape
+# por movimientos aleatorios. Implementación paralela a busqueda_tabu_simple
+# para comparar la eficacia de los mecanismos reactivos vs el TS clásico.
+from .busqueda_tabu_reactiva import (
+    BusquedaTabuReactivaResult,
+    busqueda_tabu_reactiva,
+    busqueda_tabu_reactiva_desde_instancia,
+)
+
 # Algoritmo de Abejas (Bee Algorithm): inspirado en el comportamiento de búsqueda
 # de alimento de colmenas de abejas.
 from .abejas import AbejasResult, busqueda_abejas, busqueda_abejas_desde_instancia
@@ -150,7 +168,10 @@ from .vecindarios import (
     generar_vecino,
     generar_vecino_ids,
 )
-from .metaheuristicas_utils import pesos_inter_bias
+from .metaheuristicas_utils import (
+    pesos_inter_bias,
+    seleccionar_grupo_operadores_inter_intra,
+)
 
 
 # =============================================================================
@@ -198,6 +219,12 @@ __all__ = [
     "BusquedaTabuResult",
     "busqueda_tabu",
     "busqueda_tabu_desde_instancia",
+    "BusquedaTabuSimpleResult",
+    "busqueda_tabu_simple",
+    "busqueda_tabu_simple_desde_instancia",
+    "BusquedaTabuReactivaResult",
+    "busqueda_tabu_reactiva",
+    "busqueda_tabu_reactiva_desde_instancia",
     "AbejasResult",
     "busqueda_abejas",
     "busqueda_abejas_desde_instancia",
@@ -240,6 +267,7 @@ __all__ = [
     "OPERADORES_INTRA",
     "OPERADORES_INTER",
     "pesos_inter_bias",
+    "seleccionar_grupo_operadores_inter_intra",
     "generar_vecino",
     "generar_vecino_ids",
 ]

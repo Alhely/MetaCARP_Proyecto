@@ -59,6 +59,7 @@ __all__ = [
     "guardar_resultado_csv",
     "construir_contexto_para_corrida",
     "pesos_inter_bias",
+    "seleccionar_grupo_operadores_inter_intra",
 ]
 
 
@@ -245,7 +246,7 @@ class ContadorOperadores:
 
     def resumen_csv(self) -> dict[str, int]:
         """
-        Devuelve 4 categorías × 7 operadores = 28 columnas planas.
+        Devuelve 4 categorías × 9 operadores = 36 columnas planas.
 
         Formato: ``<categoria>_<operador>`` con conteo entero (0 si no apareció).
         Categorías: ``propuesto``, ``aceptado``, ``mejoraron``, ``trayectoria_mejor``.
@@ -733,3 +734,108 @@ def pesos_inter_bias(
     w_inter = alpha_inter / n_inter
     w_intra = (1.0 - alpha_inter) / n_intra
     return [w_intra if op in _INTRA_OPS else w_inter for op in operadores]
+
+
+# ---------------------------------------------------------------------------
+# Utilidad: seleccionar_grupo_operadores_inter_intra
+# ---------------------------------------------------------------------------
+# Este helper encapsula la mecánica EXACTA de sesgo inter/intra-ruta que usa el
+# Recocido Simulado (SA) del proyecto y que, por homogeneidad, debe compartirse
+# con Búsqueda Tabú simple (TS) y Reactive Tabu Search (RTS). El objetivo es
+# garantizar que los tres metaheurísticos apliquen la MISMA fórmula matemática
+# y por tanto sean directamente comparables en términos del mecanismo de
+# reparación de capacidad.
+#
+# Decisión de diseño (heredada del SA):
+#   - El sesgo NO se aplica como vector de pesos para rng.choices() (esa es la
+#     estrategia del helper pesos_inter_bias, útil cuando se delega la elección
+#     ponderada a generar_vecino). En cambio, el SA muestrea el GRUPO de
+#     operadores con un lanzamiento de Bernoulli y luego deja que generar_vecino
+#     elija uniformemente DENTRO del grupo. Esa estructura de dos pasos evita
+#     que un operador inaplicable agote los reintentos internos de generar_vecino.
+#   - Por consistencia con SA, este helper realiza UN único rng.random() y
+#     devuelve el subconjunto de operadores correspondiente. El consumidor solo
+#     debe pasar ese subconjunto a generar_vecino vía el argumento `operadores=`,
+#     con `pesos_operadores=None` (selección uniforme dentro del grupo).
+def seleccionar_grupo_operadores_inter_intra(
+    rng: Any,
+    violacion: float,
+    ops_intra: Sequence[str],
+    ops_inter: Sequence[str],
+    operadores_fallback: Sequence[str],
+    *,
+    alpha_inter: float = 0.8,
+    p_inter: float = 0.6,
+) -> tuple[list[str], bool]:
+    """Decide el grupo de operadores (inter vs intra) para una iteración.
+
+    Replica la lógica EXACTA del Recocido Simulado del proyecto:
+
+    - ``p_efectiva = alpha_inter`` si la solución actual viola capacidad
+      (``violacion > 1e-12``), si no ``p_efectiva = p_inter``.
+    - Se lanza un único ``rng.random()`` en [0, 1).
+    - Si el dado es < ``p_efectiva`` y existen operadores inter-ruta, se elige
+      el grupo INTER-RUTA. Esta rama promueve la reparación cuando hay
+      violación (alpha_inter alto) y la diversificación cuando es factible
+      (p_inter como sesgo fijo a inter).
+    - En otro caso, si existen operadores intra-ruta, se elige el grupo
+      INTRA-RUTA (refinamiento dentro de las rutas existentes).
+    - Como último recurso (caso degenerado: ninguna de las dos listas tiene
+      operadores), se devuelve ``list(operadores_fallback)``.
+
+    La función realiza EXACTAMENTE UN rng.random() para no alterar la
+    secuencia aleatoria de los algoritmos que la consumen. Esto es crítico
+    para preservar la reproducibilidad bit-a-bit con la implementación SA
+    original.
+
+    Args:
+        rng: instancia ``random.Random`` reproducible (la misma que usa el
+            metaheurístico para todas sus decisiones aleatorias).
+        violacion: exceso total de demanda sobre la capacidad de la solución
+            actual (>= 0). El umbral interno es 1e-12 para tolerar errores de
+            punto flotante.
+        ops_intra: lista/tupla de operadores intra-ruta activos (subset de
+            ``operadores`` filtrado contra ``OPERADORES_INTRA``).
+        ops_inter: lista/tupla de operadores inter-ruta activos (subset de
+            ``operadores`` filtrado contra ``OPERADORES_INTER``).
+        operadores_fallback: lista de operadores a usar si ambos grupos están
+            vacíos. Habitualmente la lista completa ``list(operadores)`` que
+            el metaheurístico recibió como parámetro.
+        alpha_inter: probabilidad de elegir el grupo inter-ruta cuando la
+            solución actual viola capacidad. Default 0.8 (igual al SA).
+        p_inter: probabilidad de elegir el grupo inter-ruta cuando la solución
+            actual es factible. Default 0.6 (igual al SA). Mantiene una dosis
+            constante de exploración inter-ruta incluso sin violación.
+
+    Returns:
+        Tupla ``(grupo_operadores, hubo_violacion)``:
+        - ``grupo_operadores``: lista de operadores a pasar a generar_vecino.
+        - ``hubo_violacion``: True si la solución actual estaba en estado de
+          violación (``violacion > 1e-12``) durante esta iteración. El
+          consumidor (TS simple, RTS) puede usar este flag para contar
+          cuántas iteraciones entraron al modo sesgado.
+    """
+    # Detectamos si la solución actual viola capacidad. Usamos un epsilon
+    # pequeño (1e-12) para evitar problemas de comparación con float: una
+    # violación "real" siempre será al menos del orden de 1, las violaciones
+    # cercanas a cero son ruido numérico.
+    hubo_violacion = violacion > 1e-12
+    # Probabilidad efectiva de elegir el grupo inter-ruta en esta iteración.
+    # Cuando hay violación se usa alpha_inter (típicamente mayor, para forzar
+    # reparación); cuando es factible se usa p_inter (sesgo más suave para
+    # escapar de mínimos locales intra-ruta).
+    p_efectiva = alpha_inter if hubo_violacion else p_inter
+    # Lanzamiento del dado (UNA sola llamada a rng.random() por iteración).
+    # Esta es la única fuente de aleatoriedad que el helper consume; cualquier
+    # otra decisión queda delegada al consumidor para preservar la secuencia.
+    if rng.random() < p_efectiva and ops_inter:
+        # Lanzamiento exitoso: usamos el grupo inter-ruta completo.
+        # generar_vecino elegirá uniformemente dentro de él.
+        return list(ops_inter), hubo_violacion
+    if ops_intra:
+        # Lanzamiento fallido o no había inter disponibles: grupo intra-ruta.
+        return list(ops_intra), hubo_violacion
+    # Caso degenerado: ni hay intra ni hay inter en la lista activa.
+    # Devolvemos la lista completa de operadores como fallback para que
+    # generar_vecino tenga al menos un nombre con el cual trabajar.
+    return list(operadores_fallback), hubo_violacion
