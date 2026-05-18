@@ -1,0 +1,53 @@
+% Requiere \usepackage{booktabs}
+% Requiere \usepackage{siunitx}  (opcional, para alineación decimal uniforme)
+% Si se usa \footnotesize dentro de table, no se necesita paquete adicional.
+
+\begin{table}[htbp]
+  \centering
+  \footnotesize
+  \caption{%
+    Mejores corridas del Recocido Simulado en instancias pequeñas (familias GDB y KSHS).
+    Para cada instancia se reporta la configuración \((\alpha, p_{\text{inter}})\) que produjo
+    el menor costo en el grid search de 110 combinaciones. Gap calculado respecto al BKS publicado.
+    Gap promedio global: \(30{,}54\,\%\). En negrita los tres menores gaps individuales.%
+  }
+  \label{tab:sa_small_resumen}
+  \begin{tabular}{l r r r r r r r}
+    \toprule
+    Instancia &
+    BKS &
+    Mejor SA &
+    Gap (\%) &
+    $\alpha$ &
+    $p_{\text{inter}}$ &
+    Tiempo (s) &
+    Enfriam. \\
+    \midrule
+    gdb1   &  316 &  403 &        27{,}53 & 0{,}82 & 0{,}70 &  2{,}16 &  16 \\
+    gdb2   &  339 &  445 &        31{,}27 & 0{,}86 & 0{,}80 &  4{,}58 &  22 \\
+    gdb3   &  275 &  410 &        49{,}09 & 0{,}88 & 0{,}70 &  3{,}11 &  25 \\
+    gdb4   &  287 &  382 &        33{,}10 & 0{,}80 & 0{,}60 &  1{,}08 &  14 \\
+    gdb5   &  377 &  532 &        41{,}11 & 0{,}98 & 0{,}60 & 33{,}46 & 162 \\
+    gdb6   &  298 &  424 &        42{,}28 & 0{,}80 & 0{,}60 &  1{,}81 &  14 \\
+    gdb7   &  325 &  408 &        25{,}54 & 0{,}80 & 0{,}60 &  1{,}61 &  14 \\
+    gdb10  &  275 &  418 &        52{,}00 & 0{,}84 & 0{,}70 &  2{,}80 &  19 \\
+    gdb12  &  458 &  623 &        36{,}03 & 0{,}92 & 0{,}80 &  6{,}49 &  38 \\
+    gdb13  &  536 &  638 &        19{,}03 & 0{,}99 & 0{,}70 & 69{,}94 & 332 \\
+    gdb14  &  100 &  144 &        44{,}00 & 0{,}82 & 0{,}40 &  1{,}33 &  16 \\
+    gdb15  &   58 &   74 &        27{,}59 & 0{,}80 & 0{,}50 &  1{,}23 &  14 \\
+    gdb16  &  127 &  152 &        19{,}69 & 0{,}80 & 0{,}80 &  2{,}91 &  15 \\
+    gdb17  &   91 &  109 &        19{,}78 & 0{,}80 & 0{,}60 &  2{,}89 &  15 \\
+    gdb19  &   55 &   63 & \textbf{14{,}55} & 0{,}88 & 0{,}60 &  0{,}27 &  19 \\
+    gdb20  &  121 &  161 &        33{,}06 & 0{,}80 & 0{,}70 &  1{,}63 &  14 \\
+    gdb21  &  156 &  198 &        26{,}92 & 0{,}80 & 0{,}70 &  5{,}15 &  16 \\
+    kshs1  & 14661 & 16899 & \textbf{15{,}26} & 0{,}88 & 0{,}60 &  0{,}84 &  22 \\
+    kshs2  &  9863 & 11257 & \textbf{14{,}13} & 0{,}82 & 0{,}70 &  0{,}55 &  14 \\
+    kshs3  &  9320 & 11790 &        26{,}50 & 0{,}80 & 0{,}60 &  0{,}54 &  13 \\
+    kshs4  & 11498 & 14638 &        27{,}31 & 0{,}84 & 0{,}80 &  0{,}69 &  16 \\
+    kshs5  & 10957 & 15199 &        38{,}71 & 0{,}88 & 0{,}50 &  0{,}75 &  22 \\
+    kshs6  & 10197 & 14064 &        37{,}92 & 0{,}82 & 0{,}80 &  0{,}46 &  14 \\
+    \midrule
+    Promedio & --- & --- & 30{,}54 & --- & --- & 6{,}56 & 43 \\
+    \bottomrule
+  \end{tabular}
+\end{table}

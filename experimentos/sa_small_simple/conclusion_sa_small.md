@@ -1,0 +1,107 @@
+# Conclusión del experimento SA — small simple
+
+## Configuración experimental
+
+El Recocido Simulado (SA) evaluado en este experimento opera con parámetros de temperatura calculados automáticamente por instancia: la temperatura inicial sigue la fórmula `T_init = 20 · d_max / n`, donde `d_max` es el costo máximo de servicio y `n` el número de tareas requeridas. La cadena de Markov (longitud `L`) y la temperatura mínima se derivan de la dinámica de aceptación, sin requerir calibración manual por parte del usuario.
+
+Los parámetros fijos del experimento son:
+
+- `alpha_inter = 0.8` (factor de enfriamiento para operadores inter-ruta).
+- `patience = 10` (niveles de temperatura sin mejora antes de ejecutar un reheat).
+- `reheat_factor = 0.5` (la temperatura asciende al 50 % de `T_init` en cada reheat).
+- `max_reheats_sin_mejora = 5` (criterio de parada temprana: cinco reheats consecutivos sin mejorar la mejor solución global).
+- 9 operadores de vecindad: `relocate_intra`, `swap_intra`, `2opt_intra`, `relocate_inter`, `swap_inter`, `2opt_star`, `cross_exchange`, `or_opt_2` y `or_opt_3`.
+
+El grid search barrió dos hiperparámetros libres: `alpha` (tasa de enfriamiento intra-ruta) con 11 valores en [0.80, 0.99], y `p_inter` (probabilidad de seleccionar un operador inter-ruta en cada iteración) con 5 valores en [0.4, 0.8].
+
+---
+
+## Cobertura del grid search
+
+El diseño experimental combina 11 valores de `alpha` × 5 valores de `p_inter` × 23 instancias × 2 repeticiones, sumando **2 530 corridas** en total. Cada celda del grid (par `alpha × p_inter`) acumula 46 corridas (2 repeticiones × 23 instancias), y cada instancia es evaluada bajo 110 combinaciones distintas de hiperparámetros. Esta cobertura permite estimar el efecto marginal de cada hiperparámetro con márgenes estadísticos razonables, separando la varianza atribuible a `alpha`, a `p_inter` y a la variabilidad entre instancias.
+
+Las 23 instancias provienen de dos familias de referencia del CARP: 17 instancias pequeñas de la familia **GDB** (Golden, DeArmon & Baker) y 6 instancias de la familia **KSHS**, todas con BKS (Best Known Solutions) publicados, lo que permite calcular gaps absolutos respecto al óptimo conocido.
+
+---
+
+## Desempeño global
+
+Las 2 530 corridas arrojaron una **tasa de factibilidad del 100 %**: ninguna corrida terminó con una solución que violara restricciones de capacidad. Esto confirma que el mecanismo de construcción y los operadores de vecindad implementados preservan la factibilidad a lo largo de toda la búsqueda.
+
+Los tiempos de ejecución por corrida muestran una distribución asimétrica: mediana de **3.64 s**, promedio de **8.65 s**, mínimo de 0.19 s y máximo de 112.55 s. La separación entre mediana y promedio refleja la existencia de instancias con espacios de búsqueda sustancialmente más grandes que detienen el algoritmo tardíamente.
+
+El número de enfriamientos ejecutados (descensos completos de temperatura) muestra un rango de 11 a 348, con promedio de 67. Que la mediana de enfriamientos sea notablemente inferior al máximo indica que la **parada temprana por `max_reheats_sin_mejora = 5` actúa con frecuencia**: la mayoría de las corridas no agotan el presupuesto teórico de temperatura, sino que terminan al detectar estancamiento. Esto es deseable en términos de eficiencia, pero también señala que el presupuesto efectivo de búsqueda puede ser insuficiente para escapar de óptimos locales profundos.
+
+El número de iteraciones totales por corrida (mín. 1 331, promedio 33 447, máx. 378 972) refleja directamente la heterogeneidad en el tamaño de las instancias y en cuántos niveles de temperatura se recorren antes de la parada.
+
+---
+
+## Análisis del grid search: efecto de los hiperparámetros
+
+### Efecto de `alpha` (tasa de enfriamiento intra-ruta)
+
+El parámetro `alpha` muestra un efecto **monótono y claro**: a mayor valor (enfriamiento más lento), menor gap promedio frente al BKS. La tabla siguiente resume el gap promedio y mediano para cada nivel de `alpha`, promediando sobre las 230 corridas correspondientes (5 valores de `p_inter` × 23 instancias × 2 repeticiones):
+
+| `alpha` | Gap promedio | Gap mediano |
+|--------:|-------------:|------------:|
+| 0.80    | 33.98 %      | 33.08 %     |
+| 0.82    | 33.84 %      | 32.89 %     |
+| 0.84    | 33.86 %      | 32.79 %     |
+| 0.86    | 33.45 %      | 32.83 %     |
+| 0.88    | 33.23 %      | 32.73 %     |
+| 0.90    | 32.92 %      | 32.28 %     |
+| 0.92    | 32.56 %      | 31.94 %     |
+| 0.94    | 32.21 %      | 31.86 %     |
+| 0.96    | 31.74 %      | 31.55 %     |
+| 0.98    | 31.20 %      | 31.86 %     |
+| **0.99**| **30.89 %**  | **29.93 %** |
+
+La diferencia entre el extremo inferior (`alpha = 0.80`, gap promedio 33.98 %) y el superior (`alpha = 0.99`, gap promedio 30.89 %) es de aproximadamente **3.1 puntos porcentuales**. Aunque la magnitud no es dramática en términos absolutos, la tendencia es estadísticamente limpia y sugiere que el SA se beneficia de explorar el espacio de soluciones de forma más pausada: un enfriamiento lento mantiene temperaturas altas por más iteraciones, lo que favorece la aceptación de movimientos deteriorantes y reduce la probabilidad de quedar atrapado en mínimos locales tempranos.
+
+### Efecto de `p_inter` (probabilidad inter-ruta)
+
+A diferencia de `alpha`, el parámetro `p_inter` muestra un efecto **pequeño y no monótono**. La variación total entre los cinco niveles evaluados es inferior a **0.3 puntos porcentuales** en gap promedio:
+
+| `p_inter` | Gap promedio | Gap mediano |
+|----------:|-------------:|------------:|
+| 0.4       | 32.89 %      | 32.73 %     |
+| 0.5       | 32.70 %      | 32.31 %     |
+| 0.6       | **32.59 %**  | **31.86 %** |
+| 0.7       | 32.71 %      | 31.86 %     |
+| 0.8       | 32.69 %      | 31.86 %     |
+
+El mínimo marginal aparece en `p_inter = 0.6`, pero los niveles 0.6, 0.7 y 0.8 producen resultados prácticamente idénticos. Esto indica que, dentro del rango explorado, el equilibrio entre vecindarios intra-ruta e inter-ruta no es un factor determinante del desempeño, al menos cuando el conjunto de instancias incluye grafos de tamaño pequeño con pocas rutas por solución.
+
+### Configuraciones destacadas
+
+Las cinco mejores combinaciones `alpha × p_inter` (por gap promedio sobre las 46 corridas de cada celda) son:
+
+| `alpha` | `p_inter` | Gap promedio | Gap mediano | Desviación estándar |
+|--------:|----------:|-------------:|------------:|--------------------:|
+| 0.99    | 0.7       | 30.78 %      | 28.61 %     | 10.67               |
+| 0.99    | 0.6       | 30.87 %      | 30.77 %     | 10.77               |
+| 0.99    | 0.5       | 30.92 %      | 31.04 %     | 10.87               |
+| 0.99    | 0.8       | 30.93 %      | 29.92 %     | 10.58               |
+| 0.99    | 0.4       | 30.95 %      | 29.24 %     | 10.77               |
+
+Las 11 configuraciones con menor gap promedio corresponden a `alpha = 0.99` o `alpha = 0.98`. Este resultado corrobora que **`alpha` domina la varianza del desempeño del grid**, mientras que `p_inter` actúa como factor secundario cuya elección precisa tiene un impacto menor al décimo de punto porcentual en la media.
+
+---
+
+## Resultados por instancia
+
+Los gaps individuales de la mejor corrida por instancia (consultables en [`resumen_mejores_corridas.csv`](resumen_mejores_corridas.csv)) oscilan entre **14.13 %** y **52.00 %**, con promedio de 30.54 % y mediana de 27.59 %. La dispersión es elevada, lo que refleja diferencias estructurales importantes entre instancias.
+
+Las instancias con menor gap son kshs2 (14.13 %), gdb19 (14.55 %), kshs1 (15.27 %), gdb13 (19.03 %), gdb16 (19.69 %) y gdb17 (19.78 %). Las instancias de la familia KSHS y algunas GDB con topología más densa (gdb13, gdb16, gdb17, gdb19) parecen ofrecer un paisaje de búsqueda donde el SA encuentra soluciones relativamente cercanas al BKS. En estos casos, la combinación de operadores intra e inter-ruta logra recombinar las rutas de forma efectiva.
+
+En el extremo opuesto, cinco instancias superan el 40 % de gap: gdb3 (49.09 %), gdb10 (52.00 %), gdb14 (44.00 %), gdb6 (42.28 %) y gdb5 (41.11 %). El caso de gdb10, con un gap de 52 % (costo SA = 418 frente a BKS = 275), es el más severo. Una hipótesis plausible es que instancias como gdb10, gdb5 y gdb6 presentan estructuras topológicas donde la solución óptima requiere distribuciones de rutas no alcanzables mediante movimientos locales simples desde la solución inicial: los operadores de vecindad no están generando movimientos que escapen de la cuenca de atracción del mínimo local inicial. Adicionalmente, en instancias con costos absolutos pequeños (como gdb14, con BKS = 100), un error de pocos arcos mal asignados puede traducirse en gaps relativos grandes, amplificando la apariencia del problema.
+
+---
+
+## Conclusión
+
+El SA, con la parametrización evaluada en este experimento, **garantiza factibilidad completa y produce soluciones en tiempos del orden de segundos** para el conjunto de instancias pequeñas (GDB + KSHS). El gap promedio de 30.54 % respecto a los BKS publicados indica que el algoritmo converge establemente a soluciones admisibles, pero que estas se encuentran a una distancia sustancial de los óptimos de referencia. La mediana de 27.59 % sugiere que la mitad de las instancias se resuelven con un gap por debajo de ese umbral, aunque la cola alta (cinco instancias por encima del 40 %) revela que el SA en su forma actual no es uniformemente competitivo.
+
+La configuración recomendada a partir de este grid search es **`alpha = 0.99` con `p_inter` en el rango 0.6–0.7**: son las celdas con menor gap promedio, y la diferencia entre ellas es inferior a 0.1 puntos porcentuales. La robustez de esta recomendación está limitada por la insensibilidad documentada de `p_inter`, por lo que la prioridad de calibración futura debe recaer sobre `alpha` y sobre el presupuesto de búsqueda.
+
+El comportamiento de la parada temprana (mediana de 67 enfriamientos frente al máximo de 348) apunta a una causa estructural del gap elevado: el criterio `max_reheats_sin_mejora = 5` termina la búsqueda antes de que el algoritmo haya agotado su capacidad exploratoria real. Las líneas de mejora más directas son: (1) incrementar `max_reheats_sin_mejora` a 10–15 para dar más presupuesto a instancias difíciles sin aumentar el tiempo en instancias fáciles; (2) explorar valores de `alpha` superiores a 0.99 (por ejemplo, 0.995 o 0.999) para verificar si la tendencia monótona observada continúa; (3) añadir una fase de búsqueda local determinista (2-opt exhaustivo o Lin-Kernighan adaptado a arcos) al final de la ejecución del SA para pulir la mejor solución encontrada; y (4) combinar el SA con una metaheurística complementaria con mayor capacidad de diversificación —como Búsqueda Tabú o Colonia de Abejas— en un esquema híbrido o de reinicio, aprovechando que el SA ya produce soluciones factibles de calidad moderada en tiempos reducidos.

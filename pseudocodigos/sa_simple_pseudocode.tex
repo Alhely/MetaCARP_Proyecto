@@ -1,0 +1,108 @@
+\documentclass[12pt, a4paper]{article}
+
+% ============================================================
+%  Packages
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage[ruled, vlined, linesnumbered, english]{algorithm2e}
+\usepackage{geometry}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% ============================================================
+%  Document metadata
+% ============================================================
+\title{Simulated Annealing (Simple) --- Pseudocode}
+\author{}
+\date{}
+
+% ============================================================
+%  Begin document
+% ============================================================
+\begin{document}
+\maketitle
+
+% ------------------------------------------------------------
+\section*{Notation}
+% ------------------------------------------------------------
+
+\begin{itemize}
+    \item $G$: CARP instance graph with required arc set $R$.
+    \item $s$: current solution --- a set of routes covering all arcs in $R$.
+    \item $s^{*}$: best feasible solution found so far.
+    \item $f(s) = \textsc{Cost}(s) + \lambda \cdot \textsc{CapacityViolation}(s)$: penalized objective ($\lambda > 0$).
+    \item $\mathcal{O}_{\mathrm{intra}} = \{\texttt{relocate\_intra},\, \texttt{swap\_intra},\, \texttt{2opt\_intra}\}$: within-route operators.
+    \item $\mathcal{O}_{\mathrm{inter}} = \{\texttt{relocate\_inter},\, \texttt{swap\_inter},\, \texttt{2opt\_star},\, \texttt{cross\_exchange},\, \texttt{or\_opt\_2},\, \texttt{or\_opt\_3}\}$: between-route operators.
+    \item $\alpha \in (0,1)$: geometric cooling factor. \quad $p_{\mathrm{inter}} \in [0,1]$: inter-route probability (feasible case). \quad $\alpha_{\mathrm{inter}} = 0.8$: inter-route bias when infeasible.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section*{Algorithm}
+% ------------------------------------------------------------
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{Simple Simulated Annealing for CARP}
+\label{alg:sa_simple}
+
+\KwIn{CARP instance $G$;\; cooling factor $\alpha$;\; penalty weight $\lambda$;\;
+      inter-route probability $p_{\mathrm{inter}}$;\;
+      optionally $T_{\mathrm{init}}$, $T_{\mathrm{min}}$ (computed from instance if omitted)}
+\KwOut{Best feasible solution $s^{*}$}
+
+\BlankLine
+\tcp{Instance-driven calibration (used if parameters not provided)}
+$n \leftarrow |R|$ \tcp{number of required arcs (tasks)}
+$d_{\max} \leftarrow \max_{i,j}\,\mathrm{dist}(i,j)$ \tcp{longest shortest-path distance}
+$L \leftarrow n^{2}$ \;
+$T_{\mathrm{init}} \leftarrow 20 \cdot d_{\max} / n$ \;
+$T_{\mathrm{min}} \leftarrow 20 \cdot d_{\max} / n^{2}$ \;
+
+\BlankLine
+$s \leftarrow \textsc{InitialSolution}(G)$ \;
+$s^{*} \leftarrow s$ \;
+$T \leftarrow T_{\mathrm{init}}$ \;
+
+\BlankLine
+\While{$T > T_{\mathrm{min}}$}{
+
+    \For{$\mathit{it} \leftarrow 1$ \KwTo $L$}{
+
+        \tcp{Dice: choose operator group based on feasibility}
+        $v \leftarrow \textsc{CapacityViolation}(s)$ \;
+        \lIf{$v > 0$}{$p_{\mathrm{eff}} \leftarrow \alpha_{\mathrm{inter}}$}
+        \lElse{$p_{\mathrm{eff}} \leftarrow p_{\mathrm{inter}}$}
+        \eIf{$\mathrm{Uniform}(0,1) < p_{\mathrm{eff}}$}{
+            $\mathit{op} \leftarrow \textsc{SelectUniform}(\mathcal{O}_{\mathrm{inter}})$ \;
+        }{
+            $\mathit{op} \leftarrow \textsc{SelectUniform}(\mathcal{O}_{\mathrm{intra}})$ \;
+        }
+
+        \BlankLine
+        $s' \leftarrow \textsc{ApplyOperator}(\mathit{op},\, s)$ \;
+        $\Delta \leftarrow f(s') - f(s)$ \;
+
+        \tcp{Metropolis acceptance criterion}
+        \If{$\Delta \leq 0$ \textbf{ or } $\mathrm{Uniform}(0,1) < e^{-\Delta / T}$}{
+            $s \leftarrow s'$ \;
+        }
+
+        \tcp{Update global best (feasible solutions only)}
+        \If{$\textsc{Feasible}(s)$ \textbf{ and } $\textsc{Cost}(s) < \textsc{Cost}(s^{*})$}{
+            $s^{*} \leftarrow s$ \;
+        }
+    }
+
+    \BlankLine
+    $T \leftarrow \alpha \cdot T$ \tcp{geometric cooling step}
+}
+
+\BlankLine
+\Return $s^{*}$
+\end{algorithm}
+
+\end{document}
