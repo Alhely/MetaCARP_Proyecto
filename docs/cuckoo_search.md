@@ -168,7 +168,7 @@ Los nuevos nidos se generan aplicando un **vuelo de Lévy desde el mejor nido ac
 
 ## La función `cuckoo_search`
 
-### Firma
+### Firma (versión modernizada e instance-aware)
 
 ```python
 def cuckoo_search(
@@ -176,11 +176,20 @@ def cuckoo_search(
     data: Mapping[str, Any],
     G: nx.Graph,
     *,
-    iteraciones: int = 260,
-    num_nidos: int = 20,
+    # --- Parámetros instance-aware (None → fórmula en función de n_tareas) ---
+    iteraciones: int | None = None,          # None → max(200, 20·n)
+    num_nidos: int | None = None,            # None → max(10, round(2·√n))
+    pasos_levy_base: int | None = None,      # None → max(3, round(√n / 2))
+    max_iter_sin_mejora: int | None = None,  # None → max(50, 3·n)
+    # --- Parámetros no instance-aware (ratios o parámetros de forma) ---
     pa_abandono: float = 0.25,
-    pasos_levy_base: int = 3,
     beta_levy: float = 1.5,
+    # --- Factores de escala (sobrescriben la fórmula default; ignorados si se pasa valor absoluto) ---
+    factor_iter: float | None = None,        # iteraciones      = max(200, round(f·n))
+    factor_nidos: float | None = None,       # num_nidos        = max(10,  round(f·√n))
+    factor_pasos: float | None = None,       # pasos_levy_base  = max(3,   round(f·√n))
+    # --- Parámetros de sesgo y aleatoridad ---
+    p_inter: float = 0.6,                    # P(inter) cuando la solución es factible
     semilla: int | None = None,
     operadores: Iterable[str] = OPERADORES_POPULARES,
     marcador_depot_etiqueta: str | None = None,
@@ -190,15 +199,16 @@ def cuckoo_search(
     guardar_csv: bool = False,
     ruta_csv: str | None = None,
     nombre_instancia: str = "instancia",
-    id_corrida: str | None = None,
-    config_id: str | None = None,
     repeticion: int | None = None,
     root: str | None = None,
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
+    **_ignorado_kwargs,
 ) -> CuckooSearchResult:
 ```
+
+> **Nota:** `alpha_inter` fue eliminado de la firma. El algoritmo aplica automáticamente `max(p_inter, 0.8)` como probabilidad inter-ruta cuando la solución actual viola capacidad. El parámetro `p_inter` base controla el régimen factible; el piso 0.8 bajo violación es una garantía interna (misma decisión que en `busqueda_abejas_simple`). Los parámetros `id_corrida` y `config_id` ya no figuran en la firma: si se pasan por kwargs heredados, son absorbidos por `**_ignorado_kwargs` y NO se escriben en el CSV (convención del proyecto).
 
 ### Tabla de parámetros
 
@@ -207,27 +217,48 @@ def cuckoo_search(
 | `inicial_obj` | `Any` | — | Objeto con soluciones iniciales candidatas (dict, pickle, lista de rutas o estructura anidada). Se explora recursivamente para extraer soluciones. |
 | `data` | `Mapping[str, Any]` | — | Datos de la instancia CARP cargados con `load_instances`. |
 | `G` | `nx.Graph` | — | Grafo de la instancia cargado con `cargar_objeto_gexf`. |
-| `iteraciones` | `int` | `260` | Número de ciclos del bucle principal. Cada ciclo ejecuta los tres pasos (generación, competencia, abandono). |
-| `num_nidos` | `int` | `20` | Número de soluciones candidatas mantenidas en paralelo. Debe ser >= 2. |
-| `pa_abandono` | `float` | `0.25` | Fracción de peores nidos a abandonar por iteración. Debe estar en el intervalo abierto (0, 1). |
-| `pasos_levy_base` | `int` | `3` | Escala base del número de perturbaciones en el vuelo de Lévy. Valores más altos producen saltos más largos en promedio. |
+| `iteraciones` | `int \| None` | `None` → `max(200, 20·n)` | Número de ciclos del bucle principal. Cada ciclo ejecuta los tres pasos (generación, competencia, abandono). |
+| `num_nidos` | `int \| None` | `None` → `max(10, round(2·√n))` | Número de soluciones candidatas mantenidas en paralelo. Debe ser >= 2 cuando se pasa explícito. |
+| `pasos_levy_base` | `int \| None` | `None` → `max(3, round(√n/2))` | Escala base del número de perturbaciones en el vuelo de Lévy. Valores más altos producen saltos más largos en promedio. |
+| `max_iter_sin_mejora` | `int \| None` | `None` → `max(50, 3·n)` | Criterio de parada anticipada por estancamiento; siempre activo en la versión modernizada. |
+| `pa_abandono` | `float` | `0.25` | Fracción de peores nidos a abandonar por iteración. Debe estar en el intervalo abierto (0, 1). Es una **ratio**, no escala con `n`. |
 | `beta_levy` | `float` | `1.5` | Parámetro de forma de la distribución de Lévy discreta. Valor clásico de la literatura. Si se pasa un valor <= 0, se usa 1.5 automáticamente. |
-| `semilla` | `int \| None` | `None` | Semilla del generador aleatorio. Si `None`, la ejecución no es reproducible. |
+| `factor_iter` | `float \| None` | `None` | Si se pasa, `iteraciones = max(200, round(f·n))`. Solo actúa si `iteraciones` es `None`. |
+| `factor_nidos` | `float \| None` | `None` | Si se pasa, `num_nidos = max(10, round(f·√n))`. Solo actúa si `num_nidos` es `None`. |
+| `factor_pasos` | `float \| None` | `None` | Si se pasa, `pasos_levy_base = max(3, round(f·√n))`. Solo actúa si `pasos_levy_base` es `None`. |
+| `p_inter` | `float` [0,1] | `0.6` | P(elegir el grupo inter-ruta) cuando la solución es factible. Bajo violación se aplica `max(p_inter, 0.8)`. |
+| `semilla` | `int \| None` | `None` | Semilla del generador aleatorio. Si `None`, la ejecución no es reproducible (recomendado para experimentos paralelos). |
 | `operadores` | `Iterable[str]` | `OPERADORES_POPULARES` | Nombres de los operadores de vecindario habilitados. Por defecto, los 9 operadores definidos en `vecindarios.py`. |
 | `marcador_depot_etiqueta` | `str \| None` | `None` | Etiqueta del nodo depósito en las rutas (p.ej. `"D"`). Si `None`, se toma del contexto de evaluación. |
 | `usar_gpu` | `bool` | `False` | Si `True` y CuPy está disponible, la evaluación en lote se realiza en GPU. |
 | `backend_vecindario` | `Literal["labels", "ids"]` | `"labels"` | Modo de generación de vecinos. `"ids"` opera sobre representación entera (más rápido para instancias grandes). |
-| `guardar_historial` | `bool` | `True` | Si `True`, registra el mejor costo al inicio de cada iteración en `historial_mejor_costo`. |
+| `guardar_historial` | `bool` | `True` | Si `True`, registra el mejor costo al **final** de cada iteración en `historial_mejor_costo`. |
 | `guardar_csv` | `bool` | `False` | Si `True`, escribe una fila de resultados en un archivo CSV al finalizar. |
 | `ruta_csv` | `str \| None` | `None` | Ruta del CSV de resultados. Si `None`, se genera automáticamente como `resultados_cuckoo_search_{nombre_instancia}.csv`. |
 | `nombre_instancia` | `str` | `"instancia"` | Identificador de la instancia usado en el CSV y en la carga del contexto desde caché. |
-| `id_corrida` | `str \| None` | `None` | Identificador de la corrida para el CSV (útil en experimentos con múltiples repeticiones). |
-| `config_id` | `str \| None` | `None` | Identificador de configuración de hiperparámetros para el CSV. |
 | `repeticion` | `int \| None` | `None` | Número de repetición dentro de un experimento para el CSV. |
 | `root` | `str \| None` | `None` | Directorio raíz alternativo para buscar archivos de instancia. |
 | `usar_penalizacion_capacidad` | `bool` | `True` | Si `True`, el objetivo penaliza las violaciones de capacidad con `costo + λ × exceso`. |
 | `lambda_capacidad` | `float \| None` | `None` | Factor λ de penalización. Si `None`, se calcula automáticamente como ~10 veces la mediana de distancias en la instancia. |
-| `extra_csv` | `dict[str, object] \| None` | `None` | Columnas adicionales a incluir en la fila CSV. |
+| `extra_csv` | `dict[str, object] \| None` | `None` | Columnas adicionales a incluir en la fila CSV. Ahora **sí se vuelcan** a la fila antes de guardar (corrección del bug donde se ignoraban). |
+
+### Precedencia de parámetros instance-aware
+
+```
+valor absoluto (e.g. iteraciones=500)
+    ↓ si None
+factor de escala (e.g. factor_iter=20)
+    ↓ si None
+fórmula default (e.g. max(200, 20·n))
+```
+
+### Sesgo inter/intra-ruta dinámico (`p_inter`)
+
+A partir de la versión modernizada, Cuckoo Search reemplaza el helper local `pesos_inter_bias(...)` por el helper compartido `seleccionar_grupo_operadores_inter_intra(...)`, el mismo que utilizan SA, TS simple, RTS y ABC simple. Cambios derivados:
+
+- El parámetro `alpha_inter` se **elimina** de la firma. El piso 0.8 bajo violación se aplica internamente como `p_efectivo = max(p_inter, 0.8) if viol > 0 else p_inter`.
+- Cada paso del vuelo de Lévy (tanto en la generación de cuckoos como en el abandono) consume primero el grupo (inter o intra) que devuelve el helper a partir de un único `rng.random()`, y luego `generar_vecino` elige uniformemente dentro de ese grupo. La separación en dos pasos coincide con la mecánica de los demás metaheurísticos del proyecto y elimina la posibilidad de que `generar_vecino` agote reintentos cuando un operador no es aplicable a la solución actual.
+- El valor REAL aplicado bajo violación queda registrado en `p_inter_max_efectivo` (campo del resultado y columna del CSV).
 
 ### Qué retorna
 
@@ -270,6 +301,18 @@ Dataclass inmutable (`frozen=True, slots=True`) que agrupa todos los resultados 
 | `aceptaciones_solucion_infactible` | `int` | Veces que se aceptó en un nido una solución que viola restricciones de capacidad. |
 | `mejor_solucion_factible_final` | `bool` | `True` si la mejor solución final respeta todas las restricciones de capacidad. |
 | `archivo_csv` | `str \| None` | Ruta absoluta del CSV guardado, o `None` si no se guardó. |
+| `n_tareas` | `int` | Número de tareas requeridas (`len(ctx.u_arr)`), variable de escala `n`. |
+| `iteraciones_efectivas` | `int` | Valor de `iteraciones` realmente usado en el bucle (absoluto si lo pasó el usuario, factor·n si pasó factor, o `max(200, 20·n)` por default). |
+| `num_nidos_efectivo` | `int` | Valor de `num_nidos` realmente usado. |
+| `pasos_levy_efectivo` | `int` | Valor de `pasos_levy_base` realmente usado. |
+| `max_iter_sin_mejora_efectivo` | `int \| None` | Valor de `max_iter_sin_mejora` realmente usado (`None` solo si el usuario fuerza desactivación futura). |
+| `p_inter_max_efectivo` | `float` | P(inter) aplicada bajo violación (`max(p_inter, 0.8)`). |
+| `factor_iter` | `float \| None` | Factor de escala usado para `iteraciones` (None si no se pasó). |
+| `factor_nidos` | `float \| None` | Factor de escala usado para `num_nidos`. |
+| `factor_pasos` | `float \| None` | Factor de escala usado para `pasos_levy_base`. |
+| `iteraciones_sin_mejora_final` | `int` | Contador de estancamiento al cierre. |
+| `iteraciones_con_violacion` | `int` | Ciclos con violación media de nidos > 0 al inicio. |
+| `fraccion_iter_con_violacion` | `float` | `iteraciones_con_violacion / iteraciones_totales`. |
 
 ---
 
@@ -337,36 +380,174 @@ resultado = cuckoo_search_desde_instancia(
 )
 ```
 
-### Guardar resultados en CSV con metadatos de experimento
+### Guardar resultados en CSV con metadatos de experimento (instance-aware)
 
 ```python
 from metacarp.cuckoo_search import cuckoo_search_desde_instancia
 
+# Modo experimento: factores de escala (no valores absolutos) para
+# comparabilidad entre instancias de distinto tamaño.
 resultado = cuckoo_search_desde_instancia(
-    "EGL-E1-A",
-    iteraciones=500,
-    num_nidos=30,
-    pa_abandono=0.20,
-    semilla=7,
+    "gdb1",
+    factor_nidos=2.0,     # num_nidos       = max(10, round(2.0·√n))
+    factor_pasos=0.5,     # pasos_levy_base = max(3,  round(0.5·√n))
+    p_inter=0.6,          # P(inter) cuando es factible; bajo violación pasa a 0.8
+    pa_abandono=0.25,
     guardar_csv=True,
-    id_corrida="exp_grid_001",
-    config_id="nidos30_pa020",
+    ruta_csv="resultados/cuckoo_gdb1.csv",
     repeticion=1,
     extra_csv={"experimento": "grid_search_fase2"},
 )
+
+print(f"n_tareas:               {resultado.n_tareas}")
+print(f"iteraciones_efectivas:  {resultado.iteraciones_efectivas}")
+print(f"num_nidos_efectivo:     {resultado.num_nidos_efectivo}")
+print(f"pasos_levy_efectivo:    {resultado.pasos_levy_efectivo}")
+print(f"p_inter_max_efectivo:   {resultado.p_inter_max_efectivo}")
+```
+
+> **Convención del proyecto:** las columnas `id_corrida` y `config_id` ya no se escriben en el CSV. Si se pasan por kwargs heredados son absorbidos por `**_ignorado_kwargs` y descartados (las repeticiones se identifican únicamente por la columna `repeticion`).
+
+---
+
+## Columnas del CSV de salida
+
+El CSV lo escribe `guardar_resultado_csv` cuando `guardar_csv=True`. La etiqueta de metaheurística es `"cuckoo_search"`. El CSV no incluye las columnas `id_corrida` ni `config_id` (convención del proyecto). La columna agregada `aceptadas` fue **eliminada**: ya está desglosada por operador en las 36 columnas que produce `contador.resumen_csv()`.
+
+### Columnas de identificación y parámetros base (~22 columnas)
+
+| Columna | Descripción |
+|---|---|
+| `metaheuristica` | Siempre `"cuckoo_search"` |
+| `instancia` | Nombre de la instancia |
+| `bks_referencia` | Valor BKS de la literatura |
+| `bks_origen` | Fuente del BKS |
+| `gap_bks_porcentaje` | `(mejor_costo − BKS) / BKS × 100` |
+| `repeticion` | Número de repetición dentro del experimento |
+| `semilla` | Semilla del RNG |
+| `tiempo_segundos` | Duración real de la corrida |
+| `mejor_costo` | Costo de la mejor solución (factible si existe; sino, el general) |
+| `costo_solucion_inicial` | Costo de la solución inicial de referencia |
+| `mejora_absoluta` | `costo_inicial − mejor_costo` |
+| `mejora_porcentaje` | Mejora porcentual respecto al inicial |
+| `iteraciones` | Valor absoluto pasado por el usuario (`""` si `None`) |
+| `num_nidos` | Valor absoluto pasado por el usuario (`""` si `None`) |
+| `pasos_levy_base` | Valor absoluto pasado por el usuario (`""` si `None`) |
+| `max_iter_sin_mejora` | Valor absoluto pasado por el usuario (`""` si `None`) |
+| `factor_iter` | Factor de escala pasado por el usuario (`""` si no se usó) |
+| `factor_nidos` | Factor de escala pasado por el usuario (`""` si no se usó) |
+| `factor_pasos` | Factor de escala pasado por el usuario (`""` si no se usó) |
+| `pa_abandono` | Fracción de peores nidos abandonados por iteración |
+| `beta_levy` | Parámetro de forma de la distribución de Lévy |
+
+### Columnas de p_inter y penalización (4 columnas)
+
+| Columna | Descripción |
+|---|---|
+| `p_inter` | Valor BASE de P(inter) pasado por el usuario |
+| `p_inter_max_efectivo` | P(inter) aplicada bajo violación (`max(p_inter, 0.8)`) |
+| `usar_penalizacion_capacidad` | Si la penalización estuvo activa |
+| `lambda_capacidad` | λ efectivo de penalización |
+
+### Columnas de valores efectivos (5 columnas)
+
+| Columna | Descripción |
+|---|---|
+| `iteraciones_efectivas` | Iteraciones realmente usadas en el bucle |
+| `num_nidos_efectivo` | Nidos realmente usados |
+| `pasos_levy_efectivo` | `pasos_levy_base` realmente usado |
+| `max_iter_sin_mejora_efectivo` | Criterio de parada realmente usado |
+| `n_tareas` | Número de tareas requeridas (`n`) |
+
+### Columnas de operadores (36 columnas)
+
+Formato `<categoria>_<operador>`. Categorías: `propuesto`, `aceptado`, `mejoraron`, `trayectoria_mejor`. Operadores: los 9 de `OPERADORES_POPULARES`. Se generan con `contador.resumen_csv()`.
+
+### Columnas de estadísticas de corrida (~11 columnas)
+
+| Columna | Descripción |
+|---|---|
+| `iteraciones_totales` | Ciclos completos ejecutados |
+| `iteraciones_sin_mejora_final` | Contador de estancamiento al cierre |
+| `reemplazos_exitosos` | Veces que un cuckoo reemplazó un nido en la fase de competencia |
+| `abandonos_totales` | Veces que un nido fue abandonado y reconstruido |
+| `mejoras` | Actualizaciones del mejor global |
+| `aceptaciones_solucion_infactible` | Aceptaciones que aterrizaron en vecino infactible |
+| `iteraciones_con_violacion` | Ciclos con violación media > 0 |
+| `fraccion_iter_con_violacion` | `iteraciones_con_violacion / iteraciones_totales` |
+| `mejor_solucion_factible_final` | Si la mejor solución es factible |
+| `mejor_solucion_tr_legible` | Representación textual de la solución |
+| `reporte_detalle_deadheading` | Desglose de costos de arrastre por ruta |
+| `costo_total_desde_reporte` | Verificación cruzada del costo |
+
+> **Total aproximado:** ~78 columnas (22 identificación + 4 p_inter + 5 efectivos + 36 operadores + 11 estadísticas), más cualquier columna que el usuario añada vía `extra_csv` (las cuales ahora **sí** se vuelcan a la fila).
+
+---
+
+## Script de experimentos: `scripts/run_cuckoo_automatico.py`
+
+El script realiza un **grid search 4D sobre factores de escala** (no valores absolutos) para que los recursos sean proporcionales al tamaño de cada instancia.
+
+### Grid por defecto
+
+```
+factor_nidos   ∈ {1.5, 2.0, 3.0, 4.0}       → num_nidos       = max(10, round(f·√n))
+factor_pasos   ∈ {0.25, 0.5, 0.75, 1.0}     → pasos_levy_base = max(3,  round(f·√n))
+p_inter        ∈ {0.4, 0.5, 0.6, 0.7, 0.8}   → P(inter) en régimen factible
+pa_abandono    ∈ {0.15, 0.25, 0.35}          → fracción de peores nidos a abandonar
+
+Total: 4 × 4 × 5 × 3 = 240 combos × 23 instancias × 5 reps = 27 600 corridas
+```
+
+`factor_iter` y `max_iter_sin_mejora` no se barren en el grid principal: se dejan en `None` y el algoritmo los calibra con `max(200, 20·n)` y `max(50, 3·n)` respectivamente. `factor_iter` puede fijarse por CLI como override single-value.
+
+### Flags principales
+
+| Flag | Descripción |
+|---|---|
+| `--salida-dir DIR` | Carpeta final (no se crea subcarpeta hardcodeada). Subcarpeta `_partials/` para CSVs por worker. |
+| `--repeticiones N` | Repeticiones por configuración (default 5). |
+| `--workers N` | Procesos paralelos (default `os.cpu_count()`; `1` = secuencial). |
+| `--p-inter X` | Override single-value de `p_inter` (fija la dimensión a un solo punto). |
+| `--factor-nidos X` | Override single-value de `factor_nidos`. |
+| `--factor-pasos X` | Override single-value de `factor_pasos`. |
+| `--pa-abandono X` | Override single-value de `pa_abandono`. |
+| `--factor-iter X` | Override single-value de `factor_iter` (default = None ⇒ algoritmo aplica `max(200, 20·n)`). |
+| `--usar-gpu` | Activa evaluación en lote con CuPy. |
+| `--experimento NOMBRE` | Etiqueta para el nombre del CSV final consolidado. |
+
+### Decisiones de diseño
+
+- **Sin semillas fijas:** cada repetición usa una semilla aleatoria del sistema. Las repeticiones SOLO tienen valor estadístico si cada una muestrea una trayectoria distinta; una semilla determinista por tarea las convertiría en mediciones idénticas. Misma decisión que `run_abc_simple_automatico.py`, `run_tabu_simple_automatico.py` y `run_tabu_reactiva_automatico.py`.
+- **Map-reduce CSV:** cada worker escribe a un parcial único (`_partials/cuckoo_<inst>_<pid>_<idx>.csv`); el proceso principal concatena los parciales por instancia al final. Sin locks, sin colas, sin riesgo de filas truncadas.
+- **`TareaCuckoo` como dataclass frozen** sin campo `semilla` y pickle-friendly: cada corrida es función pura y puede enviarse a `ProcessPoolExecutor` directamente.
+
+### Ejemplos de uso
+
+```bash
+# Grid completo, multi-proceso (default)
+python scripts/run_cuckoo_automatico.py
+
+# Salida en carpeta concreta, 5 reps, 8 workers
+python scripts/run_cuckoo_automatico.py --salida-dir experimentos/cuckoo_grid --repeticiones 5 --workers 8
+
+# Subset del grid: fijar p_inter y pa_abandono, barrer factor_nidos y factor_pasos
+python scripts/run_cuckoo_automatico.py --p-inter 0.6 --pa-abandono 0.25
 ```
 
 ---
 
 ## Guía de ajuste de parámetros
 
-| Parámetro | Default | Efecto al aumentar | Efecto al disminuir | Recomendación |
+| Parámetro | Default (instance-aware) | Efecto al aumentar | Efecto al disminuir | Recomendación |
 |---|---|---|---|---|
-| `num_nidos` | `20` | Mayor diversidad, mejor cobertura del espacio, mayor costo por iteración | Menor diversidad, convergencia más rápida pero riesgo de mínimos locales | Aumentar para instancias grandes o con muchos mínimos locales; reducir si el tiempo de cómputo es crítico |
-| `pa_abandono` | `0.25` | Más diversificación: más nidos se reconstruyen cada iteración | Menos diversificación: la población converge más rápido | Valores entre 0.15 y 0.35 son típicos; aumentar si el algoritmo se estanca |
-| `pasos_levy_base` | `3` | Saltos más largos en promedio → mayor exploración global | Saltos más cortos → explotación más local | Aumentar para escapar de mínimos locales profundos; reducir para explotar buenas soluciones |
-| `beta_levy` | `1.5` | (disminuir) Más saltos largos, mayor exploración | (aumentar) Saltos más cortos, más explotación local | Mantener en 1.5 (valor clásico) salvo necesidad demostrada de ajuste |
-| `num_iteraciones` | `260` | Más tiempo de búsqueda, potencialmente mejor solución | Menos tiempo, soluciones de menor calidad | Escalar con el tamaño de la instancia; monitorear `historial_mejor_costo` para detectar convergencia prematura |
+| `num_nidos` | `max(10, round(2·√n))` | Mayor diversidad, mejor cobertura del espacio, mayor costo por iteración | Menor diversidad, convergencia más rápida pero riesgo de mínimos locales | Usar `factor_nidos` para barrer valores ∈ {1.5, 2.0, 3.0, 4.0} proporcionales a `√n` |
+| `pa_abandono` | `0.25` (ratio fija, no escala con n) | Más diversificación: más nidos se reconstruyen cada iteración | Menos diversificación: la población converge más rápido | Valores entre 0.15 y 0.35 son típicos; aumentar si el algoritmo se estanca |
+| `pasos_levy_base` | `max(3, round(√n / 2))` | Saltos más largos en promedio → mayor exploración global | Saltos más cortos → explotación más local | Usar `factor_pasos` para barrer ∈ {0.25, 0.5, 0.75, 1.0} proporcionales a `√n` |
+| `beta_levy` | `1.5` (parámetro de forma) | (disminuir) Más saltos largos, mayor exploración | (aumentar) Saltos más cortos, más explotación local | Mantener en 1.5 (valor clásico) salvo necesidad demostrada de ajuste |
+| `iteraciones` | `max(200, 20·n)` | Más tiempo de búsqueda, potencialmente mejor solución | Menos tiempo, soluciones de menor calidad | Escalar con el tamaño de la instancia mediante `factor_iter` ∈ {15, 20, 30}; monitorear `historial_mejor_costo` para detectar convergencia prematura |
+| `max_iter_sin_mejora` | `max(50, 3·n)` (siempre activo) | Más paciencia para escapar de plateaus | Parada anticipada agresiva | El default es razonable; ajustar solo si las trazas muestran convergencia muy temprana |
+| `p_inter` | `0.6` | Mayor sesgo a operadores inter-ruta (reparación) en régimen factible | Mayor sesgo a operadores intra-ruta (refinamiento local) | El piso 0.8 bajo violación es automático; ajustar solo el valor base |
 
 **Notas adicionales:**
 
