@@ -1,0 +1,324 @@
+\documentclass[12pt, a4paper]{article}
+
+% ============================================================
+%  Paquetes
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage[ruled, vlined, linesnumbered, spanish]{algorithm2e}
+\usepackage{geometry}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% ============================================================
+%  Metadatos del documento
+% ============================================================
+\title{Cuckoo Search Discreto para CARP --- Pseudocódigo}
+\author{}
+\date{}
+
+% ============================================================
+\begin{document}
+\maketitle
+
+% ------------------------------------------------------------
+\section{Introducción y analogía biológica}
+% ------------------------------------------------------------
+
+El algoritmo \textbf{Cuckoo Search} (Yang \& Deb, 2009) se inspira en el
+parasitismo de nidificación del cucú: el pájaro pone sus huevos en los nidos de
+otras aves y, si el huevo no es detectado como intruso, el polluelo es criado por
+el ave huésped. En términos de optimización:
+
+\begin{itemize}
+    \item Cada \textbf{nido} es una solución candidata (un conjunto de rutas CARP).
+    \item Cada \textbf{huevo de cucú} es una nueva solución generada mediante un
+          \emph{vuelo de Lévy discreto} desde la solución de un nido.
+    \item Si el huevo es \emph{mejor} que el nido donde aterriza, lo reemplaza
+          (\emph{competencia greedy}).
+    \item Con probabilidad $p_a$, los \emph{peores nidos} son abandonados y
+          reemplazados por nuevas soluciones generadas en torno al mejor nido
+          (\emph{diversificación}).
+\end{itemize}
+
+La diferencia con ABC es que Cuckoo Search genera sus soluciones candidatas
+mediante el vuelo de Lévy, que combina muchos pasos cortos con saltos
+ocasionalmente largos, en lugar de la perturbación unitaria de las empleadas
+o la selección por ruleta de las observadoras.
+
+% ------------------------------------------------------------
+\section{Notación}
+% ------------------------------------------------------------
+
+\begin{itemize}
+    \item $G = (V, E, R)$: grafo de la instancia CARP. $R \subseteq E$ son los
+          arcos requeridos.
+    \item $N = \{s_1, \ldots, s_{K}\}$: conjunto de nidos (soluciones activas),
+          con $K = \mathit{num\_nidos}$.
+    \item $s^{*}$: mejor solución encontrada durante toda la corrida.
+    \item $c(s)$: costo puro de la solución $s$.
+    \item $\mathrm{viol}(s)$: exceso total de demanda respecto a la capacidad.
+    \item $f(s) = c(s) + \lambda \cdot \mathrm{viol}(s)$: objetivo penalizado
+          ($\lambda > 0$).
+    \item $p_a \in (0,1)$: fracción de peores nidos abandonados por iteración.
+    \item $\beta > 0$: parámetro de forma del vuelo de Lévy ($\beta = 1.5$
+          clásico).
+    \item $L$: número de pasos del vuelo de Lévy discreto (variable aleatoria
+          acotada a $[1, 12]$, ver sección~\ref{sec:levy}).
+    \item $P_{\mathrm{base}}$: escala base de los pasos de Lévy.
+    \item $\mathcal{O}_{\mathrm{intra}}$, $\mathcal{O}_{\mathrm{inter}}$:
+          conjuntos de operadores intra-ruta e inter-ruta (9 operadores en total).
+    \item $p_{\mathrm{inter}} \in [0,1]$: P(elegir inter-ruta) cuando la solución
+          es factible.
+    \item $p_{\mathrm{efec}}$: probabilidad efectiva de elegir inter-ruta tras el
+          piso dinámico bajo violación.
+    \item $n = |R|$: número de tareas requeridas (variable de escala
+          \emph{instance-aware}).
+\end{itemize}
+
+\medskip
+\noindent
+\textbf{Calibración \emph{instance-aware} (valores por defecto si no se
+proporcionan):}
+\[
+\mathit{iteraciones} = \max(200,\; 20 \cdot n), \quad
+K = \max(10,\; \lceil 2\sqrt{n} \rceil), \quad
+P_{\mathrm{base}} = \max\!\left(3,\; \left\lfloor\tfrac{\sqrt{n}}{2}\right\rfloor\right), \quad
+M = \max(50,\; 3 \cdot n).
+\]
+
+\medskip
+\noindent
+\textbf{Sesgo inter/intra dinámico (compartido con SA, TS simple, RTS y ABC simple).}
+Se calcula la violación media $\bar{v} = \tfrac{1}{K}\sum_{i=1}^{K}\mathrm{viol}(s_i)$
+y se aplica:
+\[
+p_{\mathrm{efec}} \;=\;
+\begin{cases}
+  \max(p_{\mathrm{inter}},\; 0.8) & \text{si } \bar{v} > 0, \\
+  p_{\mathrm{inter}}              & \text{si } \bar{v} = 0.
+\end{cases}
+\]
+
+% ------------------------------------------------------------
+\section{Vuelo de Lévy discreto}
+\label{sec:levy}
+% ------------------------------------------------------------
+
+En el espacio continuo original, el vuelo de Lévy produce pasos de longitud con
+distribución de cola pesada. En el espacio discreto de rutas CARP se aproxima
+por el \emph{número de perturbaciones consecutivas} $L$:
+
+\[
+x \sim |\mathcal{N}(0,\,1)|, \qquad
+L = \min\!\left(12,\; 1 + \left\lfloor x^{1/\beta} \cdot P_{\mathrm{base}} \right\rfloor\right).
+\]
+
+Un $x$ grande (cola de la distribución normal) produce un $L$ grande y por tanto
+un salto largo en el espacio de soluciones. La cota $L \leq 12$ evita vuelos
+excesivamente largos que degradarían la calidad de la exploración.
+
+Cada uno de los $L$ pasos es una perturbación local: aplicar un operador
+$\mathcal{O}_{\mathrm{grupo}}$ (elegido por el sesgo inter/intra) a la solución
+actual y obtener la solución resultante. El operador concreto dentro del grupo
+se selecciona de forma uniforme.
+
+% ------------------------------------------------------------
+\section{Pseudocódigos}
+% ------------------------------------------------------------
+
+% -------- Lévy discreto (auxiliar) --------------------------
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{VueloLévyDiscreto($s_{\mathrm{base}},\, P_{\mathrm{base}},\, \beta,\,
+         \mathcal{O}_{\mathrm{grupo}}$)}
+\label{alg:levy}
+
+\KwIn{Solución base $s_{\mathrm{base}}$;\; escala $P_{\mathrm{base}}$;\;
+      parámetro $\beta$;\; grupo de operadores $\mathcal{O}_{\mathrm{grupo}}$}
+\KwOut{Solución cuckoo $s'$;\; lista de movimientos aplicados $\mathbf{m}$}
+
+\BlankLine
+$x \leftarrow |{\cal N}(0,1)|$
+    \tcp{valor absoluto de una muestra normal estándar}
+$L \leftarrow \min\!\left(12,\; 1 + \lfloor x^{1/\beta} \cdot
+    \max(1, P_{\mathrm{base}}) \rfloor\right)$
+    \tcp{número de pasos del vuelo; acotado en $[1,12]$}
+$s' \leftarrow$ copia de $s_{\mathrm{base}}$ \;
+$\mathbf{m} \leftarrow [\,]$ \;
+\For{$\ell \leftarrow 1$ \KwTo $L$}{
+    $(s',\, m_\ell) \leftarrow \textsc{GenerarVecino}(s',\, \mathcal{O}_{\mathrm{grupo}})$
+        \tcp{perturbación local (operador uniforme dentro del grupo)}
+    $\mathbf{m} \leftarrow \mathbf{m} + [m_\ell]$ \;
+}
+\Return $(s',\, \mathbf{m})$
+\end{algorithm}
+
+\bigskip
+
+% -------- Cuckoo Search completo ----------------------------
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{Cuckoo Search Discreto para CARP (Yang \& Deb 2009 adaptado)}
+\label{alg:cuckoo}
+
+\KwIn{Instancia CARP $G$;\; solución inicial $s_0$;\;
+      $p_a$;\; $\beta$;\; $p_{\mathrm{inter}}$;\; $\lambda$;\;
+      opcionalmente: $K$, $P_{\mathrm{base}}$, $\mathit{iteraciones}$,
+      $M$ (todos instance-aware si se omiten)}
+\KwOut{Mejor solución encontrada $s^{*}$}
+
+\BlankLine
+\tcp{Calibración instance-aware}
+$n \leftarrow |R|$ \;
+$\mathit{iteraciones} \leftarrow \max(200,\; 20 \cdot n)$ \;
+$K            \leftarrow \max(10,\; \lceil 2\sqrt{n} \rceil)$ \;
+$P_{\mathrm{base}} \leftarrow \max(3,\; \lfloor\sqrt{n}/2\rfloor)$ \;
+$M            \leftarrow \max(50,\; 3 \cdot n)$
+    \tcp{máx. iteraciones sin mejora}
+
+\BlankLine
+\tcp{Precómputo UNA VEZ de las particiones intra/inter}
+Construir $\mathcal{O}_{\mathrm{intra}}$, $\mathcal{O}_{\mathrm{inter}}$,
+$\mathcal{O}_{\mathrm{fallback}}$ a partir de los operadores activos \;
+
+\BlankLine
+\tcp{Inicialización de nidos}
+$N[0] \leftarrow s_0$ \;
+\For{$i \leftarrow 1$ \KwTo $K - 1$}{
+    $N[i] \leftarrow$ vecino aleatorio de $N[0]$ \;
+}
+$s^{*} \leftarrow \arg\min_{i} f(N[i])$ \;
+$\mathit{iter\_sin\_mejora} \leftarrow 0$ \;
+
+\BlankLine
+\For{$\mathit{ciclo} \leftarrow 1$ \KwTo $\mathit{iteraciones}$}{
+
+    \tcp{Criterio de parada anticipada por estancamiento}
+    \If{$\mathit{iter\_sin\_mejora} \geq M$}{
+        \textbf{break} \;
+    }
+    $f^{*}_{\mathrm{inicio}} \leftarrow f(s^{*})$ \tcp{snapshot para detectar mejora}
+
+    \BlankLine
+    \tcp{Violación media y $p_{\mathrm{efec}}$ para este ciclo}
+    $\bar{v} \leftarrow \tfrac{1}{K}\sum_{i=1}^{K} \mathrm{viol}(N[i])$ \;
+    \lIf{$\bar{v} > 0$}{$p_{\mathrm{efec}} \leftarrow \max(p_{\mathrm{inter}},\; 0.8)$}
+    \lElse{$p_{\mathrm{efec}} \leftarrow p_{\mathrm{inter}}$}
+
+    \BlankLine
+    \tcp{\textbf{Paso 1 — Generación de cuckoos mediante vuelo de Lévy}}
+    \For{$i \leftarrow 0$ \KwTo $K - 1$}{
+        $\mathcal{O}_{\mathrm{grupo}} \leftarrow$ \textsc{ElegirGrupo}($p_{\mathrm{efec}},\,
+            \mathrm{viol}(N[i]),\,
+            \mathcal{O}_{\mathrm{inter}},\, \mathcal{O}_{\mathrm{intra}}$) \;
+        $(\mathit{ck}[i],\, \mathbf{m}[i]) \leftarrow$ \textsc{VueloLévyDiscreto}($N[i],\,
+            P_{\mathrm{base}},\, \beta,\, \mathcal{O}_{\mathrm{grupo}}$) \;
+        \ForEach{$m \in \mathbf{m}[i]$}{\textsc{Proponer}($m$)} \;
+    }
+
+    \BlankLine
+    \tcp{Evaluación vectorizada del lote de cuckoos (GPU si disponible)}
+    $\{f(\mathit{ck}[i])\}_{i=0}^{K-1} \leftarrow$ \textsc{EvaluarLote}($\{\mathit{ck}[i]\}$) \;
+
+    \BlankLine
+    \tcp{\textbf{Paso 2 — Competencia: cuckoo vs nido aleatorio}}
+    \For{$i \leftarrow 0$ \KwTo $K - 1$}{
+        $j \leftarrow \textsc{UniformeEntero}(0,\, K-1)$
+            \tcp{nido rival elegido al azar}
+        \If{$f(\mathit{ck}[i]) < f(N[j]) - \varepsilon$}{
+            $N[j] \leftarrow \mathit{ck}[i]$
+                \tcp{el cuckoo reemplaza al nido rival}
+            \textsc{Aceptar}($\mathbf{m}[i][-1]$) \;
+            \tcp{Detección inmediata de mejora global (corrección del bug de imputación)}
+            \If{$f(\mathit{ck}[i]) < f(s^{*}) - \varepsilon$}{
+                $s^{*} \leftarrow \mathit{ck}[i]$ \;
+                \textsc{RegistrarMejora}($\mathbf{m}[i][-1]$)
+                    \tcp{operador del último paso del vuelo Lévy de ESTE cuckoo}
+            }
+        }
+    }
+
+    \BlankLine
+    \tcp{\textbf{Paso 3 — Abandono de los peores nidos}}
+    $n_a \leftarrow \max(1,\; \lfloor p_a \cdot K \rfloor)$
+        \tcp{cantidad de nidos a abandonar}
+    $\mathit{peores} \leftarrow$ índices de los $n_a$ nidos con mayor $f(\cdot)$ \;
+    $j^{*} \leftarrow \arg\min_{i} f(N[i])$
+        \tcp{índice del mejor nido}
+    $\mathcal{O}_{\mathrm{ab}} \leftarrow$ \textsc{ElegirGrupo}($p_{\mathrm{efec}},\,
+        \mathrm{viol}(N[j^{*}]),\,
+        \mathcal{O}_{\mathrm{inter}},\, \mathcal{O}_{\mathrm{intra}}$) \;
+    \ForEach{$k \in \mathit{peores}$}{
+        $(N[k],\, \mathbf{m}_{\mathrm{ab}}) \leftarrow$ \textsc{VueloLévyDiscreto}($N[j^{*}],\,
+            P_{\mathrm{base}},\, \beta,\, \mathcal{O}_{\mathrm{ab}}$)
+            \tcp{vuelo Lévy desde el mejor nido actual}
+        \ForEach{$m \in \mathbf{m}_{\mathrm{ab}}$}{\textsc{Proponer}($m$)} \;
+        \tcp{(evaluación incluida en el bloque final)}
+    }
+
+    \BlankLine
+    \tcp{Evaluación vectorizada de los nidos recién reemplazados}
+    Evaluar $f(N[k])$ para todo $k \in \mathit{peores}$ \;
+    \ForEach{$k \in \mathit{peores}$}{
+        \If{$f(N[k]) < f(s^{*}) - \varepsilon$}{
+            $s^{*} \leftarrow N[k]$ \tcp{el abandono puede también mejorar el global}
+        }
+    }
+
+    \BlankLine
+    \tcp{Actualización del contador de estancamiento}
+    \lIf{$f(s^{*}) < f^{*}_{\mathrm{inicio}} - \varepsilon$}{%
+        $\mathit{iter\_sin\_mejora} \leftarrow 0$}
+    \lElse{%
+        $\mathit{iter\_sin\_mejora} \leftarrow \mathit{iter\_sin\_mejora} + 1$}
+}
+
+\BlankLine
+\Return $s^{*}$
+\end{algorithm}
+
+% ------------------------------------------------------------
+\section{Notas de implementación}
+% ------------------------------------------------------------
+
+\paragraph{Evaluación vectorizada (GPU).}
+En el Paso 1, los $K$ cuckoos se evalúan en lote con
+\texttt{costo\_lote\_penalizado\_ids} (NumPy en CPU; CuPy en GPU si
+\texttt{usar\_gpu=True}). Los nidos reemplazados en el Paso 3 también se evalúan
+en lote. Esto concentra el trabajo vectorizable en dos llamadas por iteración,
+minimizando el overhead de Python puro.
+
+\paragraph{Corrección del bug de imputación.}
+En la versión anterior, la detección de mejora global se hacía comparando el
+mejor antes y después de la iteración completa, imputando el crédito al
+\emph{último movimiento aceptado} de la iteración (que podía no ser el operador
+responsable). En esta versión, la llamada a \textsc{RegistrarMejora}$(m)$ ocurre
+dentro del mismo \texttt{if} que detecta $f(\mathit{ck}[i]) < f(s^{*})$, con el
+operador del último paso del vuelo de Lévy de \emph{ese} cuckoo específico.
+Consecuencia: $\sum_{\mathrm{op}}\mathit{mejoraron}[\mathrm{op}] = \mathit{mejoras}$.
+
+\paragraph{Inicialización de nidos.}
+El nido 0 se siembra con la mejor solución inicial disponible. Los nidos
+$1 \ldots K-1$ se generan como vecinos aleatorios del nido 0 (igual estrategia
+que en ABC simple), lo que ofrece diversidad inmediata sin desperdiciar la
+información de la solución de partida.
+
+\paragraph{Diferencia con ABC simple en los scouts.}
+En Cuckoo Search, el paso de abandono (Paso 3) reemplaza los peores nidos con
+un vuelo de Lévy \emph{desde el mejor nido actual} (exploración dirigida). En
+ABC simple, los scouts reemplazan fuentes agotadas con soluciones completamente
+aleatorias (exploración pura). Cuckoo Search tiende a explorar en torno a la
+región de mejor calidad conocida; ABC simple mantiene mayor diversificación global.
+
+\paragraph{Parámetro $\beta$.}
+El valor clásico de Yang \& Deb es $\beta = 1.5$. Valores menores (ej.\ $\beta =
+1.2$) generan distribuciones con cola más pesada: más saltos largos, mayor
+exploración pero menor precisión local. Valores mayores (ej.\ $\beta = 2.0$)
+producen pasos más cortos, favoreciendo la explotación. En MetaCARP se usa el
+valor clásico como default.
+
+\end{document}
