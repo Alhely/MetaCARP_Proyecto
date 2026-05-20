@@ -1,0 +1,436 @@
+\documentclass[12pt, a4paper]{article}
+
+% ============================================================
+%  Paquetes
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage[ruled, vlined, linesnumbered, spanish]{algorithm2e}
+\usepackage{geometry}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% ============================================================
+%  Metadatos del documento
+% ============================================================
+\title{Búsqueda Tabú Simple y Reactiva --- Pseudocódigo}
+\author{}
+\date{}
+
+% ============================================================
+\begin{document}
+\maketitle
+
+% ------------------------------------------------------------
+\section{Notación común}
+% ------------------------------------------------------------
+
+A continuación se listan los símbolos compartidos por la Búsqueda Tabú Simple
+(TS) y la Búsqueda Tabú Reactiva (RTS). Estos símbolos coinciden con los del
+documento de pseudocódigo de Recocido Simulado y de Abejas Artificiales del
+proyecto MetaCARP.
+
+\begin{itemize}
+    \item $G = (V, E, R)$: grafo de la instancia CARP. $V$ son los nodos, $E$ las
+          aristas y $R \subseteq E$ las aristas requeridas.
+    \item $s$: solución --- conjunto de rutas $\{r_1, r_2, \ldots, r_k\}$, cada
+          ruta es una secuencia de etiquetas de tareas requeridas con el depósito
+          al inicio y al final.
+    \item $s^{*}$: mejor solución encontrada durante toda la corrida.
+    \item $c(s)$: costo puro (suma de costos de travesía).
+    \item $\mathrm{viol}(s)$: violación total de capacidad (exceso de demanda).
+    \item $f(s) = c(s) + \lambda \cdot \mathrm{viol}(s)$: objetivo penalizado
+          ($\lambda > 0$).
+    \item $\mathcal{N}(s)$: vecindario de $s$ inducido por los operadores
+          activos.
+    \item $\mathcal{O}_{\mathrm{intra}} = \{\texttt{relocate\_intra},\,
+          \texttt{swap\_intra},\, \texttt{2opt\_intra}\}$: operadores
+          intra-ruta.
+    \item $\mathcal{O}_{\mathrm{inter}} = \{\texttt{relocate\_inter},\,
+          \texttt{swap\_inter},\, \texttt{2opt\_star},\,
+          \texttt{cross\_exchange},\, \texttt{or\_opt\_2},\,
+          \texttt{or\_opt\_3}\}$: operadores inter-ruta.
+    \item $\mathcal{T}$: lista tabú (cola FIFO de claves de movimientos).
+    \item $\tau$: tenencia tabú (capacidad de $\mathcal{T}$). En TS es fija; en
+          RTS es dinámica y vive en $[\tau_{\min}, \tau_{\max}]$.
+    \item $n = |R|$: número de tareas requeridas (variable de escala
+          instance-aware).
+    \item $p_{\mathrm{inter}} \in [0,1]$: probabilidad de elegir el grupo
+          inter-ruta cuando la solución actual es factible.
+    \item $\alpha_{\mathrm{inter}} \in [0,1]$: probabilidad de elegir el grupo
+          inter-ruta cuando la solución actual viola capacidad.
+    \item $H(s)$: hash canónico de una solución (en RTS, para detectar ciclos).
+\end{itemize}
+
+\medskip
+\noindent
+\textbf{Clave tabú $\kappa(m)$.} El movimiento $m$ aplicado para pasar de $s$
+a $s'$ se identifica por la tupla
+$\kappa(m) = (\mathrm{operador},\, r_a, r_b,\, i, j, k, l,\, \text{etiquetas
+movidas})$. Dos movimientos con la misma clave se consideran iguales.
+
+\medskip
+\noindent
+\textbf{Sesgo inter/intra (compartido con SA y ABC).} En cada iteración del
+bucle principal se calcula $v \leftarrow \mathrm{viol}(s)$ y se define
+\[
+p_{\mathrm{efec}} \;=\;
+\begin{cases}
+  \alpha_{\mathrm{inter}} & \text{si } v > 0, \\
+  p_{\mathrm{inter}}     & \text{si } v = 0.
+\end{cases}
+\]
+Con probabilidad $p_{\mathrm{efec}}$ se elige el grupo
+$\mathcal{O}_{\mathrm{inter}}$; en caso contrario,
+$\mathcal{O}_{\mathrm{intra}}$. Dentro del grupo elegido, el operador concreto
+se muestrea de manera uniforme.
+
+% ------------------------------------------------------------
+\section{Búsqueda Tabú Simple (TS)}
+% ------------------------------------------------------------
+
+Implementación más simple del Tabu Search clásico de Glover (1986):
+best-improvement sobre un lote muestreado del vecindario, lista tabú FIFO de
+tenencia fija, criterio de aspiración clásico y doble criterio de parada
+(iteraciones máximas o estancamiento). La lista tabú se mantiene mediante una
+deque acompañada de un \emph{set} y de un \emph{Counter} paralelo para que las
+consultas y los descartes por overflow se realicen en $O(1)$.
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{Búsqueda Tabú Simple para CARP}
+\label{alg:ts_simple}
+
+\KwIn{Instancia CARP $G$;\; solución inicial $s_0$;\;
+      $\mathit{iteraciones\_max}$;\; $\mathit{max\_iter\_sin\_mejora}$;\;
+      $\mathit{tam\_vecindario}$;\; tenencia tabú $\tau$;\;
+      $p_{\mathrm{inter}}$,\; $\alpha_{\mathrm{inter}}$;\;
+      operadores $\mathcal{O}$}
+\KwOut{Mejor solución encontrada $s^{*}$}
+
+\BlankLine
+\tcp{Inicialización}
+$s \leftarrow s_0$;\quad $s^{*} \leftarrow s$;\quad
+$c^{*} \leftarrow c(s)$ \;
+$\mathcal{T} \leftarrow$ deque FIFO de capacidad $\tau$ (acompañada de un set
+y de un Counter paralelos para lookup y descarte en $O(1)$) \;
+$\mathit{iter} \leftarrow 0$;\quad $\mathit{iter\_sin\_mejora} \leftarrow 0$ \;
+$\mathit{aspiraciones} \leftarrow 0$;\quad
+$\mathit{todos\_tabu} \leftarrow 0$ \;
+
+\BlankLine
+\While{$\mathit{iter} < \mathit{iteraciones\_max}$}{
+    \If{$\mathit{iter\_sin\_mejora} \geq \mathit{max\_iter\_sin\_mejora}$}{
+        \textbf{break}
+            \tcp{parada anticipada por estancamiento}
+    }
+
+    \BlankLine
+    \tcp{Paso 1: selección del grupo de operadores (sesgo inter/intra)}
+    $v \leftarrow \mathrm{viol}(s)$ \;
+    \eIf{$v > 0$}{
+        $p_{\mathrm{efec}} \leftarrow \alpha_{\mathrm{inter}}$
+    }{
+        $p_{\mathrm{efec}} \leftarrow p_{\mathrm{inter}}$
+    }
+    \eIf{$\mathrm{Uniforme}(0,1) < p_{\mathrm{efec}}$}{
+        $\mathcal{O}_{\mathrm{grupo}} \leftarrow \mathcal{O}_{\mathrm{inter}}$
+    }{
+        $\mathcal{O}_{\mathrm{grupo}} \leftarrow \mathcal{O}_{\mathrm{intra}}$
+    }
+
+    \BlankLine
+    \tcp{Paso 2: generación del lote de vecinos}
+    $\mathcal{N} \leftarrow \emptyset$;\quad
+    $\mathcal{M} \leftarrow \emptyset$
+        \tcp{vecinos y movimientos asociados}
+    \For{$k \leftarrow 1$ \KwTo $\mathit{tam\_vecindario}$}{
+        $\mathit{op} \leftarrow$ \textsc{SelectUniform}($\mathcal{O}_{\mathrm{grupo}}$) \;
+        $(s'_k, m_k) \leftarrow$ \textsc{AplicarOperador}($\mathit{op},\, s$) \;
+        $\mathcal{N} \leftarrow \mathcal{N} \cup \{s'_k\}$;\quad
+        $\mathcal{M} \leftarrow \mathcal{M} \cup \{m_k\}$ \;
+    }
+
+    \BlankLine
+    \tcp{Paso 3: evaluación vectorizada del lote}
+    Evaluar $f(s'_k)$ para todo $k$ en una sola pasada NumPy
+        (\texttt{costo\_lote\_ids}) \;
+
+    \BlankLine
+    \tcp{Paso 4: mejor vecino admisible (no-tabú o tabú con aspiración)}
+    $\mathit{ind\_admisible} \leftarrow -1$;\quad
+    $\mathit{ind\_total} \leftarrow 0$ \;
+    $\mathit{aspiracion\_iter} \leftarrow \textsc{Falso}$ \;
+    \ForEach{$k \in \{1, \ldots, \mathit{tam\_vecindario}\}$}{
+        Actualizar el mejor total $\mathit{ind\_total}$ con $\arg\min f(s'_k)$ \;
+        $\mathit{es\_tabu} \leftarrow (\kappa(m_k) \in \mathcal{T})$ \;
+        $\mathit{aspiracion} \leftarrow (f(s'_k) < c^{*} - \varepsilon)$
+            \tcp{aspiración clásica}
+        \If{$\mathit{es\_tabu}$ \textbf{ y } \textbf{no} $\mathit{aspiracion}$}{
+            \textbf{continue}
+                \tcp{movimiento tabú sin aspiración: se descarta}
+        }
+        Actualizar $\mathit{ind\_admisible}$ con $\arg\min f(s'_k)$ \;
+        \If{$\mathit{es\_tabu}$ \textbf{ y } $\mathit{aspiracion}$}{
+            $\mathit{aspiracion\_iter} \leftarrow \textsc{Verdadero}$ \;
+        }
+    }
+
+    \BlankLine
+    \tcp{Paso 5: elección final del movimiento}
+    \eIf{$\mathit{ind\_admisible} = -1$}{
+        $k^{*} \leftarrow \mathit{ind\_total}$;\quad
+        $\mathit{todos\_tabu} \leftarrow \mathit{todos\_tabu} + 1$
+            \tcp{todos tabú: fallback al mejor tabú}
+    }{
+        $k^{*} \leftarrow \mathit{ind\_admisible}$ \;
+        \lIf{$\mathit{aspiracion\_iter}$}{
+            $\mathit{aspiraciones} \leftarrow \mathit{aspiraciones} + 1$
+        }
+    }
+    $s \leftarrow s'_{k^{*}}$;\quad $m^{*} \leftarrow m_{k^{*}}$
+        \tcp{TS avanza SIEMPRE, aunque empeore}
+
+    \BlankLine
+    \tcp{Paso 6: actualización FIFO de la lista tabú con Counter paralelo}
+    \If{$|\mathcal{T}| = \tau$}{
+        $\kappa_{\mathrm{desc}} \leftarrow$ clave más antigua de $\mathcal{T}$ \;
+        $\mathrm{conteo}[\kappa_{\mathrm{desc}}] \leftarrow
+            \mathrm{conteo}[\kappa_{\mathrm{desc}}] - 1$ \;
+        \If{$\mathrm{conteo}[\kappa_{\mathrm{desc}}] = 0$}{
+            eliminar $\kappa_{\mathrm{desc}}$ del set y del Counter
+                \tcp{descarte $O(1)$}
+        }
+    }
+    Insertar $\kappa(m^{*})$ en la deque, en el set, e incrementar
+        $\mathrm{conteo}[\kappa(m^{*})]$ \;
+
+    \BlankLine
+    \tcp{Paso 7: actualización del mejor global}
+    \eIf{$f(s) < c^{*} - \varepsilon$}{
+        $s^{*} \leftarrow s$;\quad $c^{*} \leftarrow f(s)$;\quad
+        $\mathit{iter\_sin\_mejora} \leftarrow 0$ \;
+    }{
+        $\mathit{iter\_sin\_mejora} \leftarrow \mathit{iter\_sin\_mejora} + 1$ \;
+    }
+    $\mathit{iter} \leftarrow \mathit{iter} + 1$ \;
+}
+
+\BlankLine
+\Return $s^{*}$
+\end{algorithm}
+
+\bigskip
+\noindent
+\textbf{Parámetros por defecto (TS simple).} La implementación canónica del
+proyecto utiliza $\mathit{iteraciones\_max} = 400$,
+$\mathit{max\_iter\_sin\_mejora} = 100$, $\mathit{tam\_vecindario} = 25$,
+$\tau = 20$. Para el sesgo: $\alpha_{\mathrm{inter}} = 0.8$ y
+$p_{\mathrm{inter}} = 0.6$ (los mismos valores que SA y RTS, para garantizar
+comparabilidad entre las tres metaheurísticas).
+
+% ------------------------------------------------------------
+\section{Búsqueda Tabú Reactiva (RTS)}
+% ------------------------------------------------------------
+
+Reactive Tabu Search de Battiti \& Tecchiolli (1994). Extiende TS simple con
+tres mecanismos adaptativos: (i) tenencia tabú dinámica, (ii) memoria de
+soluciones visitadas por hash canónico para detectar ciclos, y
+(iii) mecanismo de escape (diversificación fuerte) cuando una solución se
+visita demasiadas veces. Hereda de TS simple la lista tabú FIFO, el
+best-improvement sobre lote muestreado, la aspiración clásica y el doble
+criterio de parada.
+
+\medskip
+\noindent
+\textbf{Hash canónico $H(s)$.} Se ordenan las rutas lexicográficamente como
+tuplas (los vehículos son intercambiables) y se conserva el orden interno de
+cada ruta (CARP puede ser dirigido). El hash se calcula sobre la tupla de
+tuplas resultante. Esto permite detectar ciclos en $O(1)$ vía diccionario.
+
+\medskip
+\noindent
+\textbf{Parámetros instance-aware (cálculo automático cuando el usuario no
+los especifica).} Sea $n = |R|$. La implementación calcula:
+\[
+\begin{aligned}
+  \mathit{iteraciones\_max}     &\leftarrow \max(50,\; 20 n) \\
+  \mathit{max\_iter\_sin\_mejora} &\leftarrow \max(20,\; 5 n) \\
+  \mathit{tam\_vecindario}      &\leftarrow \max(20,\; 2 n) \\
+  \tau_{\mathrm{ini}}            &\leftarrow \max(3,\; \mathrm{round}(\sqrt{n})) \\
+  \tau_{\min}                    &\leftarrow 3 \\
+  \tau_{\max}                    &\leftarrow \max(15,\; \mathrm{round}(3\sqrt{n})) \\
+  \mathit{iter\_paciencia}       &\leftarrow \max(5,\; \mathrm{round}(2\sqrt{n})) \\
+  \mathit{num\_mov\_escape}      &\leftarrow \max(3,\; n/10).
+\end{aligned}
+\]
+El piso $\tau_{\max} \geq 15$ garantiza un rango útil incluso para instancias
+muy pequeñas (p.\,ej.\ \texttt{gdb1} con $n \approx 11$). Adicionalmente,
+$\mathit{factor\_aumento} = 1.2$, $\mathit{factor\_reduccion} = 0.9$ y
+$\mathit{umbral\_repeticiones\_escape} = 3$.
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{Búsqueda Tabú Reactiva (RTS) para CARP}
+\label{alg:rts}
+
+\KwIn{Instancia CARP $G$;\; solución inicial $s_0$;\;
+      $\mathit{iteraciones\_max}$,\; $\mathit{max\_iter\_sin\_mejora}$,\;
+      $\mathit{tam\_vecindario}$;\;
+      $\tau_{\mathrm{ini}}, \tau_{\min}, \tau_{\max}$;\;
+      $\mathit{factor\_aumento} > 1$,\;
+      $0 < \mathit{factor\_reduccion} < 1$;\;
+      $\mathit{iter\_paciencia}$;\;
+      $\mathit{umbral\_repeticiones\_escape}$,\;
+      $\mathit{num\_mov\_escape}$;\;
+      $p_{\mathrm{inter}}$,\; $\alpha_{\mathrm{inter}}$;\;
+      operadores $\mathcal{O}$}
+\KwOut{Mejor solución encontrada $s^{*}$}
+
+\BlankLine
+\tcp{Inicialización}
+$s \leftarrow s_0$;\quad $s^{*} \leftarrow s$;\quad $c^{*} \leftarrow c(s)$ \;
+$\tau \leftarrow \tau_{\mathrm{ini}}$ \;
+$\mathcal{T} \leftarrow$ deque FIFO de capacidad $\tau$ (con set y Counter paralelos) \;
+$\mathit{historial} \leftarrow \{H(s) \mapsto (\text{última vista}=-1,\,
+    \text{veces vistas}=1)\}$ \;
+$\mathit{iter\_sin\_repeticion} \leftarrow 0$;\quad
+$\mathit{iter\_sin\_mejora} \leftarrow 0$ \;
+$\mathit{iter} \leftarrow 0$ \;
+
+\BlankLine
+\While{$\mathit{iter} < \mathit{iteraciones\_max}$}{
+    \lIf{$\mathit{iter\_sin\_mejora} \geq \mathit{max\_iter\_sin\_mejora}$}{
+        \textbf{break}
+    }
+
+    \BlankLine
+    \tcp{Pasos 1--5: idénticos a TS simple (sesgo, lote, evaluación,
+        best-non-tabu con aspiración, fallback "todos tabú")}
+    Ejecutar los pasos 1--5 del Algoritmo~\ref{alg:ts_simple}
+        sobre $s$, $\mathcal{T}$ y $\mathcal{O}$ \;
+    $s \leftarrow s'_{k^{*}}$;\quad $m^{*} \leftarrow m_{k^{*}}$ \;
+
+    \BlankLine
+    \tcp{Paso 6: insertar el movimiento en la lista tabú FIFO}
+    Insertar $\kappa(m^{*})$ en $\mathcal{T}$ con el mismo protocolo de
+        descarte del Algoritmo~\ref{alg:ts_simple}
+        (deque + set + Counter paralelos) \;
+
+    \BlankLine
+    \tcp{Paso 7: actualización del mejor global}
+    \If{$f(s) < c^{*} - \varepsilon$}{
+        $s^{*} \leftarrow s$;\quad $c^{*} \leftarrow f(s)$;\quad
+        $\mathit{iter\_sin\_mejora} \leftarrow 0$ \;
+    }
+    \lElse{
+        $\mathit{iter\_sin\_mejora} \leftarrow \mathit{iter\_sin\_mejora} + 1$
+    }
+
+    \BlankLine
+    \tcp{Paso 8: MECANISMO REACTIVO DEL TENURE}
+    $h \leftarrow H(s)$ \;
+    \eIf{$h \in \mathit{historial}$}{
+        \tcp{repetición detectada: posible ciclo}
+        $\mathit{historial}[h].\text{veces} \leftarrow
+            \mathit{historial}[h].\text{veces} + 1$ \;
+        $\mathit{iter\_sin\_repeticion} \leftarrow 0$ \;
+
+        \BlankLine
+        \tcp{Aumento del tenure (siempre con +1 mínimo si hay margen)}
+        $\tau_{\mathrm{nuevo}} \leftarrow
+            \min\!\big(\tau_{\max},\, \max(\tau + 1,\, \mathrm{round}(\tau
+            \cdot \mathit{factor\_aumento}))\big)$ \;
+        \If{$\tau_{\mathrm{nuevo}} > \tau$}{
+            $\tau \leftarrow \tau_{\mathrm{nuevo}}$;\quad
+            reconstruir $\mathcal{T}$ con la nueva capacidad
+                \tcp{\texttt{deque.maxlen} es solo lectura}
+        }
+
+        \BlankLine
+        \tcp{ESCAPE si la solución se repitió suficientes veces}
+        \If{$\mathit{historial}[h].\text{veces} \geq
+            \mathit{umbral\_repeticiones\_escape}$}{
+            \For{$j \leftarrow 1$ \KwTo $\mathit{num\_mov\_escape}$}{
+                $\mathit{op} \leftarrow$ \textsc{SelectUniform}($\mathcal{O}$)
+                    \tcp{lista completa, sin sesgo durante el escape} \;
+                $s \leftarrow$ \textsc{AplicarOperador}($\mathit{op},\, s$)
+                    \tcp{lista tabú ignorada durante el escape}
+            }
+            $\mathcal{T} \leftarrow \emptyset$;\quad
+                $\mathit{historial} \leftarrow \emptyset$
+                \tcp{limpieza tras escape (memoria irrelevante en la zona nueva)} \;
+            $\mathit{historial}[H(s)] \leftarrow (\text{última vista}=\mathit{iter},\,
+                \text{veces vistas}=1)$ \;
+            $\mathit{iter\_sin\_repeticion} \leftarrow 0$ \;
+            \lIf{$f(s) < c^{*} - \varepsilon$}{
+                $s^{*} \leftarrow s$;\quad $c^{*} \leftarrow f(s)$
+            }
+            $\mathit{iter\_sin\_mejora} \leftarrow 0$
+                \tcp{reset INCONDICIONAL: el escape merece presupuesto completo} \;
+        }
+    }{
+        \tcp{solución nueva: registrar e incrementar paciencia}
+        $\mathit{historial}[h] \leftarrow (\text{última vista}=\mathit{iter},\,
+            \text{veces vistas}=1)$ \;
+        $\mathit{iter\_sin\_repeticion} \leftarrow
+            \mathit{iter\_sin\_repeticion} + 1$ \;
+        \BlankLine
+        \tcp{Reducción del tenure tras suficientes iteraciones sin repeticiones}
+        \If{$\mathit{iter\_sin\_repeticion} \geq \mathit{iter\_paciencia}$}{
+            $\tau_{\mathrm{nuevo}} \leftarrow
+                \max\!\big(\tau_{\min},\, \min(\tau - 1,\, \mathrm{round}(\tau
+                \cdot \mathit{factor\_reduccion}))\big)$ \;
+            \If{$\tau_{\mathrm{nuevo}} < \tau$}{
+                $\tau \leftarrow \tau_{\mathrm{nuevo}}$;\quad
+                reconstruir $\mathcal{T}$ truncando los elementos más antiguos \;
+            }
+            $\mathit{iter\_sin\_repeticion} \leftarrow 0$
+                \tcp{reinicio incondicional: evita acumular paciencia} \;
+        }
+    }
+
+    \BlankLine
+    $\mathit{iter} \leftarrow \mathit{iter} + 1$ \;
+}
+
+\BlankLine
+\Return $s^{*}$
+\end{algorithm}
+
+\bigskip
+\noindent
+\textbf{Decisiones de diseño.}
+\begin{itemize}
+    \item \emph{Hash canónico:} ordenar rutas lexicográficamente (los vehículos
+          son intercambiables) sin invertir el orden interno (CARP puede ser
+          dirigido). Falsos positivos descartados por construcción.
+    \item \emph{Aumento del tenure:} $\tau_{\mathrm{nuevo}} =
+          \min(\tau_{\max},\, \max(\tau + 1,\,
+          \mathrm{round}(\tau \cdot \mathit{factor\_aumento})))$. El
+          $\max(\tau+1, \cdot)$ garantiza al menos +1 cuando hay margen,
+          incluso si $\mathrm{round}(\tau \cdot 1.05) = \tau$ en instancias
+          pequeñas.
+    \item \emph{Reducción del tenure:} simétrica, $\tau_{\mathrm{nuevo}} =
+          \max(\tau_{\min},\, \min(\tau - 1,\,
+          \mathrm{round}(\tau \cdot \mathit{factor\_reduccion})))$ tras
+          $\mathit{iter\_paciencia}$ iteraciones sin repeticiones; el
+          contador se reinicia incondicionalmente para evitar acumular
+          paciencia indefinidamente.
+    \item \emph{Escape:} aplica $\mathit{num\_mov\_escape}$ movimientos
+          aleatorios consecutivos con la lista completa de operadores
+          ignorando $\mathcal{T}$; luego limpia $\mathcal{T}$ y
+          $\mathit{historial}$ (la memoria de la zona anterior ya no es
+          relevante en la zona nueva) y resetea $\mathit{iter\_sin\_mejora}$
+          incondicionalmente para dar a la nueva región un presupuesto
+          completo de explotación.
+    \item \emph{Reescalado de $\mathcal{T}$:} como \texttt{deque.maxlen} es de
+          solo lectura, cada cambio de tenure reconstruye la deque
+          preservando los elementos más recientes y manteniendo el set y el
+          Counter paralelos en sincronía.
+\end{itemize}
+
+\end{document}

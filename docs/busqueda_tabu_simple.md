@@ -50,7 +50,7 @@ Seleccionar mejor solución inicial (seleccionar_mejor_inicial_rapido)
 Inicializar:
   sol_actual    = sol_inicial
   mejor_costo   = costo(sol_inicial)
-  lista_tabu    = deque(maxlen=tabu_tenure)  +  set_tabu = set()
+  lista_tabu    = deque(maxlen=tabu_tenure)  +  set_tabu = set()  +  counter_tabu = Counter()
   iter_sin_mejora = 0
   |
   v
@@ -93,9 +93,12 @@ Inicializar:
 |  nueva_clave = _clave_tabu(mov_elegido)                       |
 |  si lista_tabu llena:                                         |
 |      descartada = lista_tabu[0]                               |
-|      set_tabu.discard(descartada)  (si no hay duplicados)     |
+|      counter_tabu[descartada] -= 1                            |
+|      si counter_tabu[descartada] == 0:                        |
+|          set_tabu.discard(descartada)  (O(1), sin escaneo)    |
 |  lista_tabu.append(nueva_clave)                               |
 |  set_tabu.add(nueva_clave)                                    |
+|  counter_tabu[nueva_clave] += 1                               |
 |                                                               |
 |  -- Actualización mejor global --                             |
 |  si costos[elegido] < mejor_costo - 1e-15:                    |
@@ -125,14 +128,17 @@ FIN
 
 ## Componentes clave
 
-### Lista tabú FIFO (`deque` + `set`)
+### Lista tabú FIFO (`deque` + `set` + `Counter`)
 
 ```python
-lista_tabu: deque[tuple[Any, ...]] = deque(maxlen=tabu_tenure)
-set_tabu:   set[tuple[Any, ...]]   = set()
+from collections import Counter, deque
+
+lista_tabu:   deque[tuple[Any, ...]]           = deque(maxlen=tabu_tenure)
+set_tabu:     set[tuple[Any, ...]]             = set()
+counter_tabu: Counter[tuple[Any, ...]]         = Counter()
 ```
 
-La `deque` con `maxlen=tabu_tenure` implementa el comportamiento FIFO automáticamente: al insertar más allá de la capacidad, Python descarta el elemento más antiguo (el de la izquierda) sin intervención explícita. El `set_tabu` paralelo permite comprobar si un movimiento está prohibido en O(1), frente al O(n) que implicaría recorrer la `deque`. Ambas estructuras se mantienen sincronizadas manualmente: cuando la `deque` descarta un elemento por desbordamiento, se elimina del `set` únicamente si no hay duplicados en la `deque` (un mismo movimiento puede haberse ejecutado dos veces antes de expirar).
+La `deque` con `maxlen=tabu_tenure` implementa el comportamiento FIFO automáticamente: al insertar más allá de la capacidad, Python descarta el elemento más antiguo sin intervención explícita. El `set_tabu` paralelo permite comprobar si un movimiento está prohibido en O(1), frente al O(n) que implicaría recorrer la `deque`. El `Counter` paralelo resuelve el problema de los **duplicados en la lista tabú**: cuando la `deque` descarta una clave por desbordamiento, el `Counter` dice en O(1) si esa clave sigue presente en la `deque` (frecuencia > 0 tras decrementar) o si se puede eliminar del `set_tabu` con seguridad. Sin el `Counter`, detectar duplicados requeriría un `list(lista_tabu).count(clave)` en O(n), lo que afectaría al rendimiento en tenencias largas.
 
 ### Clave tabú (`_clave_tabu`)
 

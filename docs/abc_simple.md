@@ -14,8 +14,10 @@ La intención de tener dos implementaciones en el repositorio responde a un argu
 | Sesgo inter/intra | `pesos_inter_bias` en empleadas, observadoras y scouts | `seleccionar_grupo_operadores_inter_intra` solo en empleadas y observadoras |
 | Mejor factible | Rastreado separado del mejor general | Un único mejor (penalización guía la búsqueda) |
 | Imputación `registrar_mejora` | Comparada al final del ciclo, imputada al último movimiento aceptado | Comparada **en el mismo `if`** del vecino aceptado |
-| Criterio de parada | Solo `iteraciones` (tope duro) | `iteraciones` + `max_iter_sin_mejora` opcional |
+| Criterio de parada | Solo `iteraciones` (tope duro) | `iteraciones` + `max_iter_sin_mejora` (siempre activo, calibrado a `max(50, 3·n)`) |
 | Backend de generación | Configurable (`labels` o `ids`) | Siempre `ids` (más rápido y consistente) |
+| Parámetro `alpha_inter` | Expuesto como parámetro independiente | **Eliminado**: el algoritmo aplica `max(p_inter, 0.8)` automáticamente bajo violación |
+| Parámetros numéricos | Valores absolutos fijos | **Instance-aware**: fórmulas en función de `n_tareas`; también admiten factores de escala |
 
 ---
 
@@ -25,9 +27,9 @@ La intención de tener dos implementaciones en el repositorio responde a un argu
 |---|---|---|---|
 | **Empleadas** | `num_fuentes` | Su fuente asignada (siempre la misma) | Genera un vecino; reemplaza la fuente si mejora |
 | **Observadoras** | `num_fuentes` | Elegidas por ruleta sobre `1/(1+obj)` | Genera un vecino; reemplaza la fuente si mejora |
-| **Scouts** | Variable | Fuente con `trials[i] >= limite_abandono` | Reemplaza la fuente con una **solución aleatoria** |
+| **Scouts** | Variable | Fuente con `trials[i] >= limite_abandono` | Reemplaza la fuente con una **solución aleatoria pura** |
 
-La diferencia conceptual fundamental: las empleadas explotan localmente, las observadoras **concentran esfuerzo en las mejores** (ruleta), los scouts **diversifican** abandonando regiones agotadas.
+La diferencia conceptual fundamental: las empleadas explotan localmente, las observadoras **concentran esfuerzo en las mejores** (ruleta), los scouts **diversifican** abandonando regiones agotadas con puntos completamente nuevos del espacio.
 
 ---
 
@@ -37,13 +39,14 @@ La diferencia conceptual fundamental: las empleadas explotan localmente, las obs
 |---|---|---|
 | **Se MANTIENE** | Tres fases empleadas → observadoras → scouts | Estructura nuclear del ABC |
 | **Se MANTIENE** | Ruleta por fitness inverso `1/(1+obj)` en observadoras | Fórmula original Karaboga |
-| **Se MANTIENE** | Scouts puramente aleatorios | El sello distintivo del ABC canónico |
+| **Se MANTIENE** | Scouts puramente aleatorios (greedy por capacidad) | El sello distintivo del ABC canónico; generan un punto sin sesgo histórico |
 | **Se MANTIENE** | Comparación greedy en empleadas y observadoras | Misma regla de actualización del paper |
 | **Se SIMPLIFICA** | Una sola lista `mejor_sol_ids` (no se rastrea mejor factible aparte) | Penalización ya guía la búsqueda hacia región factible; segundo rastreo añadía complejidad sin beneficio en instancias estudiadas |
 | **Se SIMPLIFICA** | Backend de generación fijo en IDs | Evita la rama dual `labels`/`ids` que complica el código sin acelerar nada relevante |
 | **Se AÑADE** | Sesgo `seleccionar_grupo_operadores_inter_intra` en empleadas y observadoras | Sin él, ABC era incapaz de reparar capacidad en instancias con violación inicial. Es el mismo helper que usan SA / TS simple / RTS, lo cual asegura **comparabilidad metodológica** |
-| **Se AÑADE** | `max_iter_sin_mejora` opcional | Permite parar pronto sin ejecutar las `iteraciones` completas; ahorra tiempo en repeticiones con estancamiento temprano |
+| **Se AÑADE** | `max_iter_sin_mejora` siempre activo (calibrado a `max(50, 3·n)` por defecto) | Permite parar pronto sin ejecutar las `iteraciones` completas; ahorra tiempo en plateaus largos |
 | **Se CORRIGE** | `registrar_mejora` se invoca **dentro del mismo `if`** que detecta vecino mejor que el global | En `busqueda_abejas`, la comparación se hace al final del ciclo contra `ultimo_movimiento_aceptado`, que puede no ser el operador real responsable. Aquí `sum(operadores_mejoraron.values()) ≤ mejoras` siempre, con la diferencia exacta atribuida a scouts (que no tienen operador asociado) |
+| **Se ELIMINA** | Parámetro `alpha_inter` | Sustituido por el piso automático `max(p_inter, 0.8)` bajo violación. El usuario configura un único punto (`p_inter`); el umbral 0.8 bajo violación es garantía interna |
 
 ---
 
@@ -51,94 +54,204 @@ La diferencia conceptual fundamental: las empleadas explotan localmente, las obs
 
 ```python
 busqueda_abejas_simple(
-    inicial_obj,             # objeto inicial (lista de soluciones candidatas o pickle)
-    data,                    # diccionario de datos de la instancia CARP
-    G,                       # grafo NetworkX
+    inicial_obj,                      # objeto inicial (lista de soluciones candidatas o pickle)
+    data,                             # diccionario de datos de la instancia CARP
+    G,                                # grafo NetworkX
     *,
-    iteraciones=300,
-    num_fuentes=20,
-    limite_abandono=30,
-    max_iter_sin_mejora=None,
-    semilla=None,
-    operadores=OPERADORES_POPULARES,
-    marcador_depot_etiqueta=None,
-    usar_gpu=False,
-    guardar_historial=True,
-    guardar_csv=False,
-    ruta_csv=None,
-    nombre_instancia="instancia",
-    repeticion=None,
-    root=None,
-    usar_penalizacion_capacidad=True,
-    lambda_capacidad=None,
-    alpha_inter=0.8,
-    p_inter=0.6,
-    extra_csv=None,
+    # --- Parámetros instance-aware (None → fórmula en función de n_tareas) ---
+    iteraciones: int | None = None,          # None → max(200, 20·n)
+    num_fuentes: int | None = None,          # None → max(10, round(2·√n))
+    limite_abandono: int | None = None,      # None → max(15, n // 2)
+    max_iter_sin_mejora: int | None = None,  # None → max(50, 3·n)
+    # --- Factores de escala (sobrescriben la fórmula default; ignorados si se pasa valor absoluto) ---
+    factor_fuentes: float | None = None,     # num_fuentes   = max(10, round(f·√n))
+    factor_abandono: float | None = None,    # limite_abandono = max(15, round(f·n))
+    factor_iter: int | float | None = None,  # iteraciones   = max(200, round(f·n))
+    # --- Parámetros de sesgo y aleatoridad ---
+    p_inter: float = 0.6,                    # P(inter) cuando la solución es factible
+    semilla: int | None = None,
+    operadores: Iterable[str] = OPERADORES_POPULARES,
+    marcador_depot_etiqueta: str | None = None,
+    usar_gpu: bool = False,
+    guardar_historial: bool = True,
+    guardar_csv: bool = False,
+    ruta_csv: str | None = None,
+    nombre_instancia: str = "instancia",
+    repeticion: int | None = None,
+    root: str | None = None,
+    usar_penalizacion_capacidad: bool = True,
+    lambda_capacidad: float | None = None,
+    extra_csv: dict[str, object] | None = None,
     **_ignorado_kwargs,
 ) -> AbejasSimpleResult
 ```
 
+> **Nota:** `alpha_inter` fue eliminado de la firma. El algoritmo aplica automáticamente `max(p_inter, 0.8)` como probabilidad inter-ruta cuando la solución actual viola capacidad. El parámetro `p_inter` base controla el régimen factible; el piso 0.8 bajo violación es una garantía interna.
+
+### Tabla de parámetros
+
 | Parámetro | Tipo | Default | Descripción |
 |---|---|---|---|
-| `iteraciones` | int | 300 | Número de ciclos completos (empleadas + observadoras + scouts) |
-| `num_fuentes` | int | 20 | Cuántas fuentes (soluciones activas) en paralelo |
-| `limite_abandono` | int | 30 | Intentos fallidos consecutivos antes de mandar fuente al scout |
-| `max_iter_sin_mejora` | int \| None | None | Si se especifica, criterio de parada anticipada por estancamiento |
-| `semilla` | int \| None | None | None = aleatoria del sistema (para experimentos paralelos) |
-| `operadores` | Iterable[str] | `OPERADORES_POPULARES` | Subset de los 9 operadores activos |
-| `usar_gpu` | bool | False | Si True, evaluación de lote intenta usar CuPy |
-| `usar_penalizacion_capacidad` | bool | True | Si True, objetivo = costo + λ × violación |
-| `lambda_capacidad` | float \| None | None | None = automático (~10× mediana deadhead) |
-| `alpha_inter` | float [0,1] | 0.8 | P(elegir inter) cuando hay violación |
-| `p_inter` | float [0,1] | 0.6 | P(elegir inter) cuando la solución es factible |
+| `iteraciones` | `int \| None` | `None` → `max(200, 20·n)` | Número de ciclos completos (empleadas + observadoras + scouts) |
+| `num_fuentes` | `int \| None` | `None` → `max(10, round(2·√n))` | Fuentes de alimento (soluciones activas) en paralelo |
+| `limite_abandono` | `int \| None` | `None` → `max(15, n // 2)` | Intentos fallidos consecutivos antes de mandar fuente al scout |
+| `max_iter_sin_mejora` | `int \| None` | `None` → `max(50, 3·n)` | Criterio de parada anticipada por estancamiento; siempre activo |
+| `factor_fuentes` | `float \| None` | `None` | Si se pasa, `num_fuentes = max(10, round(f·√n))`. Solo actúa si `num_fuentes` es `None` |
+| `factor_abandono` | `float \| None` | `None` | Si se pasa, `limite_abandono = max(15, round(f·n))`. Solo actúa si `limite_abandono` es `None` |
+| `factor_iter` | `int \| float \| None` | `None` | Si se pasa, `iteraciones = max(200, round(f·n))`. Solo actúa si `iteraciones` es `None` |
+| `p_inter` | `float` [0,1] | `0.6` | P(elegir inter-ruta) cuando la solución es factible. Bajo violación se aplica `max(p_inter, 0.8)` |
+| `semilla` | `int \| None` | `None` | `None` = aleatoria del sistema (corridas no reproducibles; recomendado en experimentos paralelos) |
+| `operadores` | `Iterable[str]` | `OPERADORES_POPULARES` | Subset de los 9 operadores activos |
+| `usar_gpu` | `bool` | `False` | Si `True`, evaluación en lote (fase observadoras) intenta usar CuPy |
+| `usar_penalizacion_capacidad` | `bool` | `True` | Si `True`, objetivo = costo + λ × violación |
+| `lambda_capacidad` | `float \| None` | `None` | λ explícito. `None` = automático (~10× mediana deadhead) |
+
+### Precedencia de parámetros instance-aware
+
+```
+valor absoluto (e.g. iteraciones=500)
+    ↓ si None
+factor de escala (e.g. factor_iter=20)
+    ↓ si None
+fórmula default (e.g. max(200, 20·n))
+```
 
 ---
 
-## 5. `AbejasSimpleResult` — campos del resultado
+## 5. Comportamiento del `p_inter` dinámico
+
+El algoritmo mide la **violación media** de las fuentes activas al inicio de cada ciclo y antes de la fase observadoras. Si esa violación media es positiva, aplica automáticamente:
+
+```
+p_efectivo = max(p_inter, 0.8)
+```
+
+Si la violación media es cero (todas las fuentes son factibles), se respeta `p_inter` tal como lo pasó el usuario. Este comportamiento se registra en el campo `p_inter_max_efectivo` del resultado y en la columna homónima del CSV.
+
+El parámetro `alpha_inter` que tenía `busqueda_abejas` fue eliminado porque exponía un segundo punto de la curva que el usuario no necesita controlar: la decisión relevante es el sesgo en régimen factible (`p_inter`); el piso 0.8 bajo violación es una elección de diseño del algoritmo, no un hiperparámetro.
+
+---
+
+## 6. `AbejasSimpleResult` — campos del resultado
 
 | Campo | Tipo | Significado |
 |---|---|---|
-| `mejor_solucion` | `list[list[str]]` | Mejor solución encontrada en formato de etiquetas |
+| `mejor_solucion` | `list[list[str]]` | Mejor solución encontrada en formato de etiquetas con depósito |
 | `mejor_costo` | `float` | Costo PURO (sin penalización) de la mejor solución |
 | `solucion_inicial_referencia` | `list[list[str]]` | Solución inicial elegida como referencia |
 | `costo_solucion_inicial` | `float` | Costo puro de la solución inicial |
-| `mejora_absoluta` | `float` | `costo_inicial − costo_mejor` |
+| `mejora_absoluta` | `float` | `costo_inicial − costo_mejor` (positivo ⇒ mejora) |
 | `mejora_porcentaje_inicial_vs_final` | `float` | Mejora porcentual respecto al inicial |
 | `tiempo_segundos` | `float` | Tiempo total de ejecución |
-| `iteraciones_totales` | `int` | Iteraciones realmente ejecutadas (≤ `iteraciones`) |
-| `iteraciones_sin_mejora_final` | `int` | Contador al cierre del criterio de estancamiento |
-| `fuentes_alimento` | `int` | = `num_fuentes` (replicado por trazabilidad) |
-| `scouts_reinicios` | `int` | Veces que una fuente fue reemplazada por aleatoria |
-| `mejoras` | `int` | Veces que el mejor global mejoró |
+| `iteraciones_totales` | `int` | Ciclos completos ejecutados (≤ `iteraciones_efectivas`) |
+| `iteraciones_sin_mejora_final` | `int` | Contador de estancamiento al cierre |
+| `fuentes_alimento` | `int` | `num_fuentes_efectivo` (replicado por trazabilidad) |
+| `scouts_reinicios` | `int` | Veces que una fuente fue reemplazada por solución aleatoria |
+| `mejoras` | `int` | Veces que el mejor global mejoró durante la corrida |
 | `semilla` | `int \| None` | Semilla efectiva del RNG |
 | `backend_evaluacion` | `str` | `"cpu"` o `"gpu"` |
 | `usar_penalizacion_capacidad` | `bool` | Si la penalización estuvo activa |
 | `lambda_capacidad` | `float` | λ efectivo aplicado |
-| `mejor_solucion_factible_final` | `bool` | True si la mejor solución es factible |
+| `mejor_solucion_factible_final` | `bool` | `True` si la mejor solución respeta la restricción de capacidad |
 | `aceptaciones_solucion_infactible` | `int` | Cuántas aceptaciones aterrizaron en vecino infactible |
-| `iteraciones_con_violacion` | `int` | Ciclos en los que la violación media de fuentes era > 0 |
+| `iteraciones_con_violacion` | `int` | Ciclos con violación media de fuentes > 0 |
 | `fraccion_iter_con_violacion` | `float` | `iteraciones_con_violacion / iteraciones_totales` |
-| `operadores_propuestos` | `dict[str,int]` | Conteo por operador (categoría: propuesto) |
-| `operadores_aceptados` | `dict[str,int]` | Conteo por operador (categoría: aceptado) |
-| `operadores_mejoraron` | `dict[str,int]` | Conteo por operador (categoría: mejoraron el mejor global) |
-| `operadores_trayectoria_mejor` | `dict[str,int]` | Snapshot del momento de la última mejora |
-| `historial_mejor_costo` | `list[float]` | Trayectoria del mejor costo por iteración (si `guardar_historial=True`) |
-| `archivo_csv` | `str \| None` | Ruta del CSV generado, o None |
+| `operadores_propuestos` | `dict[str,int]` | Conteo por operador (propuesto) |
+| `operadores_aceptados` | `dict[str,int]` | Conteo por operador (aceptado) |
+| `operadores_mejoraron` | `dict[str,int]` | Conteo por operador (mejoraron el mejor global) |
+| `operadores_trayectoria_mejor` | `dict[str,int]` | Snapshot de `aceptados` en el momento de la última mejora |
+| `historial_mejor_costo` | `list[float]` | Trayectoria del mejor costo por ciclo (si `guardar_historial=True`) |
+| `archivo_csv` | `str \| None` | Ruta del CSV generado, o `None` |
+| `n_tareas` | `int` | Número de tareas requeridas (`len(ctx.u_arr)`), variable de escala `n` |
+| `iteraciones_efectivas` | `int` | Valor de `iteraciones` realmente usado en el bucle |
+| `num_fuentes_efectivo` | `int` | Valor de `num_fuentes` realmente usado |
+| `limite_abandono_efectivo` | `int` | Valor de `limite_abandono` realmente usado |
+| `max_iter_sin_mejora_efectivo` | `int \| None` | Valor de `max_iter_sin_mejora` realmente usado |
+| `p_inter_max_efectivo` | `float` | Valor de P(inter) aplicado bajo violación (`max(p_inter, 0.8)`) |
 
 ---
 
-## 6. Ejemplo de uso básico
+## 7. Columnas del CSV de salida
+
+El CSV lo escribe `guardar_resultado_csv` cuando `guardar_csv=True`. La etiqueta de metaheurística es `"busqueda_abejas_simple"`. El CSV no incluye las columnas `id_corrida` ni `config_id` (convención del proyecto).
+
+### Columnas de identificación y parámetros (19 columnas)
+
+| Columna | Descripción |
+|---|---|
+| `metaheuristica` | Siempre `"busqueda_abejas_simple"` |
+| `instancia` | Nombre de la instancia |
+| `bks_referencia` | Valor BKS de la literatura |
+| `bks_origen` | Fuente del BKS |
+| `gap_bks_porcentaje` | `(mejor_costo − BKS) / BKS × 100` |
+| `repeticion` | Número de repetición dentro del experimento |
+| `semilla` | Semilla del RNG |
+| `tiempo_segundos` | Duración real de la corrida |
+| `mejor_costo` | Costo PURO de la mejor solución |
+| `costo_solucion_inicial` | Costo de la solución inicial de referencia |
+| `mejora_absoluta` | `costo_inicial − mejor_costo` |
+| `mejora_porcentaje` | Mejora porcentual |
+| `iteraciones` | Valor absoluto de `iteraciones` pasado por el usuario (`""` si se dejó en `None`) |
+| `num_fuentes` | Valor absoluto de `num_fuentes` pasado por el usuario (`""` si `None`) |
+| `limite_abandono` | Valor absoluto de `limite_abandono` pasado por el usuario (`""` si `None`) |
+| `max_iter_sin_mejora` | Valor absoluto de `max_iter_sin_mejora` pasado por el usuario (`""` si `None`) |
+| `factor_fuentes` | Factor de escala pasado por el usuario (`""` si no se usó) |
+| `factor_abandono` | Factor de escala pasado por el usuario (`""` si no se usó) |
+| `factor_iter` | Factor de escala pasado por el usuario (`""` si no se usó) |
+
+### Columnas de p_inter y penalización (4 columnas)
+
+| Columna | Descripción |
+|---|---|
+| `p_inter` | Valor BASE de P(inter) pasado por el usuario |
+| `p_inter_max_efectivo` | P(inter) aplicada bajo violación (`max(p_inter, 0.8)`) |
+| `usar_penalizacion_capacidad` | Si la penalización estuvo activa |
+| `lambda_capacidad` | λ efectivo de penalización |
+
+### Columnas de valores efectivos (5 columnas)
+
+| Columna | Descripción |
+|---|---|
+| `iteraciones_efectivas` | Iteraciones realmente usadas en el bucle |
+| `num_fuentes_efectivo` | Fuentes realmente usadas |
+| `limite_abandono_efectivo` | Límite de abandono realmente usado |
+| `max_iter_sin_mejora_efectivo` | Criterio de parada realmente usado |
+| `n_tareas` | Número de tareas requeridas (`n`) |
+
+### Columnas de operadores (36 columnas)
+
+Formato `<categoria>_<operador>`. Categorías: `propuesto`, `aceptado`, `mejoraron`, `trayectoria_mejor`. Operadores: los 9 de `OPERADORES_POPULARES`. Se generan con `contador.resumen_csv()`.
+
+### Columnas de estadísticas de corrida (9 columnas)
+
+| Columna | Descripción |
+|---|---|
+| `iteraciones_totales` | Ciclos completos ejecutados |
+| `iteraciones_sin_mejora_final` | Contador de estancamiento al cierre |
+| `scouts_reinicios` | Fuentes reiniciadas con solución aleatoria |
+| `mejoras` | Actualizaciones del mejor global |
+| `aceptaciones_solucion_infactible` | Aceptaciones que aterrizaron en vecino infactible |
+| `iteraciones_con_violacion` | Ciclos con violación media > 0 |
+| `fraccion_iter_con_violacion` | `iteraciones_con_violacion / iteraciones_totales` |
+| `mejor_solucion_factible_final` | Si la mejor solución es factible |
+| `mejor_solucion_tr_legible` | Representación textual de la solución |
+| `reporte_detalle_deadheading` | Desglose de costos de arrastre por ruta |
+| `costo_total_desde_reporte` | Verificación cruzada del costo |
+
+> **Total aproximado:** ~68 columnas (19 identificación + 4 p_inter + 5 efectivos + 36 operadores + 11 estadísticas).
+
+---
+
+## 8. Ejemplo de uso básico
 
 ```python
 from metacarp import busqueda_abejas_simple_desde_instancia
 
 resultado = busqueda_abejas_simple_desde_instancia(
     "gdb1",
-    iteraciones=200,
-    num_fuentes=15,
-    limite_abandono=25,
-    alpha_inter=0.8,
     p_inter=0.6,
+    # Parámetros instance-aware: se calculan automáticamente a partir de n_tareas.
+    # Para gdb1 (n≈22): iteraciones≈440, num_fuentes≈10, limite_abandono≈15, max_iter_sin_mejora≈66
 )
 
 print(f"Mejor costo: {resultado.mejor_costo:.2f}")
@@ -146,48 +259,78 @@ print(f"Mejora vs inicial: {resultado.mejora_porcentaje_inicial_vs_final:.2f} %"
 print(f"Iteraciones reales: {resultado.iteraciones_totales}")
 print(f"Scouts disparados: {resultado.scouts_reinicios}")
 print(f"Factible final: {resultado.mejor_solucion_factible_final}")
+print(f"n_tareas: {resultado.n_tareas}")
+print(f"num_fuentes efectivo: {resultado.num_fuentes_efectivo}")
 ```
 
-Para parar pronto cuando deja de mejorar:
+Con factores de escala explícitos (modo experimento):
+
+```python
+resultado = busqueda_abejas_simple_desde_instancia(
+    "gdb1",
+    factor_fuentes=2.0,   # num_fuentes = max(10, round(2·√n))
+    factor_abandono=0.5,  # limite_abandono = max(15, round(0.5·n))
+    factor_iter=20,        # iteraciones = max(200, 20·n)
+    p_inter=0.6,
+    guardar_csv=True,
+    ruta_csv="resultados/abc_simple_gdb1.csv",
+    nombre_instancia="gdb1",
+    repeticion=1,
+)
+```
+
+Con valores absolutos (reproducibilidad exacta entre instancias):
 
 ```python
 resultado = busqueda_abejas_simple_desde_instancia(
     "gdb1",
     iteraciones=500,
     num_fuentes=20,
-    max_iter_sin_mejora=50,   # corta tras 50 ciclos sin mejora
+    limite_abandono=30,
+    max_iter_sin_mejora=100,
+    p_inter=0.6,
 )
 ```
 
 ---
 
-## 7. Guía de parámetros del grid search
+## 9. Guía del grid search: `run_abc_simple_automatico.py`
 
-El script `scripts/run_abc_simple_automatico.py` barre tres dimensiones manteniendo `alpha_inter = 0.8` fijo:
+El script `scripts/run_abc_simple_automatico.py` barre el espacio de hiperparámetros en 4 dimensiones mediante factores de escala en función de `n_tareas`:
 
-| Dimensión | Valores barridos | Significado |
+| Dimensión | Valores barridos | Fórmula aplicada |
 |---|---|---|
-| `num_fuentes` | `{10, 20, 30}` | Tamaño de la población activa. Más fuentes = más diversidad pero más coste por ciclo. La literatura típica usa 10-50. |
-| `limite_abandono` | `{20, 35, 50}` | Cuán paciente es el algoritmo antes de reiniciar una fuente. Karaboga sugiere `dim·SN/2` como heurística; nuestro barrido cubre desde "agresivo" (20) hasta "muy paciente" (50). |
-| `p_inter` | `{0.4, 0.5, 0.6, 0.7, 0.8}` | Sesgo hacia operadores inter-ruta en estado factible. Estudia si ABC se beneficia de más exploración inter-ruta (>0.6) o más refinamiento intra (<0.6). |
+| `factor_fuentes` | `{1.5, 2.0, 3.0, 4.0}` | `num_fuentes = max(10, round(f·√n))` |
+| `factor_abandono` | `{0.25, 0.5, 0.75, 1.0}` | `limite_abandono = max(15, round(f·n))` |
+| `p_inter` | `{0.4, 0.5, 0.6, 0.7, 0.8}` | P(inter) base en régimen factible |
+| `factor_iter` | `{15, 20, 30}` | `iteraciones = max(200, round(f·n))` |
 
-`alpha_inter` se mantiene en **0.8** por instrucción explícita: cuando hay violación queremos garantizar **al menos 80%** de probabilidad de elegir un operador inter-ruta (que es el único capaz de reparar capacidad).
+**Total del grid:** 4 × 4 × 5 × 3 = 240 combos × 23 instancias × 5 repeticiones = **27,600 corridas**.
 
-Total del grid: 3 × 3 × 5 × 23 instancias × 5 repeticiones = **5,175 corridas**.
+`max_iter_sin_mejora` no se barre: se deja en `None` para que la función lo calibre automáticamente a `max(50, 3·n)` por instancia.
 
-Reducir el grid a una sola dimensión es trivial:
+Las semillas son aleatorias del sistema (no deterministas) para que las 5 repeticiones por configuración sean estadísticamente independientes.
 
 ```bash
-# Fijar p_inter = 0.6 → solo barre num_fuentes × limite_abandono (45 corridas/instancia).
+# Corrida completa del grid (puede tardar horas; recomendado con --workers)
+python scripts/run_abc_simple_automatico.py
+
+# Con paralelismo (N procesos simultáneos)
+python scripts/run_abc_simple_automatico.py --workers 8
+
+# Fijar p_inter y barrer solo las otras 3 dimensiones (960 corridas menos)
 python scripts/run_abc_simple_automatico.py --p-inter 0.6
+
+# Directorio de salida personalizado
+python scripts/run_abc_simple_automatico.py --salida-dir experimentos/abc_simple_grid
 ```
 
 ---
 
-## 8. Por qué la GPU SOLO acelera la evaluación
+## 10. Por qué la GPU SOLO acelera la evaluación
 
 La generación de vecinos opera sobre listas de Python con operadores combinatorios (`relocate_inter`, `swap_intra`, `2opt_star`, etc.). Estas operaciones son **secuenciales y data-dependent**: cada operador decide qué hacer en función de la longitud de las rutas y de elecciones aleatorias. No hay matrices ni reducciones vectoriales que paralelizar.
 
-La **evaluación**, en cambio, sí es trivialmente paralelizable: cada vecino se reduce a una suma de distancias precomputadas (`dist[u, v] + costo_servicio`). La función `costo_lote_penalizado_ids` empaqueta los `num_fuentes` vecinos de la fase observadoras en arrays planos y delega la reducción a NumPy (CPU) o CuPy (GPU). Con GPU la aceleración es notable en instancias grandes y con `num_fuentes` alto; en instancias pequeñas (n < 50) el overhead de copiar arrays a la GPU puede dominar y conviene dejar `usar_gpu=False`.
+La **evaluación**, en cambio, sí es trivialmente paralelizable: cada vecino se reduce a una suma de distancias precomputadas (`dist[u, v] + costo_servicio`). La función `costo_lote_penalizado_ids` empaqueta los `num_fuentes` vecinos de la **fase observadoras** en arrays planos y delega la reducción a NumPy (CPU) o CuPy (GPU). Con GPU la aceleración es notable en instancias grandes y con `num_fuentes` alto; en instancias pequeñas (n < 50) el overhead de copiar arrays a la GPU puede dominar y conviene dejar `usar_gpu=False`.
 
-En las **empleadas** evaluamos vecinos individualmente con `costo_rapido_ids` (escalar) porque la decisión de aceptar/rechazar se toma por fuente y no se beneficiaría de vectorizar (cada decisión depende del resultado anterior). Si se quisiera vectorizar también esta fase habría que rediseñarla como "best-of-N" en lugar de "greedy por fuente", lo cual cambiaría la semántica del algoritmo y lo alejaría aún más del ABC canónico.
+En las **empleadas** los vecinos se evalúan individualmente con `costo_rapido_ids` (escalar) porque la decisión de aceptar/rechazar se toma por fuente y no se beneficiaría de vectorizar (cada decisión depende del resultado anterior).

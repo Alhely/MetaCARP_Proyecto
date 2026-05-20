@@ -439,3 +439,29 @@ MetaCARP incluye tres metaheurísticas para resolver CARP: Búsqueda Tabú (tab�
 - La instancia es pequeña y el espacio de soluciones es manejable: la diversificación de ABC es menos necesaria cuando una trayectoria única puede recorrer una fracción significativa del espacio.
 
 En experimentos comparativos, la ventaja de ABC sobre los algoritmos de trayectoria única se vuelve más pronunciada al aumentar el número de iteraciones totales y el tamaño de la instancia, ya que el mantenimiento de múltiples fuentes amortiza su costo con mejores cotas de solución.
+
+---
+
+## Diferencias con `busqueda_abejas_simple` (`abejas_simple.py`)
+
+El proyecto mantiene dos implementaciones de ABC:
+
+- **`abejas.py`** (`busqueda_abejas`): esta implementación, con varios añadidos heurísticos.
+- **`abejas_simple.py`** (`busqueda_abejas_simple`): versión canónica de Karaboga (2005), usada como **baseline didáctico** en la tesis.
+
+La tabla siguiente resume las diferencias clave para comprender cuánto del rendimiento observado en `busqueda_abejas` proviene del núcleo ABC y cuánto de las modificaciones acumuladas.
+
+| Aspecto | `busqueda_abejas` (esta implementación) | `busqueda_abejas_simple` (canónica) |
+|---|---|---|
+| **Scouts** | Vecino de la mejor fuente actual | **Solución aleatoria pura** (barajar tareas + asignación greedy) — el sello de Karaboga 2005 |
+| **Sesgo inter/intra** | `pesos_inter_bias` en empleadas, observadoras y scouts | `seleccionar_grupo_operadores_inter_intra` solo en empleadas y observadoras; scouts sin sesgo |
+| **Parámetro de sesgo** | `alpha_inter` (bajo violación) + `p_inter` (factible) | Un único `p_inter`; el algoritmo aplica `max(p_inter, 0.8)` automáticamente bajo violación |
+| **Mejor factible** | Rastreado separado del mejor penalizado (`mejor_sol_factible`) | Un único mejor (la penalización guía la búsqueda; no se necesita rastreo separado) |
+| **Imputación de mejora** | Detectada al final del ciclo; imputada al `ultimo_movimiento_aceptado` (puede ser incorrecto) | Detectada **dentro del mismo `if`** que actualiza el mejor; operador siempre correcto |
+| **Criterio de parada** | Solo `iteraciones` (tope duro) | `iteraciones` + `max_iter_sin_mejora` siempre activo (calibrado a `max(50, 3·n)`) |
+| **Backend de generación** | Configurable (`labels` o `ids`) | Siempre `ids` (más eficiente; elimina la rama dual) |
+| **Parámetros numéricos** | Valores absolutos fijos (`iteraciones=250`, `num_fuentes=16`, `limite_abandono=35`) | **Instance-aware**: fórmulas en función de `n_tareas`; también admiten factores de escala |
+| **GPU en empleadas** | Sí (`costo_lote_penalizado_ids`) | No (evaluación individual con `costo_rapido_ids`; la vectorización no da speedup por fuente) |
+| **GPU en observadoras** | Sí | Sí (mismo `costo_lote_penalizado_ids`) |
+
+> **Para la tesis:** usar `busqueda_abejas_simple` como punto de partida en la comparación experimental y `busqueda_abejas` como versión extendida. La diferencia entre ambos cuantifica el impacto de las modificaciones heurísticas añadidas al núcleo ABC canónico.

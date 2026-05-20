@@ -1,108 +1,245 @@
 \documentclass[12pt, a4paper]{article}
 
 % ============================================================
-%  Packages
+%  Paquetes
 % ============================================================
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[english]{babel}
+\usepackage[spanish]{babel}
 \usepackage{amsmath, amssymb}
-\usepackage[ruled, vlined, linesnumbered, english]{algorithm2e}
+\usepackage[ruled, vlined, linesnumbered, spanish]{algorithm2e}
 \usepackage{geometry}
 \usepackage{hyperref}
 
 \geometry{margin=2.5cm}
 
 % ============================================================
-%  Document metadata
+%  Metadatos del documento
 % ============================================================
-\title{Simulated Annealing (Simple) --- Pseudocode}
+\title{Recocido Simulado (SA) --- Pseudocódigo}
 \author{}
 \date{}
 
-% ============================================================
-%  Begin document
 % ============================================================
 \begin{document}
 \maketitle
 
 % ------------------------------------------------------------
-\section*{Notation}
+\section{Notación}
 % ------------------------------------------------------------
 
 \begin{itemize}
-    \item $G$: CARP instance graph with required arc set $R$.
-    \item $s$: current solution --- a set of routes covering all arcs in $R$.
-    \item $s^{*}$: best feasible solution found so far.
-    \item $f(s) = \textsc{Cost}(s) + \lambda \cdot \textsc{CapacityViolation}(s)$: penalized objective ($\lambda > 0$).
-    \item $\mathcal{O}_{\mathrm{intra}} = \{\texttt{relocate\_intra},\, \texttt{swap\_intra},\, \texttt{2opt\_intra}\}$: within-route operators.
-    \item $\mathcal{O}_{\mathrm{inter}} = \{\texttt{relocate\_inter},\, \texttt{swap\_inter},\, \texttt{2opt\_star},\, \texttt{cross\_exchange},\, \texttt{or\_opt\_2},\, \texttt{or\_opt\_3}\}$: between-route operators.
-    \item $\alpha \in (0,1)$: geometric cooling factor. \quad $p_{\mathrm{inter}} \in [0,1]$: inter-route probability (feasible case). \quad $\alpha_{\mathrm{inter}} = 0.8$: inter-route bias when infeasible.
+    \item $G$: instancia CARP con conjunto de arcos requeridos $R$.
+    \item $s$: solución actual --- un conjunto de rutas que cubre todos los arcos
+          de $R$.
+    \item $s^{*}$: mejor solución factible encontrada hasta el momento.
+    \item $f(s) = c(s) + \lambda \cdot \mathrm{viol}(s)$: objetivo penalizado
+          ($\lambda > 0$).
+    \item $\mathcal{O}_{\mathrm{intra}} = \{\texttt{relocate\_intra},\,
+          \texttt{swap\_intra},\, \texttt{2opt\_intra}\}$: operadores
+          intra-ruta.
+    \item $\mathcal{O}_{\mathrm{inter}} = \{\texttt{relocate\_inter},\,
+          \texttt{swap\_inter},\, \texttt{2opt\_star},\,
+          \texttt{cross\_exchange},\, \texttt{or\_opt\_2},\,
+          \texttt{or\_opt\_3}\}$: operadores inter-ruta.
+    \item $\alpha \in (0,1)$: factor de enfriamiento geométrico.
+    \item $p_{\mathrm{inter}} \in [0,1]$: P(elegir inter-ruta) cuando la
+          solución es factible.
+    \item $\alpha_{\mathrm{inter}} = 0.8$: P(elegir inter-ruta) cuando hay
+          violación de capacidad.
+    \item $n = |R|$: número de tareas requeridas (variable de escala
+          \emph{instance-aware}).
+    \item $d_{\max} = \max_{i,j}\,\mathrm{dist}(i,j)$: distancia máxima
+          del grafo (camino mínimo más largo entre todos los nodos).
+    \item $L = n^{2}$: longitud del plateau (iteraciones por nivel de temperatura).
+    \item $\mathit{patience}$: niveles de temperatura consecutivos sin mejora del
+          mejor global antes de activar el recalentamiento ($= 0$ desactiva).
+    \item $r_{\mathrm{reheat}}$: fracción de $T_{\mathrm{init}}$ a la que se
+          sube la temperatura en cada recalentamiento.
+    \item $M_{\mathrm{reheat}}$: reheats consecutivos sin mejora antes de parar
+          anticipadamente ($= 0$ desactiva).
 \end{itemize}
 
+\medskip
+\noindent
+\textbf{Calibración \emph{instance-aware} (valores por defecto si no se
+proporcionan):}
+\[
+T_{\mathrm{init}} = \frac{20 \cdot d_{\max}}{n}, \qquad
+T_{\mathrm{min}}  = \frac{20 \cdot d_{\max}}{n^{2}}, \qquad
+L = n^{2}.
+\]
+
+\medskip
+\noindent
+\textbf{Sesgo inter/intra (compartido con TS simple, RTS y ABC simple).}
+En cada iteración del bucle interior se calcula $v \leftarrow
+\mathrm{viol}(s)$ y se define
+\[
+p_{\mathrm{efec}} \;=\;
+\begin{cases}
+  \alpha_{\mathrm{inter}} & \text{si } v > 0, \\
+  p_{\mathrm{inter}}     & \text{si } v = 0.
+\end{cases}
+\]
+Con probabilidad $p_{\mathrm{efec}}$ se elige el grupo
+$\mathcal{O}_{\mathrm{inter}}$; en caso contrario,
+$\mathcal{O}_{\mathrm{intra}}$.
+
 % ------------------------------------------------------------
-\section*{Algorithm}
+\section{Pseudocódigo}
 % ------------------------------------------------------------
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{Simple Simulated Annealing for CARP}
+\caption{Recocido Simulado para CARP (con Recalentamiento)}
 \label{alg:sa_simple}
 
-\KwIn{CARP instance $G$;\; cooling factor $\alpha$;\; penalty weight $\lambda$;\;
-      inter-route probability $p_{\mathrm{inter}}$;\;
-      optionally $T_{\mathrm{init}}$, $T_{\mathrm{min}}$ (computed from instance if omitted)}
-\KwOut{Best feasible solution $s^{*}$}
+\KwIn{Instancia CARP $G$;\; solución inicial $s_0$;\;
+      factor $\alpha$;\; penalización $\lambda$;\;
+      $p_{\mathrm{inter}}$;\; opcionalmente: $T_{\mathrm{init}}$,
+      $T_{\mathrm{min}}$, $L$ (calibrados si se omiten);\;
+      $\mathit{patience}$,\; $r_{\mathrm{reheat}}$,\; $M_{\mathrm{reheat}}$}
+\KwOut{Mejor solución factible $s^{*}$}
 
 \BlankLine
-\tcp{Instance-driven calibration (used if parameters not provided)}
-$n \leftarrow |R|$ \tcp{number of required arcs (tasks)}
-$d_{\max} \leftarrow \max_{i,j}\,\mathrm{dist}(i,j)$ \tcp{longest shortest-path distance}
-$L \leftarrow n^{2}$ \;
+\tcp{Calibración instance-aware}
+$n \leftarrow |R|$;\quad
+$d_{\max} \leftarrow \max_{i,j}\,\mathrm{dist}(i,j)$ \;
 $T_{\mathrm{init}} \leftarrow 20 \cdot d_{\max} / n$ \;
-$T_{\mathrm{min}} \leftarrow 20 \cdot d_{\max} / n^{2}$ \;
+$T_{\mathrm{min}}  \leftarrow 20 \cdot d_{\max} / n^{2}$ \;
+$L \leftarrow n^{2}$ \tcp{iteraciones por nivel de temperatura}
 
 \BlankLine
-$s \leftarrow \textsc{InitialSolution}(G)$ \;
-$s^{*} \leftarrow s$ \;
+\tcp{Precómputo UNA VEZ de las particiones intra/inter/fallback}
+Construir $\mathcal{O}_{\mathrm{intra}}$, $\mathcal{O}_{\mathrm{inter}}$,
+$\mathcal{O}_{\mathrm{fallback}}$ a partir de los operadores activos \;
+
+\BlankLine
+$s \leftarrow s_0$;\quad $s^{*} \leftarrow s$ \;
 $T \leftarrow T_{\mathrm{init}}$ \;
+$\mathit{niveles\_sin\_mejora} \leftarrow 0$ \;
+$\mathit{reheats\_sin\_mejora} \leftarrow 0$ \;
+$n_{\mathrm{reheats}} \leftarrow 0$ \;
 
 \BlankLine
 \While{$T > T_{\mathrm{min}}$}{
 
+    \tcp{Snapshot del mejor al inicio del nivel (para detectar mejora de nivel)}
+    $f^{*}_{\mathrm{nivel}} \leftarrow f(s^{*})$ \;
+
+    \BlankLine
     \For{$\mathit{it} \leftarrow 1$ \KwTo $L$}{
 
-        \tcp{Dice: choose operator group based on feasibility}
-        $v \leftarrow \textsc{CapacityViolation}(s)$ \;
-        \lIf{$v > 0$}{$p_{\mathrm{eff}} \leftarrow \alpha_{\mathrm{inter}}$}
-        \lElse{$p_{\mathrm{eff}} \leftarrow p_{\mathrm{inter}}$}
-        \eIf{$\mathrm{Uniform}(0,1) < p_{\mathrm{eff}}$}{
+        \BlankLine
+        \tcp{Selección del grupo de operadores (sesgo inter/intra)}
+        $v \leftarrow \mathrm{viol}(s)$ \;
+        \lIf{$v > 0$}{$p_{\mathrm{efec}} \leftarrow \alpha_{\mathrm{inter}}$}
+        \lElse{$p_{\mathrm{efec}} \leftarrow p_{\mathrm{inter}}$}
+        \eIf{$\mathrm{Uniforme}(0,1) < p_{\mathrm{efec}}$}{
             $\mathit{op} \leftarrow \textsc{SelectUniform}(\mathcal{O}_{\mathrm{inter}})$ \;
         }{
             $\mathit{op} \leftarrow \textsc{SelectUniform}(\mathcal{O}_{\mathrm{intra}})$ \;
         }
 
         \BlankLine
-        $s' \leftarrow \textsc{ApplyOperator}(\mathit{op},\, s)$ \;
+        $s' \leftarrow \textsc{AplicarOperador}(\mathit{op},\, s)$ \;
         $\Delta \leftarrow f(s') - f(s)$ \;
 
-        \tcp{Metropolis acceptance criterion}
-        \If{$\Delta \leq 0$ \textbf{ or } $\mathrm{Uniform}(0,1) < e^{-\Delta / T}$}{
+        \BlankLine
+        \tcp{Criterio de Metropolis}
+        \If{$\Delta \leq 0$ \textbf{ o } $\mathrm{Uniforme}(0,1) < e^{-\Delta / T}$}{
             $s \leftarrow s'$ \;
         }
 
-        \tcp{Update global best (feasible solutions only)}
-        \If{$\textsc{Feasible}(s)$ \textbf{ and } $\textsc{Cost}(s) < \textsc{Cost}(s^{*})$}{
+        \BlankLine
+        \tcp{Actualización del mejor global (solo soluciones factibles)}
+        \If{$\textsc{Factible}(s)$ \textbf{ y } $f(s) < f(s^{*})$}{
             $s^{*} \leftarrow s$ \;
         }
     }
 
     \BlankLine
-    $T \leftarrow \alpha \cdot T$ \tcp{geometric cooling step}
+    \tcp{Paso de enfriamiento geométrico}
+    $T \leftarrow \alpha \cdot T$ \;
+
+    \BlankLine
+    \tcp{Mecanismo de recalentamiento (Reheat)}
+    \If{$f(s^{*}) < f^{*}_{\mathrm{nivel}} - \varepsilon$}{
+        \tcp{El nivel produjo mejora: reiniciar contadores}
+        $\mathit{niveles\_sin\_mejora} \leftarrow 0$ \;
+    }{
+        $\mathit{niveles\_sin\_mejora} \leftarrow \mathit{niveles\_sin\_mejora} + 1$ \;
+    }
+
+    \BlankLine
+    \If{$\mathit{patience} > 0$ \textbf{ y }
+        $\mathit{niveles\_sin\_mejora} \geq \mathit{patience}$}{
+
+        \tcp{Guardar el mejor antes del reheat para comparación posterior}
+        $f^{*}_{\mathrm{antes\_reheat}} \leftarrow f(s^{*})$ \;
+
+        $T \leftarrow r_{\mathrm{reheat}} \cdot T_{\mathrm{init}}$ \;
+        $\mathit{niveles\_sin\_mejora} \leftarrow 0$ \;
+        $n_{\mathrm{reheats}} \leftarrow n_{\mathrm{reheats}} + 1$ \;
+
+        \tcp{Criterio de parada por reheats consecutivos sin mejora}
+        \eIf{$f(s^{*}) \geq f^{*}_{\mathrm{antes\_reheat}} - \varepsilon$}{
+            $\mathit{reheats\_sin\_mejora} \leftarrow
+                \mathit{reheats\_sin\_mejora} + 1$
+        }{
+            $\mathit{reheats\_sin\_mejora} \leftarrow 0$
+        }
+
+        \If{$M_{\mathrm{reheat}} > 0$ \textbf{ y }
+            $\mathit{reheats\_sin\_mejora} \geq M_{\mathrm{reheat}}$}{
+            \textbf{break} \tcp{parada anticipada por reheats estériles}
+        }
+    }
 }
 
 \BlankLine
 \Return $s^{*}$
 \end{algorithm}
+
+% ------------------------------------------------------------
+\section{Notas de implementación}
+% ------------------------------------------------------------
+
+\paragraph{Calibración instance-aware.}
+Las fórmulas $T_{\mathrm{init}} = 20 d_{\max}/n$ y $T_{\mathrm{min}} = 20
+d_{\max}/n^{2}$ escalan la ventana de temperatura con el tamaño de la instancia:
+instancias pequeñas (pocos arcos, distancias cortas) reciben ventanas pequeñas;
+instancias grandes, ventanas grandes. El plateau $L = n^{2}$ garantiza que cada
+nivel ejecute suficientes perturbaciones para evaluar estadísticamente el
+comportamiento a esa temperatura.
+
+\paragraph{Reheat.}
+El recalentamiento resuelve el estancamiento en mínimos locales cuando $T$ ya es
+demasiado baja para aceptar empeoramientos. En términos metalúrgicos: si el metal
+queda atrapado en una imperfección cristalina, se vuelve a calentar para dar a
+los átomos nueva movilidad. En el algoritmo, se sube $T$ a $r_{\mathrm{reheat}}
+\cdot T_{\mathrm{init}}$ y se reinicia el contador de niveles sin mejora. La
+mejor solución nunca se descarta. Con $\mathit{patience} = 0$ el reheat está
+desactivado y el SA es el clásico de Kirkpatrick (1983).
+
+\paragraph{Parada anticipada por reheats.}
+Con $M_{\mathrm{reheat}} > 0$ se puede interrumpir la corrida si $M_{\mathrm{reheat}}$
+reheats consecutivos no producen mejora del mejor global. Este criterio complementa
+la condición $T < T_{\mathrm{min}}$ y evita gastar tiempo cuando el algoritmo ya
+convergió.
+
+\paragraph{Actualización del mejor global.}
+Se mantiene el mejor global $s^{*}$ sobre las soluciones \emph{factibles}
+únicamente (aquellas con $\mathrm{viol}(s) = 0$). La solución actual $s$ puede
+ser infactible (aceptada por el criterio de Metropolis), pero no actualiza $s^{*}$.
+Esto garantiza que la salida del algoritmo siempre sea una solución CARP válida.
+
+\paragraph{Precómputo de operadores.}
+Las listas $\mathcal{O}_{\mathrm{intra}}$, $\mathcal{O}_{\mathrm{inter}}$ y
+$\mathcal{O}_{\mathrm{fallback}}$ se construyen \emph{una sola vez} antes del
+bucle exterior y se pasan al helper en cada iteración sin reconstruirlas. Esta
+microoptimización evita la creación de listas Python en el camino caliente del
+bucle interior (que ejecuta $L \approx n^{2}$ iteraciones por nivel).
 
 \end{document}

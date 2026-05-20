@@ -34,7 +34,7 @@ Este documento compara lado a lado las dos implementaciones de Búsqueda Tabú d
 | `tabu_tenure` | `20` (fijo durante la corrida) | — | — |
 | `tabu_tenure_inicial` | — | `None` → calculado | `max(3, round(√n))` |
 | `tabu_tenure_min` | — | `None` → `3` | `3` |
-| `tabu_tenure_max` | — | `None` → calculado | `max(10, round(3·√n))` |
+| `tabu_tenure_max` | — | `None` → calculado | `max(15, round(3·√n))` |
 | `factor_aumento` | — | `1.2` | — |
 | `factor_reduccion` | — | `0.9` | — |
 | `iter_sin_repeticion_para_reducir` | — | `None` → calculado | `max(5, round(2·√n))` |
@@ -88,11 +88,11 @@ Este documento compara lado a lado las dos implementaciones de Búsqueda Tabú d
 | Aspecto | TS simple | RTS |
 |---|---|---|
 | Script | `scripts/run_tabu_simple_automatico.py` | `scripts/run_tabu_reactiva_automatico.py` |
-| Parámetro en el grid | `tabu_tenure` ∈ {5, 10, 15, 20, 25, 30} | `factor_aumento` ∈ {1.1, 1.2, 1.3} × `umbral_escape` ∈ {2, 3, 5} |
+| Parámetro en el grid | `tabu_tenure` ∈ {5, 10, 15, 20, 25, 30} | `factor_aumento` ∈ {1.05, 1.1, 1.2, 1.3, 1.4} × `umbral_escape` ∈ {2, 3, 5, 8} × `p_inter` ∈ {0.4, 0.5, 0.6, 0.7, 0.8} × `factor_reduccion` ∈ {0.85, 0.9, 0.95} |
 | Parámetros fijos | `iteraciones_max=400`, `max_iter_sin_mejora=100`, `tam_vecindario=25` | instance-aware (todos `None`) |
-| Corridas totales | 6 × 23 × 2 = **276** | 3 × 3 × 23 × 2 = **414** |
-| Carpeta de salida | `<salida-dir>/tabu_simple_small_20260517/` | `<salida-dir>/tabu_reactive_small_20260517/` |
-| Nombre CSV | `tabu_simple_{instancia}_{exp}_{ydmh}.csv` | `tabu_reactiva_{instancia}_{exp}_{ydmh}.csv` |
+| Corridas totales | 6 × 23 × 2 = **276** | 5 × 4 × 5 × 3 × 23 × 5 = **34,500** |
+| Semillas | Configurables con `--semilla-base` | Aleatorias del sistema (corridas independientes) |
+| Carpeta de salida | `<salida-dir>/` (directa) | `<salida-dir>/` (directa) |
 | Etiqueta en CSV | `"busqueda_tabu_simple"` | `"tabu_reactiva"` |
 
 ---
@@ -142,10 +142,35 @@ Compara con `tabu_tenure_inicial`: si el promedio es sustancialmente mayor que e
 
 ---
 
+---
+
+## Comparativa con ABC Simple
+
+La tabla siguiente ubica las dos Búsquedas Tabú en el contexto del tercer algoritmo del proyecto, `busqueda_abejas_simple`.
+
+| Aspecto | TS simple | RTS | ABC simple |
+|---|---|---|---|
+| **Paradigma** | Trayectoria única | Trayectoria única + escape | Población (N fuentes en paralelo) |
+| **Memoria** | Lista tabú FIFO | Lista tabú dinámica + historial | Contadores `trials[i]` por fuente |
+| **Diversificación** | Via prohibiciones tabú | Via escape + tenure dinámico | Via scouts aleatorias puras (Karaboga 2005) |
+| **Selección** | Best-improvement en lote | Best-improvement en lote | Greedy por fuente (empleadas) + ruleta (observadoras) |
+| **Evaluación en lote** | Siempre (todo el vecindario) | Siempre (todo el vecindario) | Solo en observadoras (N vecinos simultáneos) |
+| **GPU** | No aplica (lotes ya vectorizados en CPU) | No aplica | Sí: `costo_lote_penalizado_ids` en observadoras |
+| **Sesgo inter/intra** | `seleccionar_grupo_operadores_inter_intra` | Mismo helper; escape sin sesgo | Mismo helper en empleadas y observadoras; scouts sin sesgo |
+| **p_inter dinámico** | `alpha_inter`/`p_inter` independientes | `alpha_inter`/`p_inter` independientes | Un solo `p_inter`; piso automático `max(p_inter, 0.8)` bajo violación |
+| **Parámetros instance-aware** | Parcial (regla `√n` manual) | Total (todos los params reactivos) | Total (fórmulas para N, abandono, iteraciones, parada) |
+| **Criterio de parada** | `iteraciones_max` + `max_iter_sin_mejora` | Ídem | `iteraciones_eff` + `max_iter_sin_mejora` (siempre activo) |
+| **Bug de imputación de mejora** | No aplica (una mejora por iter) | No aplica | Corregido: `registrar_mejora` dentro del mismo `if` de detección |
+| **Script de experimentos** | `run_tabu_simple_automatico.py` | `run_tabu_reactiva_automatico.py` | `run_abc_simple_automatico.py` |
+| **Dimensiones del grid** | 1D (tenure) | 4D (factor_aum × umbral_esc × p_inter × factor_red) | 4D (factor_fuentes × factor_abandono × p_inter × factor_iter) |
+| **Total corridas grid** | 276 | 34,500 | 27,600 |
+
+---
+
 ## Documentación relacionada
 
 - `docs/busqueda_tabu_simple.md` — descripción completa del TS simple
 - `docs/busqueda_tabu_reactiva.md` — descripción completa del RTS
-- `docs/helper_sesgo_inter_intra.md` — helper compartido `seleccionar_grupo_operadores_inter_intra`
-- `docs/busqueda_tabu.md` — versión original de Búsqueda Tabú del proyecto (implementación compleja con dict)
+- `docs/abc_simple.md` — descripción completa del ABC simple (Karaboga 2005 para CARP)
+- `docs/colonia_abejas.md` — versión extendida del ABC del proyecto
 - `docs/generacion_vecinos.md` — catálogo de los 9 operadores de vecindario

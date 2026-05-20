@@ -44,7 +44,9 @@ Si una misma solución se repite `umbral_repeticiones_escape` veces o más (cicl
 
 1. Se aplican `num_movimientos_escape` movimientos aleatorios consecutivos sobre la solución actual, ignorando la lista tabú (el objetivo es saltar lejos en el espacio).
 2. Se **limpia completamente** la lista tabú y el historial de soluciones.
-3. Se reinicia `iter_sin_repeticion = 0` y se registra la nueva solución en el historial.
+3. Se reinicia `iter_sin_repeticion = 0` e `iter_sin_mejora = 0` y se registra la nueva solución en el historial.
+
+El reset incondicional de `iter_sin_mejora` (independientemente de si el escape mejora el mejor global) es una decisión deliberada: el escape es un evento de diversificación, no de explotación. Contar el escape como "iteración sin mejora" sería injusto con el algoritmo: la región a la que llega el escape es nueva y puede tardar varios ciclos normales en mostrar progreso. Resetear el contador le da ese tiempo.
 
 La limpieza total tras el escape está justificada: después de varios movimientos aleatorios estamos en una región potencialmente lejana. Las prohibiciones y el historial de la zona anterior no son útiles allí; resetear desde cero permite detectar ciclos en la nueva región desde el principio.
 
@@ -71,7 +73,7 @@ Calibración instance-aware:
   tam_vec    = max(20, 2·n)              si tam_vecindario es None
   tenure_ini = max(3, round(sqrt_n))     si tabu_tenure_inicial es None
   tenure_min = 3                         si tabu_tenure_min es None
-  tenure_max = max(10, round(3·sqrt_n))  si tabu_tenure_max es None
+  tenure_max = max(15, round(3·sqrt_n))  si tabu_tenure_max es None
   iter_pac   = max(5, round(2·sqrt_n))   si iter_sin_repeticion_para_reducir es None
   n_escape   = max(3, n//10)             si num_movimientos_escape es None
   |
@@ -82,7 +84,7 @@ Seleccionar mejor solución inicial
 Inicializar:
   sol_actual    = sol_inicial
   tenure_actual = tenure_ini
-  lista_tabu    = deque(maxlen=tenure_actual)  +  set_tabu = set()
+  lista_tabu    = deque(maxlen=tenure_actual)  +  set_tabu = set()  +  counter_tabu = Counter()
   historial     = { hash(sol_inicial): {ultima_vista: -1, veces_vista: 1} }
   iter_sin_rep  = 0
   |
@@ -207,7 +209,7 @@ def busqueda_tabu_reactiva(
 | `tam_vecindario` | `int \| None` | `None` → `max(20, 2·n)` | Vecinos generados por iteración (best-improvement sobre el lote). |
 | `tabu_tenure_inicial` | `int \| None` | `None` → `max(3, round(√n))` | Tenencia tabú de arranque. Regla clásica de Glover-Laguna. |
 | `tabu_tenure_min` | `int \| None` | `None` → `3` | Cota inferior de la tenencia. Evita listas tabú efímeras. |
-| `tabu_tenure_max` | `int \| None` | `None` → `max(10, round(3·√n))` | Cota superior de la tenencia. Limita el exceso de prohibiciones. |
+| `tabu_tenure_max` | `int \| None` | `None` → `max(15, round(3·√n))` | Cota superior de la tenencia. Limita el exceso de prohibiciones. El piso 15 evita que instancias pequeñas (n < 25) usen un techo demasiado bajo y el mecanismo reactivo no tenga espacio real para actuar. |
 | `factor_aumento` | `float` | `1.2` | Multiplicador del tenure al detectar repetición. Debe ser `> 1.0`. |
 | `factor_reduccion` | `float` | `0.9` | Multiplicador del tenure al pasar tiempo sin repeticiones. Debe estar en `(0, 1)`. |
 | `iter_sin_repeticion_para_reducir` | `int \| None` | `None` → `max(5, round(2·√n))` | Iteraciones sin repetición antes de reducir el tenure. |
@@ -390,20 +392,18 @@ resultado = busqueda_tabu_reactiva(
 ### Script de experimentos automático
 
 ```bash
-# Grid sobre factor_aumento × umbral_escape (3 × 3 = 9 configs × 23 instancias × 2 reps = 414 corridas)
-python scripts/run_tabu_reactiva_automatico.py
+# Grid 4D: factor_aumento × umbral_escape × p_inter × factor_reduccion
+# 5 × 4 × 5 × 3 = 300 combos × 23 instancias × 5 reps = 34,500 corridas
+python scripts/run_tabu_reactiva_automatico.py --salida-dir experimentos/rts_grid
 
-# Con directorio de salida personalizado
-python scripts/run_tabu_reactiva_automatico.py --salida-dir mis_experimentos
+# Con paralelismo (N procesos simultáneos)
+python scripts/run_tabu_reactiva_automatico.py --salida-dir experimentos/rts_grid --workers 8
 
-# Forzar parámetros explícitos (desactiva el cálculo instance-aware)
-python scripts/run_tabu_reactiva_automatico.py \
-    --iteraciones-max 500 \
-    --tam-vecindario 30 \
-    --repeticiones 3
+# Con más repeticiones
+python scripts/run_tabu_reactiva_automatico.py --salida-dir experimentos/rts_grid --repeticiones 5
 ```
 
-Los CSV se guardan en `<salida-dir>/tabu_reactive_small_20260517/`.
+Las semillas son aleatorias del sistema (sin `--semilla-base`) para que las repeticiones sean estadísticamente independientes. Los CSV se escriben directamente en `<salida-dir>/`.
 
 ---
 

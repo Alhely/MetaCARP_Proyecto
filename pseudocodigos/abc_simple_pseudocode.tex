@@ -1,0 +1,369 @@
+\documentclass[12pt, a4paper]{article}
+
+% ============================================================
+%  Paquetes
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage[ruled, vlined, linesnumbered, spanish]{algorithm2e}
+\usepackage{geometry}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% ============================================================
+%  Metadatos del documento
+% ============================================================
+\title{Colonia de Abejas Artificiales Simple (ABC) --- Pseudocódigo}
+\author{}
+\date{}
+
+% ============================================================
+\begin{document}
+\maketitle
+
+% ------------------------------------------------------------
+\section{Introducción y fundamento biológico}
+% ------------------------------------------------------------
+
+El algoritmo \textbf{Artificial Bee Colony (ABC)} de Karaboga (2005) modela el
+comportamiento de una colonia de abejas melíferas durante la búsqueda y
+explotación de fuentes de alimento. En el contexto de optimización combinatoria,
+cada \emph{fuente de alimento} es una solución candidata y la calidad de la
+fuente es la aptitud (\emph{fitness}) de la solución.
+
+La implementación \texttt{busqueda\_abejas\_simple} sigue de forma fiel la
+estructura de Karaboga (2005) y la adapta al CARP con las siguientes
+modificaciones justificadas:
+
+\begin{enumerate}
+    \item \textbf{Sesgo inter/intra-ruta}: se usa el helper compartido
+          \texttt{seleccionar\_grupo\_operadores\_inter\_intra} en fases
+          empleadas y observadoras para reparar violaciones de capacidad
+          —sin él, el algoritmo podría quedarse atascado en regiones infactibles.
+    \item \textbf{$p_{\mathrm{inter}}$ dinámico}: cuando hay violación de
+          capacidad, la probabilidad de elegir operadores inter-ruta sube
+          automáticamente a $\max(p_{\mathrm{inter}}, 0.8)$.
+    \item \textbf{Penalización $\lambda$}: $f(s) = c(s) + \lambda \cdot
+          \mathrm{viol}(s)$; permite trabajar con soluciones infactibles y guía
+          la búsqueda hacia la región factible.
+    \item \textbf{Criterio de parada por estancamiento}: \texttt{max\_iter\_sin\_mejora}
+          (calibrado a $\max(50,\,3n)$ por instancia).
+    \item \textbf{Scouts aleatorias puras}: Karaboga estricto; las fuentes
+          agotadas se sustituyen por soluciones generadas al azar (no por vecinos
+          de la mejor actual, como hace la versión extendida del proyecto).
+    \item \textbf{Corrección del bug de imputación de mejora}: la función
+          \texttt{registrar\_mejora} se invoca inmediatamente cuando un vecino
+          supera el mejor global, dentro del mismo \texttt{if} de detección.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Notación}
+% ------------------------------------------------------------
+
+\begin{itemize}
+    \item $G = (V, E, R)$: grafo de la instancia CARP. $R \subseteq E$ son las
+          aristas requeridas.
+    \item $F = \{s_1, s_2, \ldots, s_{N}\}$: conjunto de fuentes de alimento
+          (soluciones activas), con $N = \mathit{num\_fuentes}$.
+    \item $s_i$: fuente $i$ (una solución CARP --- conjunto de rutas sobre $R$).
+    \item $s^{*}$: mejor solución encontrada durante toda la corrida.
+    \item $c(s)$: costo puro de la solución $s$ (suma de costos de travesía y
+          servicio, sin penalización).
+    \item $\mathrm{viol}(s)$: exceso total de demanda respecto a la capacidad del
+          vehículo.
+    \item $f(s) = c(s) + \lambda \cdot \mathrm{viol}(s)$: objetivo penalizado
+          ($\lambda > 0$).
+    \item $\mathit{trials}[i]$: contador de intentos fallidos consecutivos de
+          la fuente $i$ (se reinicia a 0 cuando la fuente mejora).
+    \item $L_{\mathrm{aban}}$: límite de abandono — si $\mathit{trials}[i] \geq
+          L_{\mathrm{aban}}$, la fuente $i$ se reemplaza por un scout.
+    \item $\mathcal{O}_{\mathrm{intra}} = \{\texttt{relocate\_intra},\,
+          \texttt{swap\_intra},\, \texttt{2opt\_intra}\}$: operadores
+          intra-ruta.
+    \item $\mathcal{O}_{\mathrm{inter}} = \{\texttt{relocate\_inter},\,
+          \texttt{swap\_inter},\, \texttt{2opt\_star},\,
+          \texttt{cross\_exchange},\, \texttt{or\_opt\_2},\,
+          \texttt{or\_opt\_3}\}$: operadores inter-ruta.
+    \item $p_{\mathrm{inter}} \in [0,1]$: probabilidad base de elegir el grupo
+          inter-ruta (cuando la solución es factible).
+    \item $p_{\mathrm{efec}}$: probabilidad efectiva de elegir inter-ruta tras
+          aplicar el piso dinámico.
+    \item $n = |R|$: número de tareas requeridas (variable de escala
+          \emph{instance-aware}).
+\end{itemize}
+
+\medskip
+\noindent
+\textbf{Sesgo inter/intra dinámico.} En cada ciclo se calcula la violación media
+$\bar{v} = \tfrac{1}{N}\sum_{i=1}^{N}\mathrm{viol}(s_i)$. La probabilidad
+efectiva de elegir el grupo inter-ruta es:
+\[
+p_{\mathrm{efec}} \;=\;
+\begin{cases}
+  \max(p_{\mathrm{inter}},\; 0.8) & \text{si } \bar{v} > 0, \\
+  p_{\mathrm{inter}}              & \text{si } \bar{v} = 0.
+\end{cases}
+\]
+Con probabilidad $p_{\mathrm{efec}}$ se selecciona $\mathcal{O}_{\mathrm{inter}}$;
+en caso contrario, $\mathcal{O}_{\mathrm{intra}}$. Dentro del grupo elegido, el
+operador concreto se muestrea de manera uniforme.
+
+% ------------------------------------------------------------
+\section{Calibración \emph{instance-aware} de parámetros}
+% ------------------------------------------------------------
+
+Los parámetros del algoritmo se escalan con $n = |R|$ para evitar que
+corridas demasiado cortas (instancias pequeñas) o demasiado largas (instancias
+grandes) distorsionen la comparación. Las fórmulas por defecto son:
+
+\begin{align*}
+\mathit{iteraciones}        &= \max(200,\; 20 \cdot n) \\
+\mathit{num\_fuentes}       &= \max(10,\; \lceil 2\sqrt{n} \rceil) \\
+\mathit{limite\_abandono}   &= \max(15,\; \lfloor n/2 \rfloor) \\
+\mathit{max\_iter\_sin\_mejora} &= \max(50,\; 3 \cdot n)
+\end{align*}
+
+El usuario puede sobrescribir cualquier parámetro con un \emph{factor de escala}
+$f$ (e.g.\ $\mathit{factor\_iter} = 20$, lo que equivale a
+$\mathit{iteraciones} = \max(200, 20n)$) o con un valor absoluto. La precedencia es:
+
+\[
+\text{valor absoluto} \;\succ\; \text{factor de escala} \;\succ\; \text{fórmula por defecto}
+\]
+
+% ------------------------------------------------------------
+\section{Pseudocódigos}
+% ------------------------------------------------------------
+
+% -------- Algoritmo ABC Simple completo ---------------------
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{ABC Simple para CARP (Karaboga 2005 adaptado)}
+\label{alg:abc_simple}
+
+\KwIn{Instancia CARP $G$;\; solución inicial $s_0$;\;
+      $p_{\mathrm{inter}}$;\; penalización $\lambda$;\;
+      opcionalmente: $N$, $L_{\mathrm{aban}}$, $\mathit{iteraciones}$,
+      $\mathit{max\_iter\_sin\_mejora}$ (todos instance-aware si se omiten)}
+\KwOut{Mejor solución encontrada $s^{*}$}
+
+\BlankLine
+\tcp{Calibración instance-aware (valores default si no se proporcionan)}
+$n \leftarrow |R|$ \tcp{número de tareas requeridas}
+$\mathit{iteraciones} \leftarrow \max(200,\; 20 \cdot n)$ \;
+$N \leftarrow \max(10,\; \lceil 2\sqrt{n} \rceil)$ \;
+$L_{\mathrm{aban}} \leftarrow \max(15,\; \lfloor n/2 \rfloor)$ \;
+$M \leftarrow \max(50,\; 3 \cdot n)$
+    \tcp{máx. iteraciones sin mejora}
+
+\BlankLine
+\tcp{Inicialización de fuentes}
+$\mathit{fuentes}[0] \leftarrow s_0$;\quad
+$\mathit{trials}[0] \leftarrow 0$ \;
+\For{$i \leftarrow 1$ \KwTo $N - 1$}{
+    $\mathit{fuentes}[i] \leftarrow$ \textsc{GenerarVecino}($\mathit{fuentes}[0],\,
+        \mathcal{O}_{\mathrm{inter}} \cup \mathcal{O}_{\mathrm{intra}}$) \;
+    $\mathit{trials}[i] \leftarrow 0$ \;
+}
+
+\BlankLine
+\tcp{Mejor inicial (mínimo objetivo penalizado sobre todas las fuentes)}
+$s^{*} \leftarrow \arg\min_{i} f(\mathit{fuentes}[i])$ \;
+$f^{*} \leftarrow f(s^{*})$ \;
+$\mathit{iter\_sin\_mejora} \leftarrow 0$ \;
+
+\BlankLine
+\tcp{Precómputo UNA VEZ de las particiones intra/inter (microoptimización)}
+Construir $\mathcal{O}_{\mathrm{intra}}$, $\mathcal{O}_{\mathrm{inter}}$,
+$\mathcal{O}_{\mathrm{fallback}}$ a partir de los operadores activos \;
+
+\BlankLine
+\For{$\mathit{ciclo} \leftarrow 1$ \KwTo $\mathit{iteraciones}$}{
+
+    \tcp{Criterio de parada anticipada por estancamiento}
+    \If{$\mathit{iter\_sin\_mejora} \geq M$}{
+        \textbf{break} \;
+    }
+
+    $f^{*}_{\mathrm{inicio}} \leftarrow f^{*}$ \tcp{snapshot del inicio del ciclo}
+
+    \BlankLine
+    \tcp{Violación media y p\_inter efectivo para este ciclo}
+    $\bar{v} \leftarrow \tfrac{1}{N}\sum_{i=1}^{N} \mathrm{viol}(\mathit{fuentes}[i])$ \;
+    \lIf{$\bar{v} > 0$}{$p_{\mathrm{efec}} \leftarrow \max(p_{\mathrm{inter}},\; 0.8)$}
+    \lElse{$p_{\mathrm{efec}} \leftarrow p_{\mathrm{inter}}$}
+
+    \BlankLine
+    \tcp{\textbf{Fase 1 — Empleadas} (explotación individual)}
+    \For{$i \leftarrow 0$ \KwTo $N - 1$}{
+        $\mathcal{O}_{\mathrm{grupo}} \leftarrow$ \textsc{ElegirGrupo}($p_{\mathrm{efec}},\,
+            \mathcal{O}_{\mathrm{inter}},\, \mathcal{O}_{\mathrm{intra}}$) \;
+        $(s',\, m) \leftarrow$ \textsc{GenerarVecino}($\mathit{fuentes}[i],\,
+            \mathcal{O}_{\mathrm{grupo}}$) \;
+        \textsc{Proponer}($m$) \;
+        \eIf{$f(s') < f(\mathit{fuentes}[i]) - \varepsilon$}{
+            $\mathit{fuentes}[i] \leftarrow s'$;\quad
+            $\mathit{trials}[i] \leftarrow 0$ \;
+            \textsc{Aceptar}($m$) \;
+            \tcp{Detección inmediata de mejora global (corrección del bug de imputación)}
+            \If{$f(s') < f^{*} - \varepsilon$}{
+                $s^{*} \leftarrow s'$;\quad
+                $f^{*} \leftarrow f(s')$ \;
+                \textsc{RegistrarMejora}($m$) \;
+            }
+        }{
+            $\mathit{trials}[i] \leftarrow \mathit{trials}[i] + 1$ \;
+        }
+    }
+
+    \BlankLine
+    \tcp{\textbf{Fase 2 — Observadoras} (explotación ponderada por ruleta)}
+    \tcp{Recalcular violación media y $p_{\mathrm{efec}}$ tras las empleadas}
+    $\bar{v} \leftarrow \tfrac{1}{N}\sum_{i=1}^{N} \mathrm{viol}(\mathit{fuentes}[i])$ \;
+    \lIf{$\bar{v} > 0$}{$p_{\mathrm{efec}} \leftarrow \max(p_{\mathrm{inter}},\; 0.8)$}
+    \lElse{$p_{\mathrm{efec}} \leftarrow p_{\mathrm{inter}}$}
+
+    \BlankLine
+    \tcp{Probabilidades de la ruleta: fitness inverso normalizado}
+    \For{$i \leftarrow 0$ \KwTo $N - 1$}{
+        $w_i \leftarrow \dfrac{1}{1 + f(\mathit{fuentes}[i])}$ \;
+    }
+    $W \leftarrow \sum_{i=0}^{N-1} w_i$;\quad
+    $P_i \leftarrow w_i / W$ para todo $i$ \;
+
+    \BlankLine
+    \tcp{Muestrear $N$ índices CON REEMPLAZO (fuentes buenas reciben más visitas)}
+    $\mathit{idxs} \leftarrow \textsc{RuletaMuestreaConReemplazo}(P, k=N)$ \;
+
+    \BlankLine
+    \tcp{Generar lote de vecinos (uno por cada índice muestreado)}
+    \For{$k \leftarrow 0$ \KwTo $N - 1$}{
+        $i \leftarrow \mathit{idxs}[k]$ \;
+        $\mathcal{O}_{\mathrm{grupo}} \leftarrow$ \textsc{ElegirGrupo}($p_{\mathrm{efec}},\,
+            \mathcal{O}_{\mathrm{inter}},\, \mathcal{O}_{\mathrm{intra}}$) \;
+        $(s'_k,\, m_k) \leftarrow$ \textsc{GenerarVecino}($\mathit{fuentes}[i],\,
+            \mathcal{O}_{\mathrm{grupo}}$) \;
+    }
+
+    \BlankLine
+    \tcp{Evaluación vectorizada del lote (GPU si disponible)}
+    $\{f(s'_k)\}_{k=0}^{N-1} \leftarrow$ \textsc{EvaluarLote}($\{s'_k\}$)
+        \tcp{\texttt{costo\_lote\_penalizado\_ids}}
+
+    \BlankLine
+    \tcp{Actualización greedy de fuentes}
+    \For{$k \leftarrow 0$ \KwTo $N - 1$}{
+        $i \leftarrow \mathit{idxs}[k]$ \;
+        \textsc{Proponer}($m_k$) \;
+        \eIf{$f(s'_k) < f(\mathit{fuentes}[i]) - \varepsilon$}{
+            $\mathit{fuentes}[i] \leftarrow s'_k$;\quad
+            $\mathit{trials}[i] \leftarrow 0$ \;
+            \textsc{Aceptar}($m_k$) \;
+            \tcp{Detección inmediata de mejora global}
+            \If{$f(s'_k) < f^{*} - \varepsilon$}{
+                $s^{*} \leftarrow s'_k$;\quad $f^{*} \leftarrow f(s'_k)$ \;
+                \textsc{RegistrarMejora}($m_k$) \;
+            }
+        }{
+            $\mathit{trials}[i] \leftarrow \mathit{trials}[i] + 1$ \;
+        }
+    }
+
+    \BlankLine
+    \tcp{\textbf{Fase 3 — Scouts} (diversificación con soluciones aleatorias puras)}
+    \ForEach{$i$ \textbf{ tal que } $\mathit{trials}[i] \geq L_{\mathrm{aban}}$}{
+        $s_{\mathrm{nuevo}} \leftarrow$ \textsc{SoluciónAleatoria}($G$)
+            \tcp{barajar tareas + asignación greedy de capacidad}
+        $\mathit{fuentes}[i] \leftarrow s_{\mathrm{nuevo}}$ \;
+        $\mathit{trials}[i] \leftarrow 0$ \;
+        \tcp{El scout NO llama a Proponer/Aceptar: no hay operador de vecindad}
+        \tcp{Si el scout mejoró el global, se registra sin imputar operador}
+        \If{$f(s_{\mathrm{nuevo}}) < f^{*} - \varepsilon$}{
+            $s^{*} \leftarrow s_{\mathrm{nuevo}}$;\quad
+            $f^{*} \leftarrow f(s_{\mathrm{nuevo}})$ \;
+            \tcp{Mejora contabilizada pero sin asociar a ningún operador}
+        }
+    }
+
+    \BlankLine
+    \tcp{Actualización del contador de estancamiento}
+    \lIf{$f^{*} < f^{*}_{\mathrm{inicio}} - \varepsilon$}{%
+        $\mathit{iter\_sin\_mejora} \leftarrow 0$}
+    \lElse{%
+        $\mathit{iter\_sin\_mejora} \leftarrow \mathit{iter\_sin\_mejora} + 1$}
+}
+
+\BlankLine
+\Return $s^{*}$
+\end{algorithm}
+
+\bigskip
+
+% -------- Auxiliar: Solución aleatoria (scouts canónicos) ----
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\caption{Generación de solución aleatoria para scouts}
+\label{alg:solucion_aleatoria}
+
+\KwIn{Instancia CARP $G$;\; capacidad del vehículo $Q$;\; depósito $d$}
+\KwOut{Solución CARP aleatoria $s$}
+
+\BlankLine
+$\mathit{tareas} \leftarrow$ barajar aleatoriamente $R$ \;
+$s \leftarrow [\,]$;\quad $\mathit{ruta\_actual} \leftarrow [d]$;\quad
+$\mathit{carga\_actual} \leftarrow 0$ \;
+\ForEach{tarea $t \in \mathit{tareas}$}{
+    \eIf{$\mathit{carga\_actual} + \mathrm{demanda}(t) \leq Q$}{
+        $\mathit{ruta\_actual} \leftarrow \mathit{ruta\_actual} + [t]$ \;
+        $\mathit{carga\_actual} \leftarrow \mathit{carga\_actual} + \mathrm{demanda}(t)$ \;
+    }{
+        $s \leftarrow s + [\mathit{ruta\_actual} + [d]]$
+            \tcp{cerrar ruta actual con retorno al depósito}
+        $\mathit{ruta\_actual} \leftarrow [d, t]$ \;
+        $\mathit{carga\_actual} \leftarrow \mathrm{demanda}(t)$ \;
+    }
+}
+\lIf{$|\mathit{ruta\_actual}| > 1$}{
+    $s \leftarrow s + [\mathit{ruta\_actual} + [d]]$}
+\Return $s$
+\end{algorithm}
+
+% ------------------------------------------------------------
+\section{Notas de implementación}
+% ------------------------------------------------------------
+
+\paragraph{Evaluación vectorizada (GPU).}
+En la fase observadoras, los $N$ vecinos generados en lote se evalúan en una
+sola llamada a \texttt{costo\_lote\_penalizado\_ids}, que empaqueta los arrays
+de distancias y demandas en NumPy y, si hay GPU disponible (\texttt{usar\_gpu=True}),
+delega la reducción a CuPy. En la fase empleadas cada vecino se evalúa
+individualmente con \texttt{costo\_rapido\_ids} porque la decisión de
+aceptar/rechazar se toma por fuente (la vectorización no daría speedup allí).
+
+\paragraph{Corrección del bug de imputación.}
+En la versión extendida \texttt{busqueda\_abejas}, la detección de mejora global
+se hacía comparando $f(s)$ antes y después del ciclo completo, y la mejora se
+atribuía al \emph{último movimiento aceptado} en el ciclo (que podría ser
+cualquier movimiento posterior al que realmente mejoró el mejor). Aquí, la
+llamada a \textsc{RegistrarMejora}$(m)$ ocurre dentro del mismo \texttt{if}
+que actualiza $s^{*}$, garantizando que $\sum_{\mathrm{op}}\mathit{mejoraron}[\mathrm{op}]
+\leq \mathit{mejoras}$, con la diferencia exacta contabilizada a los scouts.
+
+\paragraph{Ruleta de observadoras.}
+El fitness de la fuente $i$ en la fórmula de Karaboga es $\mathit{fit}_i = 1/(1 + f_i)$
+(válida para $f_i \geq 0$, siempre cumplida en CARP). Las probabilidades de
+selección son $P_i = \mathit{fit}_i / \sum_j \mathit{fit}_j$. La selección se
+realiza con Python's \texttt{random.choices} con repetición ($k = N$), lo que
+permite que las mejores fuentes sean visitadas más de una vez por ciclo.
+
+\paragraph{Inicialización de fuentes.}
+La fuente 0 se siembra con la solución inicial de referencia. Las fuentes
+$1 \ldots N-1$ se siembran con vecinos aleatorios de la fuente 0 (en lugar de
+soluciones completamente aleatorias) para arrancar con diversidad pero cercana
+a una buena solución de partida. Es el compromiso estándar de la literatura
+aplicada de ABC.
+
+\end{document}
