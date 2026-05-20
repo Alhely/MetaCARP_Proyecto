@@ -114,6 +114,16 @@ from .busqueda_tabu_reactiva import (
 # de alimento de colmenas de abejas.
 from .abejas import AbejasResult, busqueda_abejas, busqueda_abejas_desde_instancia
 
+# Algoritmo de Abejas SIMPLE (versión Karaboga 2005 canónica): scouts puramente
+# aleatorios, sesgo inter/intra-ruta compartido con SA/TS, criterio de parada
+# por estancamiento opcional y corrección del bug de imputación de mejora a
+# operadores. Pensado como baseline didáctico de la tesis.
+from .abejas_simple import (
+    AbejasSimpleResult,
+    busqueda_abejas_simple,
+    busqueda_abejas_simple_desde_instancia,
+)
+
 # Búsqueda del Cucú (Cuckoo Search): algoritmo inspirado en el parasitismo de
 # nidos del cucú, con vuelos de Lévy para exploración.
 from .cuckoo_search import CuckooSearchResult, cuckoo_search, cuckoo_search_desde_instancia
@@ -228,6 +238,9 @@ __all__ = [
     "AbejasResult",
     "busqueda_abejas",
     "busqueda_abejas_desde_instancia",
+    "AbejasSimpleResult",
+    "busqueda_abejas_simple",
+    "busqueda_abejas_simple_desde_instancia",
     "CuckooSearchResult",
     "cuckoo_search",
     "cuckoo_search_desde_instancia",
