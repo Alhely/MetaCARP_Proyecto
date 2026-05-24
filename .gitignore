@@ -86,6 +86,10 @@ dmypy.json
 # CSV experiment results
 *.csv
 
+# Pickle solution library (regenerable from CSV consolidado)
+*.pkl
+analisis_operadores_20260520/biblioteca_soluciones/
+
 # Temporary files
 *.tmp
 *.temp
