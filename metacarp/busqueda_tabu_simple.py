@@ -101,8 +101,10 @@ from .cargar_grafos import cargar_objeto_gexf                         # carga el
 from .cargar_soluciones_iniciales import cargar_solucion_inicial      # carga la solución inicial
 from .evaluador_costo import (
     costo_lote_ids,                      # evalúa un lote de soluciones (NumPy vectorizado)
+    costo_lote_penalizado_ids,           # ídem con objetivo penalizado: (obj, costo_puro, viol)
     costo_rapido,                        # evalúa UNA solución (label-based) — usado tras kick
     exceso_capacidad_rapido,             # calcula la violación de capacidad de una solución
+    lambda_penal_capacidad_por_defecto,  # λ por defecto basado en la instancia
 )
 from .instances import load_instances  # carga los datos de la instancia CARP
 from .metaheuristicas_utils import (
@@ -413,6 +415,14 @@ def busqueda_tabu_simple(
         root=root,
     )
 
+    # λ efectivo para penalizar violaciones de capacidad en el objetivo del bucle.
+    # Si el usuario pasa lambda_capacidad=None, usamos el default instance-aware.
+    lam_eff: float = (
+        float(lambda_capacidad)
+        if lambda_capacidad is not None
+        else lambda_penal_capacidad_por_defecto(ctx)
+    )
+
     # Selección de la mejor solución inicial entre todas las candidatas del pickle.
     # Esta versión simple NO usa penalización por capacidad para elegir la inicial
     # (queremos que TS sea lo más "puro" posible), pero seleccionar_mejor_inicial_rapido
@@ -432,11 +442,11 @@ def busqueda_tabu_simple(
     costo_actual = costo_ref
     viol_actual = sel_ini.violacion_capacidad  # exceso de demanda (0 = factible)
 
-    # Mejor global registrado: la mejor solución vista durante toda la búsqueda.
-    # En la versión simple, "mejor" = menor costo puro, sin distinguir
-    # factibilidad. Sin embargo, registramos también si la mejor final fue
-    # factible para reportarlo en el CSV (mismo patrón que SA).
+    # Mejor global registrado. ``mejor_obj_pen`` guía las decisiones internas
+    # (selección, aspiración, estancamiento). ``mejor_costo`` es el costo puro
+    # que se reporta en CSV y dataclass.
     mejor_costo = float(costo_ref)
+    mejor_obj_pen = float(costo_ref) + lam_eff * float(viol_actual)
     mejor_sol = copiar_solucion_labels(sol_ref)
     mejor_factible = viol_actual < 1e-12  # True si la inicial es factible
 
@@ -572,78 +582,58 @@ def busqueda_tabu_simple(
 
         # --- Paso 2: Evaluación en lote ---
         # Codificamos los vecinos a IDs enteros y los evaluamos en una sola
-        # pasada vectorizada de NumPy (mucho más rápido que evaluarlos uno a
-        # uno, sobre todo cuando tam_vecindario es grande).
+        # pasada vectorizada. Usamos el objetivo penalizado para que TS guíe
+        # la búsqueda equilibrando costo puro y violación de capacidad.
         sols_ids = [encode_solution(v, ctx.encoding) for v in vecinos]
-        costos_np = costo_lote_ids(sols_ids, ctx)  # array NumPy shape (tam_vecindario,)
+        obj_np, costos_np, viols_np = costo_lote_penalizado_ids(sols_ids, ctx, lam_eff)
         vecinos_evaluados += len(vecinos)
 
         # --- Paso 3: Selección del mejor vecino no-tabú (best-improvement) ---
-        # Recorremos el lote y encontramos:
-        # 1. El mejor admisible (no-tabú, o tabú con aspiración).
-        # 2. El mejor total (incluyendo tabú), por si todos resultan tabú.
+        # Selección y aspiración se hacen sobre el objetivo penalizado; los costos
+        # puros solo se usan para actualizar ``mejor_costo`` al final del paso 6.
         mejor_admisible_idx = -1
-        mejor_admisible_costo = float("inf")
+        mejor_admisible_obj = float("inf")
         mejor_total_idx = 0
-        mejor_total_costo = float("inf")
-        # Bandera: ¿se accedió a un vecino vía aspiración en este lote?
+        mejor_total_obj = float("inf")
         aspiracion_en_iter = False
 
-        for idx in range(len(costos_np)):
-            c_v = float(costos_np[idx])     # costo del vecino idx
+        for idx in range(len(obj_np)):
+            o_v = float(obj_np[idx])    # objetivo penalizado del vecino idx
 
-            # Actualizamos el mejor total (sin restricciones tabú).
-            if c_v < mejor_total_costo:
-                mejor_total_costo = c_v
+            if o_v < mejor_total_obj:
+                mejor_total_obj = o_v
                 mejor_total_idx = idx
 
-            # ¿Este movimiento está en la lista tabú?
             key = _clave_tabu(movimientos[idx])
             es_tabu = key in set_tabu
 
-            # **Criterio de aspiración clásico**: se acepta un movimiento tabú
-            # si produce una solución estrictamente mejor que el MEJOR GLOBAL
-            # conocido. Esto evita que la lista tabú nos cierre el camino al
-            # óptimo. La condición usa un epsilon pequeño para evitar problemas
-            # de comparación con float.
-            aspiracion = c_v < mejor_costo - 1e-15
+            # Aspiración: superar el mejor objetivo penalizado global conocido.
+            aspiracion = o_v < mejor_obj_pen - 1e-15
 
-            # Si el movimiento es tabú y NO cumple aspiración, lo saltamos.
             if es_tabu and not aspiracion:
                 continue
 
-            # Si llegamos aquí, el vecino es admisible (no-tabú o tabú con aspiración).
-            if c_v < mejor_admisible_costo:
-                mejor_admisible_costo = c_v
+            if o_v < mejor_admisible_obj:
+                mejor_admisible_obj = o_v
                 mejor_admisible_idx = idx
-                # Si la única razón por la que es admisible es la aspiración,
-                # registramos que hubo aspiración en esta iteración.
                 if es_tabu and aspiracion:
                     aspiracion_en_iter = True
 
         # --- Paso 4: Elección del movimiento a ejecutar ---
         if mejor_admisible_idx == -1:
-            # Caso degenerado: TODOS los vecinos del lote eran tabú y ninguno
-            # cumplía aspiración. Como no podemos quedarnos quietos, elegimos
-            # el mejor tabú para forzar el avance. Esto es una decisión
-            # pragmática de la versión simple; alternativas son: regenerar
-            # vecindario, hacer perturbación aleatoria, terminar.
             elegido_idx = mejor_total_idx
             iteraciones_todos_tabu += 1
         else:
             elegido_idx = mejor_admisible_idx
-            # Si hubo aspiración en la elección, lo contamos para el reporte.
             if aspiracion_en_iter:
                 aspiraciones += 1
 
-        # Actualizamos el estado actual al vecino elegido.
-        # En TS simple SIEMPRE nos movemos al vecino seleccionado, aunque sea
-        # peor que la solución actual (esa es la idea: subir colinas para
-        # escapar de mínimos locales, confiando en la lista tabú para no
-        # caer en ciclos).
+        # Actualizamos el estado actual al vecino elegido. costo_actual y
+        # viol_actual se toman directamente del batch (sin recalcular).
         sol_actual = vecinos[elegido_idx]
         costo_actual = float(costos_np[elegido_idx])
-        viol_actual = exceso_capacidad_rapido(sol_actual, ctx)
+        viol_actual = float(viols_np[elegido_idx])
+        obj_actual = float(obj_np[elegido_idx])
         ultimo_mov_aceptado = movimientos[elegido_idx]
         contador.aceptar(ultimo_mov_aceptado.operador)
 
@@ -678,17 +668,15 @@ def busqueda_tabu_simple(
         conteo_tabu[nueva_clave] += 1
 
         # --- Paso 6: Actualización del mejor global ---
-        # Si el vecino elegido mejora el mejor global histórico, lo registramos.
-        # Esta es la "memoria del mejor encontrado", independiente de la
-        # solución actual (que puede haberse desplazado hacia regiones peores).
-        if costo_actual < mejor_costo - 1e-15:
+        # Comparamos por objetivo penalizado; guardamos el costo puro para el reporte.
+        if obj_actual < mejor_obj_pen - 1e-15:
+            mejor_obj_pen = obj_actual
             mejor_costo = costo_actual
             mejor_sol = copiar_solucion_labels(sol_actual)
             mejor_factible = viol_actual < 1e-12
             iter_mejor = iteracion
             mejoras += 1
             contador.registrar_mejora(ultimo_mov_aceptado.operador)
-            # Reiniciamos el contador de estancamiento: sí hubo progreso.
             iter_sin_mejora = 0
         else:
             # No mejoramos: incrementamos el contador de estancamiento. Cuando
@@ -710,10 +698,10 @@ def busqueda_tabu_simple(
                 sol_actual = aplicar_kick_labels(
                     sol_actual, rng, md_op, encoding=encoding
                 )
-                # Tras el kick recalculamos costo y violación para que las
-                # próximas iteraciones tomen decisiones con datos coherentes.
+                # Recalculamos costo, violación y objetivo penalizado tras el kick.
                 viol_actual = float(exceso_capacidad_rapido(sol_actual, ctx))
                 costo_actual = float(costo_rapido(sol_actual, ctx))
+                obj_actual = costo_actual + lam_eff * viol_actual
                 iter_sin_mejora = 0
                 n_resets_kick += 1
                 if max_resets is not None and n_resets_kick >= max_resets:
@@ -797,6 +785,8 @@ def busqueda_tabu_simple(
             # Columna del mecanismo de kick (strict_intra_inter_20260524).
             # 0 cuando la variante experimental no esta activa (default).
             "n_resets_kick": n_resets_kick,
+            # λ efectivo usado en el objetivo penalizado del bucle principal.
+            "lambda_capacidad": lam_eff,
         }
         archivo_csv = guardar_resultado_csv(fila=fila, ruta_csv=ruta)
 
