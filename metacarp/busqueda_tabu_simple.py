@@ -101,6 +101,7 @@ from .cargar_grafos import cargar_objeto_gexf                         # carga el
 from .cargar_soluciones_iniciales import cargar_solucion_inicial      # carga la solución inicial
 from .evaluador_costo import (
     costo_lote_ids,                      # evalúa un lote de soluciones (NumPy vectorizado)
+    costo_rapido,                        # evalúa UNA solución (label-based) — usado tras kick
     exceso_capacidad_rapido,             # calcula la violación de capacidad de una solución
 )
 from .instances import load_instances  # carga los datos de la instancia CARP
@@ -202,6 +203,10 @@ class BusquedaTabuSimpleResult:
     alpha_inter_aplicado: float = 0.0
     p_inter_aplicado: float = 0.0
     iteraciones_con_violacion: int = 0
+    # Número de kicks (perturbaciones inter-ruta) aplicados durante la corrida.
+    # Solo es > 0 cuando se pasa max_iter_sin_mejora_kick al wrapper de la
+    # variante experimental strict_intra_inter_20260524.
+    n_resets_kick: int = 0
 
 
 def _clave_tabu(mov: MovimientoVecindario) -> tuple[Any, ...]:
@@ -258,6 +263,14 @@ def busqueda_tabu_simple(
     # el parámetro en su valor canónico SA sin tener que conocer la constante.
     alpha_inter: float | None = None,  # P(elegir inter) cuando la sol. actual viola capacidad
     p_inter: float | None = None,      # P(elegir inter) cuando la sol. actual es factible
+    # --- Kick reactivo (variante experimental strict_intra_inter_20260524) ---
+    # Cuando ``iter_sin_mejora`` alcanza este umbral se aplica una perturbacion
+    # INTER-RUTA disruptiva (ver ``metacarp.strict_intra_inter_20260524``) y se
+    # reinicia el contador. None = mecanismo desactivado (comportamiento clasico).
+    max_iter_sin_mejora_kick: int | None = None,
+    # Cota dura del numero de kicks consecutivos. Cuando se alcanza, la corrida
+    # termina. None = sin tope (los kicks se permiten indefinidamente).
+    max_resets: int | None = None,
     **_ignorado_kwargs: object,        # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> BusquedaTabuSimpleResult:
     """
@@ -462,6 +475,10 @@ def busqueda_tabu_simple(
     aspiraciones = 0            # cuántas veces se rescató un tabú por aspiración
     iteraciones_todos_tabu = 0  # cuántas iteraciones tuvieron todos los vecinos tabú
     iter_sin_mejora = 0         # contador de iteraciones consecutivas sin mejorar best global
+    # Contador de kicks (perturbaciones inter-ruta) aplicados durante la corrida.
+    # Solo se incrementa si ``max_iter_sin_mejora_kick`` es != None y el umbral
+    # se alcanza. Se reporta en el dataclass y en el CSV.
+    n_resets_kick: int = 0
     iter_mejor = 0              # iteración en la que se descubrió la mejor solución
     ultimo_mov_aceptado: MovimientoVecindario | None = None
     historial_best: list[float] = []
@@ -677,6 +694,32 @@ def busqueda_tabu_simple(
             # inicio de la siguiente iteración.
             iter_sin_mejora += 1
 
+            # --- Kick por estancamiento global (strict_intra_inter_20260524) ---
+            # Cuando la MH lleva demasiadas iteraciones sin mejorar el mejor
+            # global, se aplica una perturbación inter-ruta disruptiva y se
+            # reinicia el contador. Si se alcanza max_resets, se para. El kick
+            # se aplica DESPUÉS de incrementar iter_sin_mejora para que la
+            # decisión use el valor recién actualizado (consistencia con el
+            # criterio de parada por estancamiento al inicio de la iteración).
+            if (max_iter_sin_mejora_kick is not None
+                    and iter_sin_mejora >= max_iter_sin_mejora_kick):
+                # Import diferido: solo se carga si la corrida activa el kick.
+                from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
+                sol_actual = aplicar_kick_labels(
+                    sol_actual, rng, md_op, encoding=encoding
+                )
+                # Tras el kick recalculamos costo y violación para que las
+                # próximas iteraciones tomen decisiones con datos coherentes.
+                viol_actual = float(exceso_capacidad_rapido(sol_actual, ctx))
+                costo_actual = float(costo_rapido(sol_actual, ctx))
+                iter_sin_mejora = 0
+                n_resets_kick += 1
+                if max_resets is not None and n_resets_kick >= max_resets:
+                    # Cota dura: incrementamos iteracion para reportar el total
+                    # correcto y rompemos el bucle externo.
+                    iteracion += 1
+                    break
+
         # Avanzamos a la siguiente iteración.
         iteracion += 1
 
@@ -749,6 +792,9 @@ def busqueda_tabu_simple(
             "fraccion_iter_con_violacion": (
                 iteraciones_con_violacion / iteracion if iteracion > 0 else 0.0
             ),
+            # Columna del mecanismo de kick (strict_intra_inter_20260524).
+            # 0 cuando la variante experimental no esta activa (default).
+            "n_resets_kick": n_resets_kick,
         }
         archivo_csv = guardar_resultado_csv(fila=fila, ruta_csv=ruta)
 
@@ -782,6 +828,8 @@ def busqueda_tabu_simple(
         alpha_inter_aplicado=alpha_inter_eff,
         p_inter_aplicado=p_inter_eff,
         iteraciones_con_violacion=iteraciones_con_violacion,
+        # Kicks aplicados (variante experimental strict_intra_inter_20260524).
+        n_resets_kick=n_resets_kick,
     )
 
 
@@ -806,6 +854,9 @@ def busqueda_tabu_simple_desde_instancia(
     # Parámetros del sesgo inter/intra (mismos defaults que SA: None -> 0.8/0.6).
     alpha_inter: float | None = None,
     p_inter: float | None = None,
+    # Kick reactivo (variante experimental strict_intra_inter_20260524).
+    max_iter_sin_mejora_kick: int | None = None,
+    max_resets: int | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> BusquedaTabuSimpleResult:
     """
@@ -844,4 +895,7 @@ def busqueda_tabu_simple_desde_instancia(
         # Propagamos los parámetros del sesgo inter/intra al núcleo del algoritmo.
         alpha_inter=alpha_inter,
         p_inter=p_inter,
+        # Propagamos el mecanismo de kick (variante experimental).
+        max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
+        max_resets=max_resets,
     )

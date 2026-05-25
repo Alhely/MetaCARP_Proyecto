@@ -210,6 +210,10 @@ class AbejasSimpleResult:
     # violación de capacidad. Si la corrida no tuvo violación, este valor
     # documenta lo que el algoritmo HABRÍA usado si la hubiera tenido.
     p_inter_max_efectivo: float = field(default=0.0)
+    # Numero de kicks (perturbaciones inter-ruta) aplicados durante la corrida.
+    # Solo es > 0 cuando se pasa max_iter_sin_mejora_kick al wrapper de la
+    # variante experimental strict_intra_inter_20260524.
+    n_resets_kick: int = field(default=0)
 
 
 # ---------------------------------------------------------------------------
@@ -391,6 +395,14 @@ def busqueda_abejas_simple(
     # eliminado para que el usuario solo configure UN punto de la curva y el
     # piso 0.8 bajo violación esté garantizado por construcción.
     p_inter: float = 0.6,
+    # --- Kick reactivo (variante experimental strict_intra_inter_20260524) ---
+    # Cuando ``iter_sin_mejora`` alcanza este umbral se aplica una perturbacion
+    # INTER-RUTA disruptiva a TODAS las fuentes y se reinicia el contador.
+    # None = mecanismo desactivado (comportamiento clasico).
+    max_iter_sin_mejora_kick: int | None = None,
+    # Cota dura del numero de kicks consecutivos. Cuando se alcanza, la corrida
+    # termina. None = sin tope (los kicks se permiten indefinidamente).
+    max_resets: int | None = None,
     extra_csv: dict[str, object] | None = None,  # columnas extra para el CSV (no se usan aquí)
     **_ignorado_kwargs: object,              # absorbe kwargs heredados (id_corrida, config_id, ...)
 ) -> AbejasSimpleResult:
@@ -673,6 +685,9 @@ def busqueda_abejas_simple(
     aceptaciones_infactible = 0  # aceptaciones cuyo vecino sigue siendo infactible
     iteraciones_con_violacion = 0  # ciclos con violación media positiva al inicio
     iter_sin_mejora = 0
+    # Numero de kicks (perturbaciones inter-ruta) aplicados durante la corrida.
+    # Solo se incrementa si ``max_iter_sin_mejora_kick`` esta activo.
+    n_resets_kick: int = 0
     contador = ContadorOperadores()
     historial_best: list[float] = []
     # Número de ciclos efectivamente ejecutados (puede ser < iteraciones si paramos antes).
@@ -910,6 +925,37 @@ def busqueda_abejas_simple(
         else:
             iter_sin_mejora += 1
 
+            # --- Kick por estancamiento global (strict_intra_inter_20260524) ---
+            # En ABC el kick es POBLACIONAL: aplicamos la rafaga inter-ruta a
+            # TODAS las fuentes (no solo a una). Esto provoca una diversificacion
+            # masiva del enjambre cuando lleva muchos ciclos sin progreso. Tambien
+            # reseteamos los contadores de abandono (``trials``) para que las
+            # fuentes recien perturbadas no sean inmediatamente reemplazadas por
+            # scouts antes de poder explotar su nueva posicion.
+            if (max_iter_sin_mejora_kick is not None
+                    and iter_sin_mejora >= max_iter_sin_mejora_kick):
+                # Import diferido: solo se carga si la corrida activa el kick.
+                from metacarp.strict_intra_inter_20260524 import aplicar_kick_ids
+                for i in range(num_fuentes_eff):
+                    fuentes_ids[i] = aplicar_kick_ids(fuentes_ids[i], rng, encoding=encoding)
+                    fuentes_pure[i] = float(costo_rapido_ids(fuentes_ids[i], ctx))
+                    fuentes_viol[i] = float(exceso_capacidad_sol_ids(fuentes_ids[i], ctx))
+                    # Reseteamos el contador de abandono de esta fuente: la
+                    # acabamos de perturbar, no tiene sentido contarla como
+                    # "agotada" todavia.
+                    trials[i] = 0
+                iter_sin_mejora = 0
+                n_resets_kick += 1
+                if max_resets is not None and n_resets_kick >= max_resets:
+                    # Restamos 1 a ciclo_final por la misma razon que el break
+                    # del criterio max_iter_sin_mejora: este ciclo SI ejecuto
+                    # todas sus fases pero el reporte queda mas coherente
+                    # ajustando el contador antes de romper.
+                    # NOTA: ciclo_final ya esta sincronizado con la iteracion
+                    # actual (ciclo+1), asi que NO lo restamos: queremos contar
+                    # este ciclo como ejecutado.
+                    break
+
         if guardar_historial:
             historial_best.append(mejor_costo)
 
@@ -1015,6 +1061,9 @@ def busqueda_abejas_simple(
             "mejor_solucion_tr_legible": solucion_legible_humana(mejor_solucion_labels),
             "reporte_detalle_deadheading": detalle_txt,
             "costo_total_desde_reporte": costo_total_reporte,
+            # Columna del mecanismo de kick (strict_intra_inter_20260524).
+            # 0 cuando la variante experimental no esta activa (default).
+            "n_resets_kick": n_resets_kick,
         }
         archivo_csv = guardar_resultado_csv(fila=fila, ruta_csv=ruta)
 
@@ -1060,6 +1109,8 @@ def busqueda_abejas_simple(
         limite_abandono_efectivo=limite_abandono_eff,
         max_iter_sin_mejora_efectivo=max_sin_mejora_eff,
         p_inter_max_efectivo=p_inter_max_efectivo,
+        # Kicks aplicados (variante experimental strict_intra_inter_20260524).
+        n_resets_kick=n_resets_kick,
     )
 
 
@@ -1095,6 +1146,9 @@ def busqueda_abejas_simple_desde_instancia(
     # ``alpha_inter`` fue ELIMINADO: el algoritmo eleva automáticamente
     # P(inter) a max(p_inter, 0.8) cuando hay violación de capacidad.
     p_inter: float = 0.6,
+    # Kick reactivo (variante experimental strict_intra_inter_20260524).
+    max_iter_sin_mejora_kick: int | None = None,
+    max_resets: int | None = None,
     extra_csv: dict[str, object] | None = None,
     **_ignorado_kwargs: object,
 ) -> AbejasSimpleResult:
@@ -1138,5 +1192,8 @@ def busqueda_abejas_simple_desde_instancia(
         # alpha_inter eliminado de la firma: el piso 0.8 bajo violación se
         # garantiza internamente a partir de p_inter.
         p_inter=p_inter,
+        # Propagamos el mecanismo de kick (variante experimental).
+        max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
+        max_resets=max_resets,
         extra_csv=extra_csv,
     )

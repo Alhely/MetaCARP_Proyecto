@@ -264,6 +264,10 @@ class RecocidoSimuladoResult:
     # mejora en el mejor global. Si max_reheats_sin_mejora > 0 y este valor
     # llegó al umbral, la corrida terminó por parada temprana (no por T < T_min).
     reheats_sin_mejora_global: int = 0
+    # Numero de kicks (perturbaciones inter-ruta) aplicados durante la corrida.
+    # Solo es > 0 cuando se pasa max_iter_sin_mejora_kick al wrapper de la
+    # variante experimental strict_intra_inter_20260524.
+    n_resets_kick: int = 0
 
 
 def recocido_simulado(
@@ -293,6 +297,14 @@ def recocido_simulado(
     patience: int = 50,    # niveles sin mejora antes de reheat (0 = desactivado)
     reheat_factor: float = 0.5,  # fracción de T_init_eff a la que se recalienta al activar el reheat
     max_reheats_sin_mejora: int = 0,  # reheats consecutivos sin mejorar antes de parar (0 = desactivado)
+    # --- Kick reactivo (variante experimental strict_intra_inter_20260524) ---
+    # Cuando ``niveles_sin_mejora_kick`` (contador paralelo a ``niveles_sin_mejora``)
+    # alcanza este umbral se aplica una perturbacion INTER-RUTA disruptiva y se
+    # reinicia el contador. None = mecanismo desactivado (comportamiento clasico).
+    max_iter_sin_mejora_kick: int | None = None,
+    # Cota dura del numero de kicks consecutivos. Cuando se alcanza, la corrida
+    # termina. None = sin tope (los kicks se permiten indefinidamente).
+    max_resets: int | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
@@ -455,6 +467,14 @@ def recocido_simulado(
     # si no hubo mejora; se reinicia a 0 cuando sí la hay o cuando se dispara
     # un reheat. Es la variable clave para decidir cuándo recalentar.
     niveles_sin_mejora = 0
+    # --- Contadores del mecanismo de kick (variante strict_intra_inter_20260524) ---
+    # niveles_sin_mejora_kick: contador PARALELO a ``niveles_sin_mejora``,
+    # usado especificamente por el kick. Se resetea cuando hay mejora del nivel,
+    # tras un reheat (sincronizacion con el reset clasico) o tras un kick.
+    niveles_sin_mejora_kick: int = 0
+    # n_resets_kick: numero total de kicks aplicados durante la corrida.
+    # Solo se incrementa si ``max_iter_sin_mejora_kick`` esta activo.
+    n_resets_kick: int = 0
     # n_reheats: número total de veces que el reheat se activó durante la
     # corrida. Se reporta en el resultado y, si guardar_csv=True, en el CSV.
     # Sirve para estudiar empíricamente si el algoritmo necesitó muchos
@@ -668,11 +688,15 @@ def recocido_simulado(
             # Sí hubo mejora durante el nivel: reiniciamos el contador. El
             # SA está progresando, no necesita reheat por ahora.
             niveles_sin_mejora = 0
+            # Tambien reseteamos el contador paralelo del kick.
+            niveles_sin_mejora_kick = 0
         else:
             # No hubo mejora durante el nivel: incrementamos el contador.
             # Cuanto más se acumula, más cerca está el algoritmo de disparar
             # un reheat (si patience > 0).
             niveles_sin_mejora += 1
+            # Incrementamos en paralelo el contador del kick.
+            niveles_sin_mejora_kick += 1
 
         # Si se alcanzó el umbral de paciencia, recalentamos. La condición
         # ``patience > 0`` permite desactivar el mecanismo por completo
@@ -712,6 +736,40 @@ def recocido_simulado(
                 max_reheats_sin_mejora > 0
                 and reheats_sin_mejora_global >= max_reheats_sin_mejora
             ):
+                break
+
+            # Tras un reheat, reseteamos el contador del kick: el reheat ya es
+            # una forma fuerte de diversificacion termica, no tiene sentido
+            # dispararel kick inmediatamente despues. Damos una "ventana de
+            # gracia" para que el reheat se traduzca en mejora.
+            niveles_sin_mejora_kick = 0
+
+        # --- Kick por estancamiento global (strict_intra_inter_20260524) ---
+        # Cuando el SA acumula demasiados niveles SIN mejorar (medido por el
+        # contador paralelo ``niveles_sin_mejora_kick``), se aplica una
+        # perturbacion INTER-RUTA disruptiva sobre la solucion actual. El kick
+        # se evalua DESPUES del bloque de reheat para que: (a) el reheat tenga
+        # prioridad como mecanismo termodinamico canonico, y (b) tras un reheat
+        # el kick no se dispare inmediatamente (el reset al final del bloque
+        # anterior garantiza esto).
+        if (max_iter_sin_mejora_kick is not None
+                and niveles_sin_mejora_kick >= max_iter_sin_mejora_kick):
+            # Import diferido: solo se carga si la corrida activa el kick.
+            from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
+            sol_actual = aplicar_kick_labels(
+                sol_actual, rng, md_op, encoding=encoding
+            )
+            # Tras el kick recalculamos costo y violacion para que las
+            # proximas iteraciones del bucle interno (siguiente nivel de T)
+            # arranquen con datos coherentes.
+            costo_actual = float(costo_rapido(sol_actual, ctx))
+            viol_actual = float(exceso_capacidad_rapido(sol_actual, ctx))
+            niveles_sin_mejora_kick = 0
+            # Reseteamos tambien el contador del reheat: la perturbacion del
+            # kick ya cumplio el rol de "sacudida" para este ciclo de niveles.
+            niveles_sin_mejora = 0
+            n_resets_kick += 1
+            if max_resets is not None and n_resets_kick >= max_resets:
                 break
 
     # === FIN DEL BUCLE EXTERNO ===
@@ -776,6 +834,9 @@ def recocido_simulado(
             "mejor_solucion_tr_legible": solucion_legible_humana(sol_mejor),
             "reporte_detalle_deadheading": detalle_txt,
             "costo_total_desde_reporte": costo_total_reporte,
+            # Columna del mecanismo de kick (strict_intra_inter_20260524).
+            # 0 cuando la variante experimental no esta activa (default).
+            "n_resets_kick": n_resets_kick,
         }
         archivo_csv = guardar_resultado_csv(fila=fila, ruta_csv=ruta)
 
@@ -812,6 +873,8 @@ def recocido_simulado(
         n_reheats=n_reheats,
         # Reheats consecutivos sin mejora al terminar (criterio de parada temprana).
         reheats_sin_mejora_global=reheats_sin_mejora_global,
+        # Kicks aplicados (variante experimental strict_intra_inter_20260524).
+        n_resets_kick=n_resets_kick,
     )
 
 
@@ -839,6 +902,9 @@ def recocido_simulado_desde_instancia(
     patience: int = 50,    # niveles sin mejora antes de reheat (0 = desactivado)
     reheat_factor: float = 0.5,  # fracción de T_init_eff a la que se recalienta al activar el reheat
     max_reheats_sin_mejora: int = 0,  # reheats consecutivos sin mejorar antes de parar (0 = desactivado)
+    # Kick reactivo (variante experimental strict_intra_inter_20260524).
+    max_iter_sin_mejora_kick: int | None = None,
+    max_resets: int | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
@@ -880,4 +946,7 @@ def recocido_simulado_desde_instancia(
         patience=patience,
         reheat_factor=reheat_factor,
         max_reheats_sin_mejora=max_reheats_sin_mejora,
+        # Propagamos el mecanismo de kick (variante experimental).
+        max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
+        max_resets=max_resets,
     )

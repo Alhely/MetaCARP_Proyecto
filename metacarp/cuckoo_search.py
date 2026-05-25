@@ -223,6 +223,10 @@ class CuckooSearchResult:
     iteraciones_sin_mejora_final: int = 0
     iteraciones_con_violacion: int = 0
     fraccion_iter_con_violacion: float = 0.0
+    # Numero de kicks (perturbaciones inter-ruta) aplicados durante la corrida.
+    # Solo es > 0 cuando se pasa max_iter_sin_mejora_kick al wrapper de la
+    # variante experimental strict_intra_inter_20260524.
+    n_resets_kick: int = 0
 
 
 def _vuelo_levy_discreto(
@@ -371,6 +375,14 @@ def cuckoo_search(
     # de la curva y el piso 0.8 bajo violación esté garantizado por construcción
     # (misma decisión que en busqueda_abejas_simple).
     p_inter: float = 0.6,
+    # --- Kick reactivo (variante experimental strict_intra_inter_20260524) ---
+    # Cuando ``iter_sin_mejora`` alcanza este umbral se aplica una perturbacion
+    # INTER-RUTA disruptiva a TODOS los nidos y se reinicia el contador.
+    # None = mecanismo desactivado (comportamiento clasico).
+    max_iter_sin_mejora_kick: int | None = None,
+    # Cota dura del numero de kicks consecutivos. Cuando se alcanza, la corrida
+    # termina. None = sin tope (los kicks se permiten indefinidamente).
+    max_resets: int | None = None,
     extra_csv: dict[str, object] | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> CuckooSearchResult:
@@ -648,6 +660,9 @@ def cuckoo_search(
     aceptaciones_sol_infactible = 0
     # Contadores de diagnóstico instance-aware:
     iter_sin_mejora = 0
+    # Numero de kicks (perturbaciones inter-ruta) aplicados durante la corrida.
+    # Solo se incrementa si ``max_iter_sin_mejora_kick`` esta activo.
+    n_resets_kick: int = 0
     iteraciones_con_violacion = 0
     # Número de ciclos efectivamente ejecutados (puede ser < iteraciones_eff si paramos antes).
     ciclo_final = 0
@@ -903,6 +918,29 @@ def cuckoo_search(
         else:
             iter_sin_mejora += 1
 
+            # --- Kick por estancamiento global (strict_intra_inter_20260524) ---
+            # En Cuckoo el kick es POBLACIONAL: aplicamos la rafaga inter-ruta
+            # a TODOS los nidos para diversificar el conjunto. Tras el kick
+            # invocamos ``fusionar_desde_nidos`` para sincronizar el mejor
+            # global con la nueva poblacion (un nido kicked podria casualmente
+            # mejorar el mejor, igual que un scout en ABC).
+            if (max_iter_sin_mejora_kick is not None
+                    and iter_sin_mejora >= max_iter_sin_mejora_kick):
+                # Import diferido: solo se carga si la corrida activa el kick.
+                from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
+                for k in rango_nidos:
+                    nidos_sol[k] = aplicar_kick_labels(
+                        nidos_sol[k], rng, md_op, encoding=encoding
+                    )
+                    nidos_pure[k] = float(costo_rapido(nidos_sol[k], ctx))
+                    nidos_viol[k] = float(exceso_capacidad_rapido(nidos_sol[k], ctx))
+                # Re-fusionamos para capturar mejoras introducidas por el kick.
+                fusionar_desde_nidos()
+                iter_sin_mejora = 0
+                n_resets_kick += 1
+                if max_resets is not None and n_resets_kick >= max_resets:
+                    break
+
         # Registramos el historial al FINAL del ciclo (tras competencia y
         # abandono), no al inicio. Esto refleja la mejor solución REAL del
         # ciclo, no un snapshot obsoleto del estado anterior.
@@ -994,6 +1032,9 @@ def cuckoo_search(
             "mejor_solucion_tr_legible": solucion_legible_humana(sol_mejor),
             "reporte_detalle_deadheading": detalle_txt,
             "costo_total_desde_reporte": costo_total_reporte,
+            # Columna del mecanismo de kick (strict_intra_inter_20260524).
+            # 0 cuando la variante experimental no esta activa (default).
+            "n_resets_kick": n_resets_kick,
         }
         # CORRECCIÓN DEL BUG: ``extra_csv`` antes se ignoraba. Ahora se vuelca a
         # la fila ANTES de guardar para que el script de experimentos pueda
@@ -1043,6 +1084,8 @@ def cuckoo_search(
         iteraciones_sin_mejora_final=iter_sin_mejora,
         iteraciones_con_violacion=iteraciones_con_violacion,
         fraccion_iter_con_violacion=fraccion_iter_con_viol,
+        # Kicks aplicados (variante experimental strict_intra_inter_20260524).
+        n_resets_kick=n_resets_kick,
     )
 
 
@@ -1076,6 +1119,9 @@ def cuckoo_search_desde_instancia(
     # ``alpha_inter`` fue ELIMINADO: el algoritmo eleva automáticamente P(inter)
     # a max(p_inter, 0.8) cuando hay violación de capacidad.
     p_inter: float = 0.6,
+    # Kick reactivo (variante experimental strict_intra_inter_20260524).
+    max_iter_sin_mejora_kick: int | None = None,
+    max_resets: int | None = None,
     extra_csv: dict[str, object] | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> CuckooSearchResult:
@@ -1120,5 +1166,8 @@ def cuckoo_search_desde_instancia(
         # ``alpha_inter`` eliminado: el piso 0.8 bajo violación se garantiza
         # internamente a partir de p_inter.
         p_inter=p_inter,
+        # Propagamos el mecanismo de kick (variante experimental).
+        max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
+        max_resets=max_resets,
         extra_csv=extra_csv,
     )
