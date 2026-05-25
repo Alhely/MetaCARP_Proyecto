@@ -438,6 +438,8 @@ def busqueda_tabu_reactiva(
     # Cota dura del numero de kicks consecutivos. Cuando se alcanza, la corrida
     # termina. None = sin tope (los kicks se permiten indefinidamente).
     max_resets: int | None = None,
+    # Penalización por capacidad (lambda_grid_20260525). None = default instance-aware.
+    lambda_capacidad: float | None = None,
     **_ignorado_kwargs: object,                # absorbe kwargs heredados (id_corrida, config_id)
 ) -> BusquedaTabuReactivaResult:
     """
@@ -652,7 +654,7 @@ def busqueda_tabu_reactiva(
         inicial_obj,
         ctx,
         usar_penalizacion_capacidad=True,
-        lambda_capacidad=None,
+        lambda_capacidad=lambda_capacidad,  # None → default instance-aware
     )
     sol_ref = sel_ini.solucion          # solución de referencia para medir mejora final
     costo_ref = sel_ini.costo_puro      # costo inicial de referencia (sin penalización)
@@ -1251,6 +1253,8 @@ def busqueda_tabu_reactiva_desde_instancia(
     # Kick reactivo (variante experimental strict_intra_inter_20260524).
     max_iter_sin_mejora_kick: int | None = None,
     max_resets: int | None = None,
+    # Penalización por capacidad (lambda_grid_20260525). None = default instance-aware.
+    lambda_capacidad: float | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (id_corrida, config_id)
 ) -> BusquedaTabuReactivaResult:
     """
@@ -1299,4 +1303,6 @@ def busqueda_tabu_reactiva_desde_instancia(
         # Propagamos el mecanismo de kick (variante experimental).
         max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
         max_resets=max_resets,
+        # Propagamos la penalización de capacidad (lambda_grid_20260525).
+        lambda_capacidad=lambda_capacidad,
     )
