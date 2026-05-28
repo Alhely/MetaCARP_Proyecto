@@ -1,0 +1,1320 @@
+% =====================================================================
+% Reporte_seleccion_operadores_y_su_efecto.tex
+% ---------------------------------------------------------------------
+% Documento monolitico que documenta y compara las estrategias de
+% seleccion de operadores desarrolladas en el proyecto MetaCARP.
+% Compilable con pdflatex (>= 2 pases para resolver referencias).
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+% ----- Codificacion e idioma -----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+
+% ----- Matematicas -----
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+
+% ----- Tablas profesionales -----
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+
+% ----- Pseudocodigo -----
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\algrenewcommand\algorithmicrequire{\textbf{Entradas:}}
+\algrenewcommand\algorithmicensure{\textbf{Devuelve:}}
+\algrenewcommand\algorithmicif{\textbf{si}}
+\algrenewcommand\algorithmicthen{\textbf{entonces}}
+\algrenewcommand\algorithmicelse{\textbf{si no}}
+\algrenewcommand\algorithmicend{\textbf{fin}}
+\algrenewcommand\algorithmicwhile{\textbf{mientras}}
+\algrenewcommand\algorithmicfor{\textbf{para}}
+\algrenewcommand\algorithmicdo{\textbf{hacer}}
+\algrenewcommand\algorithmicreturn{\textbf{devolver}}
+\algrenewcommand\algorithmicrepeat{\textbf{repetir}}
+\algrenewcommand\algorithmicuntil{\textbf{hasta}}
+
+% ----- Hipervinculos y color -----
+\usepackage{xcolor}
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% ----- Margenes y espacios -----
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\setlength{\parskip}{4pt}
+
+% ----- Cabeceras -----
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{MetaCARP -- Seleccion de operadores}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ----- Comandos abreviados -----
+\newcommand{\carp}{CARP}
+\newcommand{\mh}{MH}
+\newcommand{\meta}[1]{\textsc{#1}}
+\newcommand{\op}[1]{\texttt{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% =====================================================================
+\title{\textbf{Seleccion de operadores y su efecto sobre las
+metaheuristicas del proyecto MetaCARP}\\[4pt]
+\large Reporte minucioso de experimentos
+y comparativa cuantitativa}
+\author{Alhely Gonzalez Luna\\\small \texttt{alelygl@gmail.com}}
+\date{Mayo 2026}
+% =====================================================================
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Este reporte recoge, justifica y compara todas las estrategias
+de \emph{seleccion de operadores de vecindario} desarrolladas en el
+proyecto \textsc{MetaCARP} para resolver el \emph{Capacitated Arc
+Routing Problem} (\carp). Se documentan en detalle (i) los nueve
+operadores implementados, (ii) las cinco metaheuristicas que los
+consumen, (iii) las cuatro estrategias de seleccion ensayadas
+(uniforme, sesgo binario fluido, sesgo binario estricto y
+\emph{Adaptive Operator Selection} con \emph{Probability Matching}) y
+(iv) la variante reciente de \emph{Path Relinking} truncado. Se
+discuten resultados experimentales sobre la suite estandar y se
+extraen lecciones cualitativas para futuras extensiones.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ===================================================================
+\section{Introduccion}
+% ===================================================================
+
+\subsection{Definicion formal del \carp}
+
+El \emph{Capacitated Arc Routing Problem} (\carp) toma como entrada un
+grafo no dirigido y conexo
+\begin{equation}
+G = (V, E),\qquad
+E = E_R \cup E_{NR},\qquad E_R \cap E_{NR} = \emptyset,
+\end{equation}
+donde $V$ es el conjunto de vertices, $E_R$ el subconjunto de
+\emph{aristas requeridas} (tareas) y $E_{NR}$ el de \emph{aristas no
+requeridas} (transitos puros). Para cada arista $e \in E$ existen una
+funcion de costo $c(e) \ge 0$ y una funcion de demanda
+$d(e) \ge 0$ con $d(e) > 0$ si y solo si $e \in E_R$. Existe ademas un
+nodo deposito $v_0 \in V$ y una flota de a lo sumo $K$ vehiculos
+identicos con capacidad $Q$.
+
+Una \emph{solucion} es una particion ordenada $S=(R_1,\dots,R_m)$ con
+$m\le K$, donde cada $R_k$ es una secuencia de aristas requeridas
+servidas por el vehiculo $k$, comenzando y terminando en $v_0$. El
+problema consiste en encontrar
+\begin{equation}\label{eq:carp}
+\min_{S} \quad
+\sum_{k=1}^{m} \bigl[\, \text{deadhead}(R_k) + \sum_{e\in R_k} c(e)\,\bigr]
+\quad\text{sujeto a}\quad
+\sum_{e\in R_k} d(e) \le Q,\quad
+\bigcup_{k} R_k = E_R,
+\end{equation}
+con cada tarea servida exactamente una vez por un unico vehiculo. El
+termino $\text{deadhead}(R_k)$ acumula los costos de los caminos mas
+cortos en $G$ que enlazan dos servicios consecutivos.
+
+\subsection{Por que la seleccion de operadores es critica}
+
+Las metaheuristicas (en adelante, \mh) usadas en \textsc{MetaCARP}
+son \emph{trayectoria} (Recocido Simulado, Tabu Search Simple,
+Reactive Tabu Search) y \emph{poblacion} (\emph{Artificial Bee Colony},
+\emph{Cuckoo Search}). Todas comparten la misma mecanica nuclear:
+\emph{generar un vecino} de la solucion actual aplicando un operador
+de vecindario, evaluarlo, y decidir si lo aceptan. Los operadores de
+vecindario constituyen, por tanto, el \emph{unico} medio del que
+dispone la \mh{} para moverse en el espacio de soluciones.
+
+Existen dos categorias claramente distintas:
+\begin{itemize}
+\item \textbf{Operadores intra-ruta}: solo reordenan las tareas
+\emph{dentro} de una ruta. No alteran la asignacion tarea $\to$ ruta
+y, por consiguiente, \emph{no pueden reducir una violacion de
+capacidad}.
+\item \textbf{Operadores inter-ruta}: trasladan tareas \emph{entre}
+rutas. Modifican la distribucion de demanda por vehiculo y son los
+unicos capaces de reparar violaciones de capacidad.
+\end{itemize}
+
+Como la funcion objetivo agregada combina \emph{costo} y
+\emph{violacion} (ver Seccion \ref{sec:representacion}), una eleccion
+ciega de operadores acaba con la \mh{} eligiendo movimientos intra
+cuando lo que necesita son inter, o viceversa. Por ello la
+\emph{seleccion de operadores} es un eje de diseno tan importante como
+los propios parametros termodinamicos, tabu o poblacionales.
+
+\subsection{Roadmap del documento}
+
+La Seccion \ref{sec:representacion} fija la notacion, el formato de
+solucion y el objetivo penalizado. La Seccion \ref{sec:operadores}
+documenta cada uno de los nueve operadores en detalle algoritmico. La
+Seccion \ref{sec:metaheuristicas} hace lo propio con las cinco \mh{}.
+La Seccion \ref{sec:seleccion} formaliza las cuatro estrategias de
+seleccion estudiadas. La Seccion \ref{sec:experimentos} recoge los
+experimentos en orden cronologico. La Seccion \ref{sec:comparativa}
+presenta la tabla maestra de \emph{gap} al \emph{BKS}. La
+Seccion \ref{sec:insights} discute las conclusiones cualitativas y la
+Seccion \ref{sec:conclusiones} cierra con recomendaciones.
+
+% ===================================================================
+\section{Representacion de soluciones}\label{sec:representacion}
+% ===================================================================
+
+\subsection{Formato \texttt{list[list[str]]} (etiquetas)}
+
+Cada solucion se representa internamente como una lista de rutas y
+cada ruta como una lista de etiquetas string. Las tareas requeridas
+reciben etiquetas \op{TR<n>} y las no requeridas \op{TNR<n>}. El
+deposito se marca con la etiqueta \op{D} al inicio y al final de cada
+ruta. Por ejemplo:
+\begin{verbatim}
+solucion = [["D", "TR1", "TR5", "TR3", "D"],
+            ["D", "TR2", "TR4", "D"]]
+\end{verbatim}
+
+Este formato es la representacion \emph{canonica} para inspeccion
+humana, reporte CSV y entrada/salida de funciones publicas.
+
+\subsection{Formato \texttt{list[list[int]]} (IDs)}
+
+Para evaluacion vectorizada y operacion sobre grandes lotes de
+vecinos, \textsc{MetaCARP} provee una codificacion entera donde cada
+tarea recibe un ID en $\{0,\dots,n-1\}$ y el deposito ID $-1$. Las
+rutas no llevan deposito intercalado (los extremos son implicitos).
+Por ejemplo el vector anterior se codifica como:
+\begin{verbatim}
+solucion_ids = [[0, 4, 2], [1, 3]]
+\end{verbatim}
+
+El \emph{Artificial Bee Colony} (ABC) usa este formato \emph{a lo
+largo de toda la corrida} porque su bucle interno evalua decenas de
+vecinos por iteracion y la conversion etiqueta $\to$ id en cada
+evaluacion seria un cuello de botella; en contraste, las \mh{} de
+trayectoria suelen operar en etiquetas y solo codifican a IDs para el
+lote tabu.
+
+\subsection{Marcador de deposito y normalizacion}
+
+El simbolo \code{md\_op} (typicamente \op{"D"}) se obtiene del
+contexto o se pasa explicitamente. Los operadores de vecindario
+\emph{normalizan} la entrada eliminando los depots de los extremos
+antes de aplicar la transformacion, y los reinsertan al devolver. Esto
+desacopla la mecanica del operador de la convencion de marcado y
+permite implementaciones compactas.
+
+\subsection{Funcion objetivo penalizada}\label{sec:objetivo}
+
+Sea $\text{costo}(S)$ la suma definida en \eqref{eq:carp} y
+$\text{viol}(S) = \sum_k \max(0,\sum_{e\in R_k} d(e) - Q)$ el exceso
+total de demanda. \textsc{MetaCARP} usa el \emph{objetivo penalizado}
+\begin{equation}\label{eq:objetivo}
+f_\lambda(S) \;=\; \text{costo}(S) \;+\; \lambda \cdot \text{viol}(S),
+\qquad \lambda \ge 0.
+\end{equation}
+
+Esta funcion combina objetivos en un escalar y, con $\lambda$
+suficientemente grande, garantiza que el optimo de
+$f_\lambda$ sea siempre factible. Las cinco \mh{} comparan vecinos
+sobre $f_\lambda$, no sobre el costo puro: una solucion mas barata
+pero infactible es \emph{peor} desde el punto de vista del
+algoritmo.
+
+\subsection{Calculo de $\lambda$ por defecto}\label{sec:lambda}
+
+El helper \code{lambda\_penal\_capacidad\_por\_defecto(ctx)} produce
+\begin{equation}\label{eq:lambda}
+\lambda^* \;=\; \max\Bigl(\,10\cdot \widetilde{D}_{ij}^{\text{finito}},\;
+10\Bigr),
+\end{equation}
+donde $\widetilde{D}_{ij}^{\text{finito}}$ es la mediana de la matriz
+de distancias finitas y positivas de la instancia (precomputada con
+Dijkstra). La intuicion es: \emph{una violacion unitaria de capacidad
+penaliza tanto como diez deadheads medianos}, lo que en la practica
+mantiene la presion sobre la factibilidad sin invalidar movimientos
+de reparacion que pasan transitoriamente por infactibles.
+
+% ===================================================================
+\section{Operadores de vecindario}\label{sec:operadores}
+% ===================================================================
+
+\textsc{MetaCARP} implementa nueve operadores (tres intra y seis
+inter) definidos en \code{metacarp/vecindarios.py}. Todos comparten
+una firma comun: reciben la solucion en formato normalizado (sin
+deposit markers), aplican la transformacion sobre una copia y
+devuelven la copia modificada. La eleccion de los indices internos
+($i,j,k,l$) es uniformemente aleatoria sobre los valores admisibles.
+
+\subsection{Operadores intra-ruta}
+
+\subsubsection{\op{relocate\_intra}}
+
+\paragraph{Definicion.} Saca la tarea en posicion $i$ de la ruta $r$
+y la reinserta en la posicion $j$ ($i\neq j$) de la misma ruta:
+\[
+R_r = (t_0,\dots,t_{i-1},t_i,t_{i+1},\dots,t_{n-1})
+\;\longrightarrow\;
+R_r' = (t_0,\dots,t_{i-1},t_{i+1},\dots,t_j,t_i,t_{j+1},\dots,t_{n-1}).
+\]
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{\op{relocate\_intra}($S, r, i, j$)}
+\begin{algorithmic}[1]
+\Require Solucion $S$, ruta $r$, posiciones $i\neq j$ con $|R_r|\ge 2$.
+\State $S' \gets$ copia profunda de $S$
+\State $x \gets S'[r].\text{pop}(i)$
+\State $S'[r].\text{insert}(j, x)$
+\State \Return $S'$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Tamano del vecindario.} Para una ruta de longitud $n_r$,
+hay $n_r(n_r-1)$ movimientos distintos. Sumando sobre las $m$ rutas
+activas se obtiene $\sum_r n_r(n_r-1)$.
+
+\paragraph{Costo computacional.} Un movimiento aleatorio cuesta
+$O(n_r)$ por la copia (en la practica, todos los operadores hacen una
+copia $O(n)$ donde $n$ es el numero total de tareas). La enumeracion
+exhaustiva tiene complejidad $O(n^2)$.
+
+\paragraph{Asignacion tarea $\to$ ruta.} No se altera.
+
+\paragraph{Efecto sobre factibilidad.} \emph{No puede} reducir
+violaciones de capacidad: la demanda total por ruta es invariante.
+
+\paragraph{Ejemplo.} $R_1=[A,B,C,D]$ con $i=0$, $j=2$:
+$R_1' = [B,C,A,D]$.
+
+\subsubsection{\op{swap\_intra}}
+
+\paragraph{Definicion.} Intercambia las posiciones $i$ y $j$ ($i<j$)
+dentro de la misma ruta.
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{\op{swap\_intra}($S, r, i, j$)}
+\begin{algorithmic}[1]
+\Require $|R_r|\ge 2$, $i\neq j$.
+\State $S' \gets$ copia profunda de $S$
+\State $(S'[r][i], S'[r][j]) \gets (S'[r][j], S'[r][i])$
+\State \Return $S'$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Tamano del vecindario.}
+$\sum_r \binom{n_r}{2}$.
+
+\paragraph{Asignacion tarea $\to$ ruta.} No se altera.
+
+\paragraph{Efecto sobre factibilidad.} No reduce violaciones.
+
+\paragraph{Ejemplo.} $R_1=[A,B,C,D]$ con $(i,j)=(0,3)$: $R_1'=[D,B,C,A]$.
+
+\subsubsection{\op{2opt\_intra}}
+
+\paragraph{Definicion.} Revierte el subsegmento $[i,j]$ ($j>i$) dentro
+de la ruta $r$.
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{\op{2opt\_intra}($S, r, i, j$)}
+\begin{algorithmic}[1]
+\Require $|R_r|\ge 3$, $0\le i < j < n_r$.
+\State $S' \gets$ copia profunda de $S$
+\State $S'[r][i\!:\!j+1] \gets \text{reversed}(S'[r][i\!:\!j+1])$
+\State \Return $S'$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Tamano del vecindario.}
+$\sum_r \binom{n_r}{2}$.
+
+\paragraph{Efecto.} Heredado del TSP. Particularmente util cuando la
+ruta cruza geograficamente: revertir un tramo elimina el cruce.
+\emph{No reduce} violaciones de capacidad.
+
+\paragraph{Ejemplo.} $R_1=[A,B,C,D,E]$, $(i,j)=(1,3)$:
+$R_1'=[A,D,C,B,E]$.
+
+\subsection{Operadores inter-ruta}
+
+\subsubsection{\op{relocate\_inter}}
+
+\paragraph{Definicion.} Saca la tarea en posicion $i$ de la ruta
+$r_a$ y la reinserta en la posicion $j$ de la ruta $r_b\neq r_a$.
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{\op{relocate\_inter}($S, r_a, i, r_b, j$)}
+\begin{algorithmic}[1]
+\Require $|R_{r_a}|\ge 1$, $r_a\neq r_b$.
+\State $S' \gets$ copia profunda de $S$
+\State $x \gets S'[r_a].\text{pop}(i)$
+\State $S'[r_b].\text{insert}(j, x)$
+\State \Return $S'$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Tamano del vecindario.}
+$\sum_{a\neq b} n_a (n_b+1)$.
+
+\paragraph{Asignacion.} Transfiere \emph{una} tarea entre rutas.
+
+\paragraph{Efecto sobre factibilidad.} \emph{Si} puede reducir
+violacion: si $r_a$ esta sobrecargada y $r_b$ tiene holgura, basta
+mover una tarea suficientemente pesada.
+
+\paragraph{Ejemplo.} $R_a=[A,B,C]$, $R_b=[X,Y]$, $(i,j)=(2,1)$:
+$R_a'=[A,B]$, $R_b'=[X,C,Y]$.
+
+\subsubsection{\op{swap\_inter}}
+
+\paragraph{Definicion.} Intercambia la tarea en posicion $i$ de
+$r_a$ con la tarea en posicion $j$ de $r_b\neq r_a$.
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{\op{swap\_inter}($S, r_a, i, r_b, j$)}
+\begin{algorithmic}[1]
+\Require $|R_{r_a}|\ge 1$, $|R_{r_b}|\ge 1$, $r_a\neq r_b$.
+\State $S' \gets$ copia profunda de $S$
+\State $(S'[r_a][i], S'[r_b][j]) \gets (S'[r_b][j], S'[r_a][i])$
+\State \Return $S'$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Tamano del vecindario.}
+$\sum_{a<b} n_a n_b$.
+
+\paragraph{Efecto sobre factibilidad.} Si las dos tareas tienen
+demanda distinta, el balance de capacidad cambia: puede mejorar o
+empeorar la violacion. Es un operador \emph{simetrico}: el numero de
+tareas por ruta no varia.
+
+\subsubsection{\op{2opt\_star}}
+
+\paragraph{Definicion.} ``Intercambio de colas''. Corta cada ruta en
+una posicion $\text{cut}_a$ y $\text{cut}_b$ respectivamente y
+permuta las colas:
+\[
+R_a = H_a \,||\, T_a, \quad R_b = H_b \,||\, T_b
+\;\longrightarrow\;
+R_a' = H_a \,||\, T_b, \quad R_b' = H_b \,||\, T_a.
+\]
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{\op{2opt\_star}($S, r_a, c_a, r_b, c_b$)}
+\begin{algorithmic}[1]
+\Require $r_a\neq r_b$, $0\le c_a < n_{r_a}$, $0\le c_b < n_{r_b}$.
+\State $S' \gets$ copia profunda de $S$
+\State $H_a, T_a \gets S'[r_a][:c_a{+}1],\; S'[r_a][c_a{+}1:]$
+\State $H_b, T_b \gets S'[r_b][:c_b{+}1],\; S'[r_b][c_b{+}1:]$
+\State $S'[r_a] \gets H_a + T_b$
+\State $S'[r_b] \gets H_b + T_a$
+\State \Return $S'$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Tamano del vecindario.}
+$\sum_{a<b} n_a n_b$.
+
+\paragraph{Efecto.} Puede transferir bloques completos de tareas
+entre rutas, alterando drasticamente la asignacion. Util para
+\emph{deshacer cruces geometricos} entre rutas distintas y para
+balancear demanda.
+
+\paragraph{Ejemplo.} $R_a=[P,Q,R,S]$, $R_b=[X,Y,Z]$, $(c_a,c_b)=(1,1)$:
+$R_a'=[P,Q,Z]$, $R_b'=[X,Y,R,S]$.
+
+\subsubsection{\op{cross\_exchange}}
+
+\paragraph{Definicion.} Intercambia un segmento contiguo $[i,j]$ de
+$r_a$ con un segmento contiguo $[k,l]$ de $r_b\neq r_a$:
+\[
+R_a' = R_a[:i] \,||\, R_b[k:l{+}1] \,||\, R_a[j{+}1:],\quad
+R_b' = R_b[:k] \,||\, R_a[i:j{+}1] \,||\, R_b[l{+}1:].
+\]
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{\op{cross\_exchange}($S, r_a, i, j, r_b, k, l$)}
+\begin{algorithmic}[1]
+\Require $|R_{r_a}|\ge 2$, $|R_{r_b}|\ge 2$, $r_a\neq r_b$,
+$i<j$, $k<l$.
+\State $S' \gets$ copia profunda de $S$
+\State $\sigma_a \gets S'[r_a][i:j{+}1]$;\; $\sigma_b \gets S'[r_b][k:l{+}1]$
+\State $S'[r_a] \gets S'[r_a][:i] + \sigma_b + S'[r_a][j{+}1:]$
+\State $S'[r_b] \gets S'[r_b][:k] + \sigma_a + S'[r_b][l{+}1:]$
+\State \Return $S'$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Tamano del vecindario.}
+$O\bigl(\sum_{a<b} n_a^2 n_b^2\bigr)$, dominado por la enumeracion
+de los cuatro indices.
+
+\paragraph{Efecto.} Genera vecinos mucho mas disruptivos que un swap
+simple: transfiere bloques contiguos manteniendo su orden interno.
+
+\subsubsection{\op{or\_opt\_2} y \op{or\_opt\_3}}
+
+\paragraph{Definicion.} Extrae un bloque contiguo de $k\in\{2,3\}$
+tareas de $r_a$ en posicion $i$ y lo reinserta \emph{sin invertir} en
+la posicion $j$ de $r_b$. Cuando $r_a=r_b$ (caso degenerado de unica
+ruta) se reubica intra evitando $j=i$.
+
+\paragraph{Pseudocodigo (caso $k=2$).}
+\begin{algorithm}[H]
+\caption{\op{or\_opt\_2}($S, r_a, i, r_b, j$)}
+\begin{algorithmic}[1]
+\Require $|R_{r_a}|\ge 2$.
+\State $S' \gets$ copia profunda de $S$
+\State $\beta \gets S'[r_a][i:i{+}2]$
+\State eliminar $S'[r_a][i:i{+}2]$
+\State insertar $\beta$ en $S'[r_b]$ a partir de la posicion $j$
+\State \Return $S'$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Efecto.} Operadores de \emph{ejection chain} de tamano
+fijo. Util para reasignar pares/triples de tareas vecinas que
+geograficamente conviene servir juntas.
+
+\subsection{Tabla resumen}
+
+\begin{table}[h]
+\centering
+\caption{Comparativa estructural de los nueve operadores.}\label{tab:operadores}
+\small
+\begin{tabular}{lccccc}
+\toprule
+Operador & Cat. & Tamano vec. (orden) & Costo aleat. & Mueve t.$\to$r. & Reduce viol. \\
+\midrule
+\op{relocate\_intra}   & intra & $O(n^2)$ & $O(n)$ & no & no \\
+\op{swap\_intra}       & intra & $O(n^2)$ & $O(n)$ & no & no \\
+\op{2opt\_intra}       & intra & $O(n^2)$ & $O(n)$ & no & no \\
+\op{relocate\_inter}   & inter & $O(n^2)$ & $O(n)$ & si & si \\
+\op{swap\_inter}       & inter & $O(n^2)$ & $O(n)$ & si & si (parcial) \\
+\op{2opt\_star}        & inter & $O(n^2)$ & $O(n)$ & si & si \\
+\op{cross\_exchange}   & inter & $O(n^4)$ & $O(n)$ & si & si \\
+\op{or\_opt\_2}        & inter & $O(n^2)$ & $O(n)$ & si & si \\
+\op{or\_opt\_3}        & inter & $O(n^2)$ & $O(n)$ & si & si \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ===================================================================
+\section{Metaheuristicas implementadas}\label{sec:metaheuristicas}
+% ===================================================================
+
+Las cinco \mh{} se documentan a continuacion siguiendo un esquema
+homogeneo: filosofia, estado, criterio de aceptacion, pseudocodigo del
+bucle principal, interfaz con el selector de operadores y mecanismos
+especiales.
+
+% --- SA -------------------------------------------------------------
+\subsection{Recocido Simulado (SA)}\label{sec:sa}
+
+\paragraph{Filosofia.} \mh{} de trayectoria con criterio
+probabilistico de aceptacion (Metropolis). Explora intensamente al
+inicio (cuando $T$ es alta) y explota localmente al final (cuando $T$
+se enfria).
+
+\paragraph{Estado.} Solucion actual $S$, mejor global $S^\star$,
+temperatura $T$, contador de niveles sin mejora.
+
+\paragraph{Criterio de aceptacion.} Sea $\Delta=f_\lambda(S')-f_\lambda(S)$:
+\begin{equation}
+P(\text{aceptar } S') =
+\begin{cases}
+1, & \Delta\le 0 \\
+\exp(-\Delta/T), & \Delta > 0.
+\end{cases}
+\end{equation}
+
+\paragraph{Parametros instance-aware.}
+\begin{itemize}
+\item Longitud de cada nivel: $L=n^2$ donde $n=|E_R|$.
+\item $T_0 = 20\,d_{\max}/n$;\; $T_{\min}=20\,d_{\max}/n^2$.
+\item Factor de enfriamiento $\alpha=0.95$.
+\item \emph{Reheat} cuando se acumulan \code{patience}$=50$ niveles
+sin mejora, subiendo $T$ a una fraccion \code{reheat\_factor}$=0.5$
+de $T_0$.
+\item \emph{Kick} inter-ruta cuando se acumulan
+\code{max\_iter\_sin\_mejora\_kick} niveles sin mejora (variante
+experimental).
+\end{itemize}
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{Recocido Simulado (con reheat y kick)}
+\begin{algorithmic}[1]
+\Require Instancia $G$, $\lambda$, $T_0$, $T_{\min}$, $\alpha$, $L$.
+\State $S \gets$ mejor solucion inicial; $S^\star \gets S$
+\State $T \gets T_0$;\; $\text{nsm}\gets 0$;\; $\text{nsm\_k}\gets 0$
+\While{$T \ge T_{\min}$}
+  \For{$i = 1 \dots L$}
+    \State $(\text{grupo}, v) \gets$ \textsc{SeleccionarGrupo}$(S)$
+    \State $S' \gets$ \textsc{GenerarVecino}$(S, \text{grupo})$
+    \State $\Delta \gets f_\lambda(S') - f_\lambda(S)$
+    \If{$\Delta \le 0$ o $U(0,1) < \exp(-\Delta/T)$}
+      \State $S \gets S'$
+      \If{$f_\lambda(S) < f_\lambda(S^\star)$} $S^\star \gets S$ \EndIf
+    \EndIf
+  \EndFor
+  \State $T \gets \alpha T$
+  \If{nivel sin mejora} $\text{nsm}\!+\!+$; $\text{nsm\_k}\!+\!+$
+  \Else{} $\text{nsm}\gets 0$; $\text{nsm\_k}\gets 0$
+  \EndIf
+  \If{$\text{nsm}\ge \text{patience}$}
+     $T \gets T_0\cdot\text{reheat\_factor}$;\;
+     reset contadores
+  \EndIf
+  \If{$\text{nsm\_k}\ge \text{max\_kick}$}
+     $S\gets\textsc{KickInter}(S)$;\; reset contadores
+  \EndIf
+\EndWhile
+\State \Return $S^\star$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Interfaz con el selector.} En cada iteracion del bucle
+interno se invoca
+\code{seleccionar\_grupo\_operadores\_inter\_intra(rng, viol, ops\_intra,
+ops\_inter, ops\_fallback, alpha\_inter, p\_inter)}.
+El selector consume \emph{exactamente} un \code{rng.random()} y
+devuelve el grupo de operadores a usar (intra o inter) junto con la
+bandera de violacion.
+
+% --- TS Simple ------------------------------------------------------
+\subsection{Tabu Search Simple (TS Simple)}\label{sec:ts}
+
+\paragraph{Filosofia.} \mh{} de trayectoria \emph{determinista} con
+memoria a corto plazo (lista tabu). Acepta \emph{siempre} el mejor
+vecino del lote actual aunque empeore, evitando ciclos cortos mediante
+la prohibicion temporal de los movimientos recientes.
+
+\paragraph{Estado.} Lista tabu FIFO \code{lista\_tabu} de longitud
+fija \code{tabu\_tenure}$=20$, conjunto auxiliar \code{set\_tabu} para
+consulta $O(1)$, contador \code{conteo\_tabu} para sincronizacion.
+
+\paragraph{Criterio de aceptacion.} \emph{best non-tabu} con
+aspiracion clasica: si todos los vecinos del lote son tabu pero alguno
+supera el mejor global conocido, se acepta (la prohibicion se
+\emph{aspira}).
+
+\paragraph{Parametros principales.}
+\begin{itemize}
+\item \code{iteraciones\_max}$=400$, \code{max\_iter\_sin\_mejora}$=100$.
+\item \code{tam\_vecindario}$=25$ vecinos por iteracion.
+\item \code{tabu\_tenure}$=20$.
+\end{itemize}
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{Tabu Search Simple}
+\begin{algorithmic}[1]
+\Require Instancia $G$, $\lambda$, tenure, tam vecindario.
+\State $S \gets$ inicial; $S^\star \gets S$; $T_{abu}\gets \emptyset$
+\For{$k = 1 \dots K_{\max}$}
+  \State $(\text{grupo}, v) \gets$ \textsc{SeleccionarGrupo}$(S)$
+  \State $N \gets \{$\textsc{GenerarVecino}$(S, \text{grupo})\}_{i=1}^{|N|}$
+  \State Evaluar $f_\lambda$ sobre $N$ por lote vectorizado
+  \State $S' \gets \argmin_{S_i \in N \setminus T_{abu}} f_\lambda(S_i)$
+  \If{$N \setminus T_{abu} = \emptyset$}
+     \State $S' \gets \argmin_{S_i \in N} f_\lambda(S_i)$
+  \EndIf
+  \If{$f_\lambda(S') < f_\lambda(S^\star)$} \Comment{aspiracion}
+     \State $S^\star \gets S'$
+  \EndIf
+  \State $S \gets S'$;\; $T_{abu}.\text{push}(\text{mov}(S'))$
+\EndFor
+\State \Return $S^\star$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Interfaz con el selector.} La eleccion del grupo se hace
+\emph{una vez por iteracion} (no por vecino): todo el lote comparte el
+mismo modo intra o inter. Esto es coherente con la filosofia de
+\emph{best improvement sobre lote homogeneo}.
+
+% --- RTS ------------------------------------------------------------
+\subsection{Reactive Tabu Search (RTS)}\label{sec:rts}
+
+\paragraph{Filosofia.} Extension de TS Simple que ajusta
+\emph{dinamicamente} la longitud de la lista tabu en funcion de la
+deteccion de ciclos.
+
+\paragraph{Estado.} Igual que TS Simple, mas un \code{historial}
+hash $\to$ contador de visitas, una variable \code{tabu\_tenure}
+que evoluciona en $[\text{min}, \text{max}]$, y contadores
+\code{iter\_sin\_repeticion}.
+
+\paragraph{Mecanica reactiva.}
+\begin{itemize}
+\item Si la solucion actual reaparece en el historial, se \emph{aumenta}
+el tenure (multiplicador \code{factor\_aumento}$=1.2$).
+\item Si pasan suficientes iteraciones sin repeticion, se \emph{reduce}
+(multiplicador \code{factor\_reduccion}$=0.9$).
+\item Si una solucion se repite $\ge \text{umbral}=3$ veces, se dispara
+un \emph{escape}: limpia lista tabu y aplica
+\code{num\_mov\_escape} movimientos aleatorios.
+\end{itemize}
+
+\paragraph{Parametros instance-aware.}
+\begin{itemize}
+\item \code{iteraciones\_max}$\to 20n$; \code{max\_iter\_sin\_mejora}$\to 5n$.
+\item \code{tam\_vecindario}$\to \max(20, 2n)$.
+\item \code{tabu\_tenure\_inicial}$\to \max(3, \lfloor\sqrt{n}\rfloor)$.
+\item \code{tabu\_tenure\_max}$\to \max(10, \lfloor 3\sqrt{n}\rfloor)$.
+\end{itemize}
+
+\paragraph{Pseudocodigo (extracto).}
+\begin{algorithm}[H]
+\caption{Reactive Tabu Search}
+\begin{algorithmic}[1]
+\State $\tau \gets \tau_{\text{ini}}$;\; $H \gets$ historial vacio
+\For{$k = 1 \dots K_{\max}$}
+  \State Generar lote, evaluar y elegir $S'$ con aspiracion clasica
+  \State Insertar movimiento en \code{lista\_tabu} (capacidad $\tau$)
+  \State $h \gets \textsc{Hash}(S')$
+  \If{$h \in H$}
+     \State $H[h]\!+\!+$;\; $\tau \gets \min(\tau_{\max}, \tau\cdot 1.2)$
+     \If{$H[h] \ge 3$}
+        \State \textsc{Escape}$(S')$; limpiar $T_{abu}$, limpiar $H$
+     \EndIf
+  \Else{}
+     \State $H[h]\gets 1$
+     \If{\text{iter\_sin\_rep} $\ge$ \text{paciencia}}
+        \State $\tau\gets\max(\tau_{\min}, \tau\cdot 0.9)$
+     \EndIf
+  \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Interfaz con el selector.} Identica a TS Simple. Durante
+el \emph{escape} \emph{no} se aplica el sesgo intra/inter: se usa
+seleccion uniforme sobre la lista completa de operadores para no
+sesgar la zona de aterrizaje.
+
+% --- ABC ------------------------------------------------------------
+\subsection{Artificial Bee Colony Simple (ABC)}\label{sec:abc}
+
+\paragraph{Filosofia.} \mh{} de \emph{poblacion} inspirada en la
+busqueda de alimento de las abejas. Tres tipos de individuos:
+\begin{itemize}
+\item \emph{Empleadas}: explotan localmente cada fuente.
+\item \emph{Observadoras}: eligen fuentes por fitness proporcional
+(\emph{roulette wheel}).
+\item \emph{Scouts}: reemplazan fuentes que llevan demasiados
+intentos fallidos.
+\end{itemize}
+
+\paragraph{Estado.} $F$ fuentes (soluciones) en formato \emph{IDs},
+contadores de abandono por fuente, mejor global.
+
+\paragraph{Parametros instance-aware.}
+\begin{itemize}
+\item \code{iteraciones}$\to \max(200, 20n)$.
+\item \code{num\_fuentes}$\to \max(10, \lfloor 2\sqrt{n}\rfloor)$.
+\item \code{limite\_abandono}$\to \max(15, \lfloor n/2\rfloor)$.
+\end{itemize}
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{Artificial Bee Colony Simple}
+\begin{algorithmic}[1]
+\State Inicializar $F$ fuentes; evaluar; $S^\star\gets\arg\min$
+\For{$k=1\dots K_{\max}$}
+  \ForAll{fuente $i$} \Comment{fase empleadas}
+     \State $S'_i \gets$ \textsc{GenerarVecino}$(S_i)$
+     \If{$f_\lambda(S'_i) < f_\lambda(S_i)$}
+        \State $S_i\gets S'_i$; contador$_i\gets 0$
+     \Else{} contador$_i$++ \EndIf
+  \EndFor
+  \ForAll{observadora}
+     \State $i\gets$ ruleta $\propto 1/(1+f_\lambda(S_i))$
+     \State explotar $S_i$ como en empleadas
+  \EndFor
+  \ForAll{fuente $i$ con contador$_i\ge\text{limite}$}
+     \State $S_i \gets$ \textsc{Aleatoria}; contador$_i\gets 0$
+  \EndFor
+  \State Actualizar $S^\star$
+\EndFor
+\State \Return $S^\star$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Interfaz con el selector.} A diferencia de SA/TS/RTS, ABC
+opera en \emph{IDs} y consume el selector via
+\code{generar\_vecino\_ids}. El sesgo intra/inter usa la regla
+\emph{floor} $P(\text{inter})=\max(p_\text{inter}, 0.8)$ cuando hay
+violacion, eliminando \code{alpha\_inter} de la firma.
+
+% --- Cuckoo ---------------------------------------------------------
+\subsection{Cuckoo Search}\label{sec:cuckoo}
+
+\paragraph{Filosofia.} \mh{} de poblacion inspirada en el parasitismo
+de cria del cuco. Cada iteracion: (i) cada nido genera un
+\emph{cuckoo} mediante un \emph{vuelo de Levy discreto}; (ii) el
+cuckoo desafia a un nido aleatorio; (iii) se abandonan los peores
+nidos con probabilidad $p_a$.
+
+\paragraph{Estado.} $N$ nidos (soluciones) en formato etiquetas,
+mejor global.
+
+\paragraph{Vuelo de Levy discreto.} Numero de perturbaciones
+encadenadas:
+\begin{equation}
+n_{\text{pasos}} \;=\; \min\Bigl(12,\; 1 + \bigl\lfloor |N(0,1)|^{1/\beta}\cdot
+\text{pasos\_base}\bigr\rfloor\Bigr).
+\end{equation}
+Cada paso aplica \emph{un} operador del grupo elegido por el selector.
+
+\paragraph{Parametros instance-aware.}
+\begin{itemize}
+\item \code{iteraciones}$\to \max(200, 20n)$.
+\item \code{num\_nidos}$\to \max(10, \lfloor 2\sqrt{n}\rfloor)$.
+\item \code{pasos\_levy\_base}$\to \max(3, \lfloor \sqrt{n}/2\rfloor)$.
+\item \code{pa\_abandono}$=0.25$, $\beta=1.5$.
+\end{itemize}
+
+\paragraph{Pseudocodigo.}
+\begin{algorithm}[H]
+\caption{Cuckoo Search}
+\begin{algorithmic}[1]
+\State Inicializar $N$ nidos; $S^\star\gets\arg\min$
+\For{$k=1\dots K_{\max}$}
+  \ForAll{nido $i$}
+    \State $S'_i \gets$ \textsc{VueloLevy}$(S_i, n_\text{pasos}, \text{grupo})$
+    \State $j \gets$ aleatorio en $\{1,\dots,N\}$
+    \If{$f_\lambda(S'_i) < f_\lambda(S_j)$} $S_j \gets S'_i$ \EndIf
+  \EndFor
+  \State Abandonar los $\lfloor p_a N\rfloor$ peores; regenerar
+  \State Actualizar $S^\star$
+\EndFor
+\State \Return $S^\star$
+\end{algorithmic}
+\end{algorithm}
+
+% ===================================================================
+\section{Seleccion de operadores: el problema central}\label{sec:seleccion}
+% ===================================================================
+
+A continuacion se formalizan las cuatro estrategias de seleccion
+ensayadas. Todas comparten la misma interfaz: dado el estado actual
+(particularmente la violacion de capacidad) y la lista de operadores
+activos, devolver el grupo a usar (o un operador concreto).
+
+\subsection{Seleccion uniforme (baseline)}
+
+Es el comportamiento por defecto de \code{generar\_vecino} cuando se
+pasa \code{pesos\_operadores=None} y no se filtra la lista. El
+operador se muestrea uniformemente:
+\begin{equation}
+P(\text{op}_i) \;=\; \frac{1}{|\mathcal{O}|}.
+\end{equation}
+Ventaja: sin sesgo \emph{a priori}. Desventaja: no aprovecha que las
+violaciones de capacidad \emph{solo} se reparan con operadores inter,
+por lo que muchas iteraciones se gastan en intras inutiles.
+
+\subsection{Seleccion sesgada \texttt{pesos\_inter\_bias}}
+
+Implementada en \code{pesos\_inter\_bias} y consumida por
+\code{seleccionar\_grupo\_operadores\_inter\_intra}. Cuenta
+$n_{\text{intra}}=|\mathcal{O}\cap\mathcal{O}_{\text{intra}}|$ y
+$n_{\text{inter}}=|\mathcal{O}|-n_{\text{intra}}$. Para cada operador
+$o$:
+
+\paragraph{Modo violacion ($\text{viol}>10^{-12}$).}
+\begin{equation}
+w(o) \;=\;
+\begin{cases}
+(1-\alpha_{\text{inter}})/n_{\text{intra}}, & o\in\mathcal{O}_{\text{intra}}\\
+\alpha_{\text{inter}}/n_{\text{inter}}, & o\in\mathcal{O}_{\text{inter}}.
+\end{cases}
+\end{equation}
+
+\paragraph{Modo factible ($\text{viol}\le 10^{-12}$).}
+\begin{equation}
+w(o) \;=\;
+\begin{cases}
+(1-p_{\text{inter}})/n_{\text{intra}}, & o\in\mathcal{O}_{\text{intra}}\\
+p_{\text{inter}}/n_{\text{inter}}, & o\in\mathcal{O}_{\text{inter}}.
+\end{cases}
+\end{equation}
+
+\paragraph{Variante \emph{Bernoulli + grupo} (la que efectivamente usan SA/TS/RTS).}
+Las cinco \mh{} consumen una version equivalente que en lugar de
+construir un vector de pesos hace \emph{un} sorteo de Bernoulli para
+elegir el \emph{grupo} y luego deja que \code{generar\_vecino} elija
+uniformemente dentro del grupo:
+\begin{algorithm}[H]
+\caption{\textsc{SeleccionarGrupo}$(rng,\text{viol},\mathcal{O}_{\text{intra}},
+\mathcal{O}_{\text{inter}})$}
+\begin{algorithmic}[1]
+\State $p_{\text{ef}} \gets \alpha_{\text{inter}}$ si $\text{viol}>10^{-12}$, si no $p_{\text{inter}}$
+\State $u \gets rng.\text{random}()$
+\If{$u < p_{\text{ef}}$ y $\mathcal{O}_{\text{inter}}\neq\emptyset$}
+   \State \Return $(\mathcal{O}_{\text{inter}}, \text{viol}>10^{-12})$
+\EndIf
+\State \Return $(\mathcal{O}_{\text{intra}}, \text{viol}>10^{-12})$
+\end{algorithmic}
+\end{algorithm}
+Defaults: $\alpha_{\text{inter}}=0.8$, $p_{\text{inter}}=0.6$.
+
+\subsection{Seleccion binaria estricta}
+
+Implementada en \code{strict\_intra\_inter\_20260524.py}
+(\code{seleccionar\_grupo\_strict}). Es \emph{determinista}:
+\begin{equation}
+\text{grupo} =
+\begin{cases}
+\mathcal{O}_{\text{inter}}, & \text{si }\text{viol}>10^{-12}\\
+\mathcal{O}_{\text{intra}}, & \text{si }\text{viol}\le 10^{-12}.
+\end{cases}
+\end{equation}
+Se conserva el flag de violacion para los contadores, pero la
+seleccion \emph{no consume} ningun valor del RNG: es completamente
+predecible una vez fijada $\text{viol}$.
+
+Esta variante usa ademas un conjunto \emph{reducido} de cinco
+operadores: $\mathcal{O}_{\text{intra}}=\{\op{relocate\_intra},
+\op{swap\_intra}\}$ y $\mathcal{O}_{\text{inter}}=\{\op{swap\_inter},
+\op{2opt\_star}, \op{cross\_exchange}\}$. Se excluye \op{2opt\_intra}
+por considerarlo redundante con \op{swap\_intra} en instancias
+pequenas, y \op{relocate\_inter} para favorecer reorganizaciones
+simetricas. Esta variante incorpora ademas un \emph{kick reactivo}
+inter-ruta cuando se acumulan demasiadas iteraciones sin mejora,
+proporcional a $\max(1, \lfloor n/20\rfloor)$ pasos.
+
+\subsection{AOS por Probability Matching}
+
+Implementada en \code{aos\_pm\_20260527.py}. Mantiene un vector de
+pesos adaptativo $\mathbf{w}\in[w_{\min},1]^{|\mathcal{O}|}$. La
+seleccion del \emph{grupo} sigue siendo binaria estricta (igual que
+\code{seleccionar\_grupo\_strict}), pero \emph{dentro del grupo} se
+muestrea proporcional a $\mathbf{w}$.
+
+\paragraph{Regla de actualizacion (cada vez que se registra una
+mejora global).}
+\begin{equation}\label{eq:pm}
+w_o \;\gets\; \max\!\Bigl(w_{\min},\; (1-\alpha)\,w_o
++ \alpha\cdot \mathbb{1}[o = o^\star]\Bigr),
+\end{equation}
+con $w_{\min}=0.05$, $\alpha=0.2$ por defecto. El operador
+ganador $o^\star$ recibe \emph{reward} 1 y los demas 0.
+
+\paragraph{Mecanismo de inyeccion.} \code{aplicar\_patch\_aos} hace
+tres \emph{monkey-patches}: (i) reemplaza el selector de grupo en el
+modulo de la \mh{}, (ii) envuelve \code{generar\_vecino} para inyectar
+$\mathbf{w}$ como \code{pesos\_operadores}, y (iii) envuelve
+\code{ContadorOperadores.registrar\_mejora} para llamar a
+\code{actualizar} cada vez que la \mh{} registra una mejora del mejor
+global. El estado AOS se \emph{reinicia} en cada corrida para
+trayectorias independientes.
+
+% ===================================================================
+\section{Experimentos realizados}\label{sec:experimentos}
+% ===================================================================
+
+\subsection{Baseline original (seleccion uniforme)}
+
+\paragraph{Motivacion.} Disponer de una referencia neutra: cada
+operador tiene igual oportunidad.
+
+\paragraph{Cambio algoritmico.}
+$P(\text{op})=1/|\mathcal{O}|$ uniformemente.
+
+\paragraph{Veredicto.} Aceptable en SA y ABC; en TS Simple y RTS
+la baja proporcion de movimientos inter aceptados llevaba a soluciones
+factibles pero con \emph{gap} alto. Sirve como punto de partida pero
+no es competitivo en instancias con capacidad ajustada.
+
+\subsection{Experimento \texttt{p\_inter\_exp\_2026050524}}
+
+\paragraph{Motivacion.} Probar un sesgo agresivo hacia inter
+incluso en estado factible y \emph{anclar} la primera tarea de cada
+ruta (para no perder semilla de proximidad al deposito).
+
+\paragraph{Cambio algoritmico.} Variante posicional del generador de
+vecinos (\code{vecindarios\_p\_inter\_exp\_2026050524.py}) con
+$p_{\text{inter}}=0.8$ permanente y restriccion sobre la posicion $0$
+de cada ruta.
+
+\paragraph{Veredicto.} Empeoro 4 de 5 \mh{}. El anclaje rigidizaba el
+espacio y el sesgo permanente generaba aceptaciones erraticas en
+soluciones que ya eran factibles. Se descarto la idea de \emph{forzar}
+posiciones.
+
+\subsection{Experimento \texttt{strict\_intra\_inter\_20260524}}
+
+\paragraph{Motivacion.} Atacar el problema de raiz: si hay violacion,
+\emph{nunca} usar intras; si es factible, \emph{nunca} usar inters.
+Anadir un kick reactivo para escapar de optimos locales.
+
+\paragraph{Cambio algoritmico.} Selector binario estricto + reduccion
+a 5 operadores + kick inter de $\max(1, \lfloor n/20\rfloor)$ pasos
+tras cada estancamiento.
+
+\paragraph{Resultados.}
+\begin{itemize}
+\item ABC: \emph{gap} 41.83\%; factibilidad 100\%.
+\item Cuckoo: 40.55\%; 97.1\%.
+\item SA: 41.46\%; 100\%.
+\item RTS: 30.07\% pero \emph{factibilidad 0\%}.
+\item TS Simple: 30.36\% con factibilidad 10.1\%.
+\end{itemize}
+
+\paragraph{Veredicto.} El selector estricto mejoro factibilidad en SA,
+ABC y Cuckoo. Pero en TS Simple y RTS produjo soluciones de bajo
+\emph{gap} pero \emph{infactibles}: la causa raiz fue que ambos
+optimizaban costo puro sin penalizar capacidad. Esto motivo el
+siguiente experimento.
+
+\subsection{Experimento \texttt{lambda\_grid\_20260525}}
+
+\paragraph{Motivacion.} Si la causa de la infactibilidad en TS/RTS es
+$\lambda$ inadecuado, encontrar el $\lambda$ optimo por \mh.
+
+\paragraph{Cambio algoritmico.} \emph{Grid search} sobre
+$\lambda_{\text{factor}}\in\{0.5, 1.0, 2.0, 5.0, 10.0\}$, donde
+$\lambda=\lambda_{\text{factor}}\cdot\lambda^*$ y $\lambda^*$ es el
+default instance-aware de \eqref{eq:lambda}. Se anadio el parametro
+\code{lambda\_capacidad} a TS Simple y RTS para que tambien optimizaran
+el objetivo penalizado y no el costo puro.
+
+\paragraph{$\lambda$ optimo por \mh.}
+\begin{itemize}
+\item ABC: 2.0; Cuckoo: 2.0; SA: 0.5; RTS: 0.5; TS Simple: 2.0.
+\end{itemize}
+
+\paragraph{Veredicto.} TS y RTS recuperaron 100\% factibilidad; los
+\emph{gaps} estabilizaron alrededor de 39--41\%. Este experimento
+estableci\'o un nuevo \emph{baseline} de comparacion.
+
+\subsection{Experimento \texttt{aos\_pm\_20260527}}
+
+\paragraph{Motivacion.} Reemplazar la seleccion uniforme dentro del
+grupo por seleccion adaptativa segun rendimiento historico.
+
+\paragraph{Cambio algoritmico.} Probability Matching con $\alpha=0.2$,
+$w_{\min}=0.05$. \emph{Reward} 1 al operador que registra mejora
+global; 0 al resto.
+
+\paragraph{Veredicto.} \emph{No} mejoro significativamente. Tres
+hipotesis principales:
+\begin{enumerate}
+\item Las mejoras globales son \emph{escasas} (decenas por corrida):
+con tan pocas actualizaciones, $\mathbf{w}$ apenas se aparta del
+uniforme inicial.
+\item $\alpha=0.2$ es probablemente demasiado bajo para corridas
+cortas (PM es notoriamente sensible a $\alpha$).
+\item No hay \emph{warm-start} entre corridas: cada repeticion empieza
+con pesos uniformes, perdiendo la memoria acumulada en repeticiones
+anteriores.
+\end{enumerate}
+
+\subsection{Experimento \texttt{path\_relinking\_20260528}}
+
+\paragraph{Motivacion.} Aprovechar el mejor global como \emph{guia}:
+al sufrir un estancamiento, no perturbar al azar sino \emph{redirigir}
+la solucion actual hacia el mejor conocido.
+
+\paragraph{Cambio algoritmico.} \emph{Path Relinking} truncado con
+representacion \emph{arc-set}:
+\begin{enumerate}
+\item Calcular el delta = tareas con asignacion (ruta, posicion)
+distinta entre la solucion inicio y la guia.
+\item En cada paso, mover \emph{una} tarea hacia su posicion guia
+eligiendo la transferencia que minimiza $f_\lambda$.
+\item Truncar tras $\min(|\text{delta}|, 50)$ pasos.
+\item Devolver el \emph{mejor intermedio} (no el final).
+\end{enumerate}
+Con probabilidad $p_{\text{pr}}=0.5$ se lanza PR despues del kick puro;
+con probabilidad $1-p_{\text{pr}}$ se conserva solo el kick. Toda la
+captura de \code{mejor\_sol} se hace por \emph{monkey-patch} sobre
+\code{copiar\_solucion\_labels} y
+\code{ContadorOperadores.registrar\_mejora}, sin tocar las \mh.
+
+\paragraph{Veredicto.} \emph{Primer experimento con mejora consistente}
+sobre el mejor $\lambda$ por \mh. Ver Seccion \ref{sec:comparativa}.
+
+% ===================================================================
+\section{Comparativa cuantitativa final}\label{sec:comparativa}
+% ===================================================================
+
+\subsection{\emph{Gap} medio al \emph{BKS}}
+
+\begin{table}[h]
+\centering
+\caption{\emph{Gap} medio al \emph{BKS} (\%) por \mh{} y experimento.}
+\label{tab:gap}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\mh{} & Strict & AOS-PM & $\lambda$-grid best & PR \\
+\midrule
+SA           & 41.46 & 41.13 & 41.32 & \textbf{39.82} \\
+TS Simple    & 30.36 & 40.74 & 39.83 & 39.98 \\
+RTS          & 30.07 & 40.21 & 39.44 & \textbf{39.04} \\
+ABC          & 41.83 & 41.87 & 41.18 & \textbf{35.80} \\
+Cuckoo       & 40.55 & 40.48 & 40.14 & \textbf{36.95} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent En negrita los mejores valores por fila. Notese que el
+\emph{gap} aparentemente excelente de TS Simple y RTS bajo
+\meta{Strict} (30.36\% y 30.07\%) esta inflado: esos valores
+corresponden a soluciones mayoritariamente \emph{infactibles}
+(ver Tabla \ref{tab:fact}). Tras corregir $\lambda$ los \emph{gaps}
+suben a $\sim 39$--$40\%$ pero las soluciones son factibles. La
+columna PR muestra mejoras sustanciales en ABC ($-5.38$ pp) y
+Cuckoo ($-3.19$ pp).
+
+\subsection{Factibilidad}
+
+\begin{table}[h]
+\centering
+\caption{Factibilidad final (fraccion de corridas con
+$\text{viol}=0$).}\label{tab:fact}
+\small
+\begin{tabular}{lccc}
+\toprule
+\mh{} & Strict & AOS-PM & PR \\
+\midrule
+SA           & 100.0\% & 100.0\% & 100.0\% \\
+TS Simple    & 10.1\%  & 100.0\% & 100.0\% \\
+RTS          & 0.0\%   & 100.0\% & 100.0\% \\
+ABC          & 100.0\% & 100.0\% & 100.0\% \\
+Cuckoo       & 97.1\%  & 97.4\%  & 99.1\%  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Por que TS y RTS bajo \meta{Strict} casi no eran factibles.}
+La causa era estructural: ambos optimizaban \emph{costo puro}
+(seleccionaban el vecino con menor costo, no con menor objetivo
+penalizado) y la lista tabu no incluia ninguna penalizacion explicita
+de la violacion. El selector estricto forzaba el grupo \emph{inter}
+solo cuando $\text{viol}>0$, pero como TS aceptaba el ``mejor vecino
+del lote'' por costo puro, regresaba inmediatamente al regimen
+infactible si una solucion infactible \emph{barata} aparecia en el
+lote. El experimento \texttt{lambda\_grid\_20260525} resolvio
+esto integrando $\lambda$ en el criterio de seleccion del lote (TS y
+RTS pasaron a usar $\text{costo} + \lambda\cdot\text{viol}$).
+
+% ===================================================================
+\section{Insights cualitativos}\label{sec:insights}
+% ===================================================================
+
+\subsection{Intensificacion vs diversificacion}
+
+Cada estrategia distribuye de forma distinta el esfuerzo entre
+explotacion local (intensificacion) y exploracion global
+(diversificacion):
+\begin{itemize}
+\item \meta{Uniforme}: 1/3 intra, 2/3 inter (proporcional al tamano
+de los grupos). No reacciona al estado.
+\item \meta{Sesgo fluido} (alpha 0.8 / p 0.6): 80\% inter bajo
+violacion, 60\% inter en factible. Reacciona al estado.
+\item \meta{Strict}: 100\% inter o 100\% intra. Reaccion maxima al
+estado pero pierde mezcla.
+\item \meta{AOS-PM}: el grupo se elige como en \meta{Strict}; dentro
+del grupo, peso proporcional a exito historico. Reaccion al estado +
+reaccion al historial.
+\item \meta{PR}: ortogonal: no cambia el selector, anade un mecanismo
+\emph{guiado} (hacia el mejor global) que se dispara en estancamiento.
+Es puramente \emph{intensificador} dirigido.
+\end{itemize}
+
+\subsection{Por que PR funciona mejor en \mh{} de poblacion}
+
+ABC y Cuckoo mantienen multiples soluciones en paralelo; el mejor
+global cambia frecuentemente (cada vez que un cuckoo o una abeja
+genera una mejora). Esto hace que la \emph{guia} de PR sea fresca y
+relevante, conduciendo a transferencias informadas. En cambio, en
+trayectoria (SA, TS, RTS) el mejor global es estable durante muchos
+pasos y PR converge a la guia sin descubrir mejoras intermedias.
+
+\subsection{Por que AOS-PM no mejoro}
+
+Tres factores convergen:
+\begin{enumerate}
+\item \textbf{Recompensas escasas}: \code{registrar\_mejora} se
+dispara solo cuando \emph{se mejora} el mejor global; en
+$\sim 100$--$400$ iteraciones esto ocurre en $\le 20$ ocasiones. Con
+$\alpha=0.2$, los pesos se mueven muy poco.
+\item \textbf{Confusion intra/inter}: el grupo se sigue eligiendo de
+forma binaria, asi que el peso de \op{relocate\_intra} se actualiza
+solo en iteraciones \emph{intra}; igualmente para los inters. La
+serializacion impide la comparacion directa.
+\item \textbf{Sin warm-start}: cada corrida arranca con pesos
+uniformes, desperdiciando memoria potencial de corridas anteriores.
+\end{enumerate}
+
+\subsection{Por que el selector estricto solo es bueno con kick + $\lambda$}
+
+El selector estricto, aislado, es demasiado rigido: si el algoritmo
+cae en un optimo local intra, sin movimientos inter no puede salir; si
+queda atrapado en una zona infactible, sin movimientos intra no puede
+refinar dentro de las rutas. El kick proporciona la salida (perturba
+inter), y $\lambda$ adecuado asegura que el criterio de aceptacion
+prefiera factibles.
+
+\subsection{El rol del kick reactivo}
+
+Es el unico mecanismo en \textsc{MetaCARP} (aparte del reheat de SA y
+el escape de RTS) capaz de \emph{forzar} una salida de un optimo local
+sin esperar al criterio termodinamico. Su intensidad,
+$\max(1, \lfloor n/20\rfloor)$ pasos, es proporcional al tamano del
+problema: pequena en instancias chicas, fuerte en grandes. Sin kick,
+el selector estricto y AOS-PM tienden a quedarse en plateaus largos.
+
+% ===================================================================
+\section{Conclusiones y trabajo futuro}\label{sec:conclusiones}
+% ===================================================================
+
+\subsection{Mejor approach hasta la fecha}
+
+\textbf{Path Relinking truncado con $p_{\text{pr}}=0.5$ sobre el selector
+binario estricto y el kick reactivo} es el unico experimento que
+mostro mejora consistente en al menos tres de las cinco \mh{} (SA, ABC,
+Cuckoo) sin sacrificar factibilidad en ninguna. Para TS Simple y RTS
+mostro paridad con $\lambda$-grid (mejora marginal o estabilidad).
+
+\subsection{Recomendaciones de extension}
+
+\begin{itemize}
+\item \textbf{Aumentar $p_{\text{pr}}$ en ABC y Cuckoo} (probar 0.7 y
+0.9): son las \mh{} donde PR mas brillo, asi que mas PR podria mejorar
+mas.
+\item \textbf{PR multi-guia}: en lugar de guiar siempre hacia el mejor
+global, mantener un pool elite de las 3--5 mejores soluciones distintas
+y elegir guia uniformemente entre ellas. Esto diversifica las
+direcciones de relinking.
+\item \textbf{Pool elite con criterio de diversidad}: agregar
+soluciones al pool solo si distan suficientemente (medida arc-set) del
+resto, evitando convergencia prematura.
+\item \textbf{Combinar PR con AOS}: usar los pesos AOS para elegir,
+dentro de PR, \emph{que tarea mover primero} (no solo por menor
+$f_\lambda$ sino tambien con preferencia por operadores fuertes).
+\item \textbf{Warm-start de AOS-PM entre corridas} con el mismo
+seed-de-instancia: salvar el vector $\mathbf{w}$ final en un cache y
+recargarlo al inicio.
+\end{itemize}
+
+\subsection{Caminos descartados}
+
+\begin{itemize}
+\item Forzar la primera posicion de la ruta
+(\texttt{p\_inter\_exp\_2026050524}): demasiado rigido,
+empeora 4/5 \mh.
+\item Optimizar costo puro sin $\lambda$ en TS/RTS: produce
+infactibilidad masiva en cualquier variante con selector estricto.
+\item Aumentar $\alpha_{\text{aos}}$ por encima de 0.5: hace los
+pesos demasiado volatiles y la seleccion degenera a un solo operador.
+\end{itemize}
+
+% ===================================================================
+\section{Apendice: detalles de implementacion}\label{sec:apendice}
+% ===================================================================
+
+\subsection{Monkey-patch de experimentos}
+
+Los experimentos no editan las cinco \mh{} base. Aplican
+\emph{monkey-patches} a tres lugares:
+\begin{enumerate}
+\item \textbf{Selector}: cada modulo de \mh{} (\code{recocido\_simulado},
+\code{busqueda\_tabu\_simple}, etc.) importa
+\code{seleccionar\_grupo\_operadores\_inter\_intra} en su top-level.
+Reasignar el atributo del modulo cambia el selector en uso sin
+tocar el archivo.
+\item \code{generar\_vecino} y \code{generar\_vecino\_ids}: se envuelven
+en una version que inyecta \code{pesos\_operadores} (AOS).
+\item \code{ContadorOperadores.registrar\_mejora}: se envuelve para
+notificar al AOS / capturar la mejor solucion en PR.
+\end{enumerate}
+
+\subsection{Captura de $\lambda$ via \code{sys.\_getframe}}
+
+\code{\_extraer\_ctx\_y\_lambda} sube por la pila de llamadas hasta
+encontrar un frame con \code{ctx} entre sus locales; en el mismo
+frame busca \code{lam\_eff}, \code{lambda\_eff} o
+\code{lambda\_capacidad\_eff}. Si no encuentra ninguno, recalcula
+$\lambda^*$ mediante \code{lambda\_penal\_capacidad\_por\_defecto(ctx)}.
+Esta tecnica permite a PR conocer la $\lambda$ exacta que la \mh{}
+esta usando sin modificar la firma de \code{aplicar\_kick\_*}.
+
+\subsection{Captura de \code{mejor\_sol} via patch de \code{copiar\_solucion\_labels}}
+
+SA, TS Simple, RTS y Cuckoo copian la solucion mediante
+\code{copiar\_solucion\_labels(sol)} cada vez que actualizan el mejor
+global. PR envuelve esta funcion para que, ademas de hacer la copia,
+registre la ultima copia en \code{\_estado\_pr\_local.mejor\_sol\_labels}.
+Para ABC (que opera en IDs y no usa este helper), PR envuelve
+\code{ContadorOperadores.registrar\_mejora} y extrae
+\code{mejor\_sol\_ids} del frame del llamante. El patch es seguro en
+la practica porque la unica copia que realmente importa para PR es la
+que ocurre dentro del bucle principal de la \mh{}.
+
+% ===================================================================
+\begin{thebibliography}{9}
+
+\bibitem{Glover1997}
+F.~Glover y M.~Laguna,
+\emph{Tabu Search},
+Kluwer Academic Publishers, 1997.
+
+\bibitem{Lourenco2003}
+H.~R.~Lourenco, O.~C.~Martin y T.~Stutzle,
+\emph{Iterated Local Search},
+en \emph{Handbook of Metaheuristics}, Springer, 2003, pp. 320-353.
+
+\bibitem{Battiti1994}
+R.~Battiti y G.~Tecchiolli,
+\emph{The Reactive Tabu Search},
+ORSA Journal on Computing 6(2), 1994, pp. 126-140.
+
+\bibitem{Yang2009}
+X.-S.~Yang y S.~Deb,
+\emph{Cuckoo Search via Levy flights},
+en \emph{World Congress on Nature and Biologically Inspired Computing},
+IEEE, 2009, pp. 210-214.
+
+\bibitem{Karaboga2005}
+D.~Karaboga,
+\emph{An idea based on honey bee swarm for numerical optimization},
+Technical Report TR06, Erciyes University, 2005.
+
+\bibitem{Fialho2010}
+A.~Fialho, L.~da Costa, M.~Schoenauer y M.~Sebag,
+\emph{Analyzing bandit-based adaptive operator selection mechanisms},
+Annals of Mathematics and Artificial Intelligence 60, 2010,
+pp. 25-64.
+
+\bibitem{Resende2005}
+M.~G.~C.~Resende y C.~C.~Ribeiro,
+\emph{GRASP with Path-Relinking: Recent Advances and Applications},
+en \emph{Metaheuristics: Progress as Real Problem Solvers}, Springer,
+2005, pp. 29-63.
+
+\end{thebibliography}
+
+\end{document}

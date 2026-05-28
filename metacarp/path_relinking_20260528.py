@@ -176,13 +176,21 @@ def _extraer_ctx_y_lambda(profundidad_inicial: int = 2) -> tuple[Any, float | No
         ctx = locales.get("ctx")
         if ctx is not None:
             # Intentamos leer lambda del mismo frame con varios nombres
-            # conocidos. Si no esta, lo derivamos del ctx mismo.
-            lam = (
-                locales.get("lam_eff")
-                or locales.get("lambda_eff")
-                or locales.get("lambda_capacidad_eff")
-                or locales.get("lambda_capacidad")
-            )
+            # conocidos. Las 5 MH (SA/TS/RTS/ABC/Cuckoo) la nombran
+            # consistentemente ``lam_eff``; los otros nombres son red de
+            # seguridad por si una MH futura usa otra convencion.
+            #
+            # NOTA: usamos chequeo explicito ``is not None`` (NO ``or``) porque
+            # ``lam_eff == 0.0`` es un valor LEGITIMO (el usuario puede pasar
+            # ``lambda_capacidad=0.0`` para desactivar la penalizacion). Con
+            # ``or`` ese caso se trataria como falsy y caeriamos al default,
+            # cambiando el objetivo entre MH y PR.
+            lam = None
+            for nombre in ("lam_eff", "lambda_eff",
+                           "lambda_capacidad_eff", "lambda_capacidad"):
+                if nombre in locales and locales[nombre] is not None:
+                    lam = float(locales[nombre])
+                    break
             if lam is None:
                 # Calculo defensivo: usa el default canonico del modulo
                 # evaluador. Garantiza que PR siempre tenga una lambda valida.
@@ -190,8 +198,6 @@ def _extraer_ctx_y_lambda(profundidad_inicial: int = 2) -> tuple[Any, float | No
                     lam = float(lambda_penal_capacidad_por_defecto(ctx))
                 except Exception:  # noqa: BLE001
                     lam = None
-            else:
-                lam = float(lam)
             return ctx, lam
         frame = frame.f_back
     return None, None
