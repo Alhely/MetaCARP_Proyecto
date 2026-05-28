@@ -124,10 +124,10 @@ class _AOSState:
 # ``aplicar_patch_aos`` (modo paralelo: una vez por worker; modo secuencial:
 # una vez por corrida).
 _estado_aos: _AOSState | None = None
-# Guard para evitar doble-wrapping de ContadorOperadores.registrar_mejora
-# si ``aplicar_patch_aos`` se invoca varias veces en el mismo proceso
-# (modo secuencial con varias tareas consecutivas).
+# Guards para evitar doble-wrapping en modo secuencial (varias corridas en el
+# mismo proceso). Cada flag indica si el patch correspondiente ya esta activo.
 _registrar_patched: bool = False
+_gv_patched: bool = False
 
 
 # ============================================================
@@ -142,56 +142,85 @@ def seleccionar_grupo_aos(
     operadores_fallback,
     **_ignorado,
 ):
-    """Selector BINARIO para el grupo + Probability Matching para el operador.
+    """Selector BINARIO para el grupo (identico a seleccionar_grupo_strict).
 
-    Misma firma que ``seleccionar_grupo_operadores_inter_intra`` (``rng``,
-    ``violacion``, ``ops_intra``, ``ops_inter``, ``operadores_fallback``);
-    kwargs extra (``alpha_inter``, ``p_inter``) se absorben en ``**_ignorado``.
+    Misma firma que ``seleccionar_grupo_operadores_inter_intra``; kwargs
+    extra (``alpha_inter``, ``p_inter``) se absorben en ``**_ignorado``.
 
-    Logica de grupo: identica a ``seleccionar_grupo_strict``.
+    Devuelve el GRUPO COMPLETO (no un operador unico) para que
+    ``generar_vecino`` pueda reintentar con otro operador del grupo si el
+    elegido no es aplicable a la solucion actual (solution too small).
+    El efecto AOS opera en el nivel de ``generar_vecino`` via
+    ``pesos_operadores`` inyectados por ``_make_patched_gv``.
+
+    Logica de grupo: binaria estricta.
       - ``violacion > 1e-12`` -> grupo INTER (reparacion).
       - ``violacion <= 1e-12`` -> grupo INTRA (refinamiento).
-
-    Logica de operador: AOS Probability Matching.
-      - Se elige UN operador del grupo con ``_estado_aos.seleccionar()``.
-      - Se devuelve ``[op_elegido]`` (lista de un elemento) para forzar
-        que ``generar_vecino`` use exactamente ese operador en el lote.
-      - Si ``_estado_aos`` no esta inicializado, fallback a ``rng.choice``.
-
-    NOTA: este selector consume UN ``rng.random()`` adicional (en
-    ``_estado_aos.seleccionar``) respecto al selector canonico.
     """
-    # Seleccion de grupo (binaria, identica a strict).
-    # Tolerancia 1e-12 evita falsos positivos por ruido numerico.
     if violacion > 1e-12 and ops_inter:
-        grupo = list(ops_inter)
-        hubo_viol = True
-    elif ops_intra:
-        grupo = list(ops_intra)
-        hubo_viol = False
-    elif ops_inter:
+        return list(ops_inter), True
+    if ops_intra:
+        return list(ops_intra), False
+    if ops_inter:
         # Fallback: sin ops_intra pero con ops_inter (caso degenerado).
-        grupo = list(ops_inter)
-        hubo_viol = violacion > 1e-12
-    else:
-        # Ambos grupos vacios: caemos al fallback completo. Preservamos
-        # el flag de violacion para que los contadores de la MH cuenten bien.
-        return list(operadores_fallback), violacion > 1e-12
-
-    # Seleccion de operador con pesos AOS.
-    if _estado_aos is not None:
-        op_elegido = _estado_aos.seleccionar(grupo, rng)
-    else:
-        # Sin estado AOS inicializado: comportamiento equivalente al uniforme.
-        op_elegido = rng.choice(grupo)
-
-    # Devolvemos lista de UN elemento: generar_vecino usara exactamente este op.
-    return [op_elegido], hubo_viol
+        return list(ops_inter), violacion > 1e-12
+    # Ambos grupos vacios: fallback completo.
+    return list(operadores_fallback), violacion > 1e-12
 
 
 # ============================================================
 # Funcion de patch (capa 2 del experimento)
 # ============================================================
+
+def _make_patched_gv(orig_gv):
+    """Envuelve ``generar_vecino`` para inyectar pesos AOS como
+    ``pesos_operadores``.
+
+    ``generar_vecino`` elige el operador con ``rng.choices(ops,
+    weights=pesos_operadores)``. Al inyectar los pesos AOS, operadores con
+    mas mejoras historicas se eligen mas frecuentemente. Si el elegido no
+    es aplicable (solucion demasiado pequena), el bucle interno de
+    ``generar_vecino`` reintenta automaticamente: en el siguiente intento
+    puede caer en otro operador del grupo segun los mismos pesos, lo que
+    eventualmente resuelve el caso sin lanzar RuntimeError.
+    """
+    def _patched(sol, *args, operadores=None, pesos_operadores=None, **kwargs):
+        import metacarp.aos_pm_20260527 as _mod
+        if (pesos_operadores is None
+                and _mod._estado_aos is not None
+                and operadores is not None):
+            pesos_operadores = [
+                _mod._estado_aos.pesos.get(op, _mod._W_MIN_DEFAULT)
+                for op in operadores
+            ]
+        return orig_gv(
+            sol, *args,
+            operadores=operadores,
+            pesos_operadores=pesos_operadores,
+            **kwargs,
+        )
+    return _patched
+
+
+def _make_patched_gvi(orig_gvi):
+    """Idem para ``generar_vecino_ids`` (ABC Simple usa representacion IDs)."""
+    def _patched(sol_ids, *args, operadores=None, pesos_operadores=None, **kwargs):
+        import metacarp.aos_pm_20260527 as _mod
+        if (pesos_operadores is None
+                and _mod._estado_aos is not None
+                and operadores is not None):
+            pesos_operadores = [
+                _mod._estado_aos.pesos.get(op, _mod._W_MIN_DEFAULT)
+                for op in operadores
+            ]
+        return orig_gvi(
+            sol_ids, *args,
+            operadores=operadores,
+            pesos_operadores=pesos_operadores,
+            **kwargs,
+        )
+    return _patched
+
 
 def _make_registrar_patched(orig_registrar):
     """Fabrica el metodo patched sin capturar ``_estado_aos`` en la clausura.
@@ -244,19 +273,32 @@ def aplicar_patch_aos(
     alpha : float
         Tasa de aprendizaje del Probability Matching. Default 0.2.
     """
-    global _estado_aos, _registrar_patched
+    global _estado_aos, _registrar_patched, _gv_patched
 
     ops = tuple(operadores) if operadores is not None else OPERADORES_AOS_5
     # Reiniciar estado AOS para esta corrida (pesos uniformes de nuevo).
     _estado_aos = _AOSState(ops, alpha=alpha)
 
-    # --- Patch 1: selector dentro del modulo de la MH ---
+    # --- Patch 1: selector de grupo dentro del modulo de la MH ---
     # Las 5 MH del proyecto importan el selector en su top-level, por lo que
     # basta con reasignar el atributo en el namespace del modulo de la MH.
     mh = importlib.import_module(nombre_modulo_mh)
     mh.seleccionar_grupo_operadores_inter_intra = seleccionar_grupo_aos
 
-    # --- Patch 2: registrar_mejora (solo una vez por proceso) ---
+    # --- Patch 2: generar_vecino / generar_vecino_ids (solo una vez) ---
+    # Inyecta pesos AOS como ``pesos_operadores`` en cada llamada a
+    # generar_vecino. El grupo COMPLETO se pasa igual que antes, de modo que
+    # si el operador elegido por los pesos no es aplicable, el bucle interno
+    # de generar_vecino reintenta con otro operador del grupo (fallback seguro).
+    if not _gv_patched:
+        if hasattr(mh, "generar_vecino_ids"):
+            # ABC Simple usa representacion IDs.
+            mh.generar_vecino_ids = _make_patched_gvi(mh.generar_vecino_ids)
+        if hasattr(mh, "generar_vecino"):
+            mh.generar_vecino = _make_patched_gv(mh.generar_vecino)
+        _gv_patched = True
+
+    # --- Patch 3: registrar_mejora (solo una vez por proceso) ---
     # Envolvemos el metodo original para que tambien notifique al AOS cada
     # vez que la MH registre una mejora del mejor global.
     if not _registrar_patched:
