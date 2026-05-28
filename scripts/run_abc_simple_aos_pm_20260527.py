@@ -56,7 +56,7 @@ def _ejecutar_una(tarea: TareaExp) -> tuple[TareaExp, str, dict | None, str | No
             # tope 10 kicks antes de detener la corrida.
             max_iter_sin_mejora_kick=30,
             max_resets=10,
-            usar_gpu=True,                # ABC se beneficia de GPU en lote observadoras
+            usar_gpu=False,
             semilla=None,
             repeticion=tarea.repeticion,
             guardar_csv=True,

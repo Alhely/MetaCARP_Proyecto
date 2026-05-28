@@ -70,7 +70,7 @@ def _ejecutar_una(tarea: TareaExp) -> tuple[TareaExp, str, dict | None, str | No
             patience=10,
             reheat_factor=0.5,
             max_reheats_sin_mejora=5,
-            usar_gpu=True,                # cae a CPU si CuPy no esta disponible
+            usar_gpu=False,
             semilla=None,                 # aleatoria del sistema
             repeticion=tarea.repeticion,
             guardar_csv=True,

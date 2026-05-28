@@ -53,7 +53,7 @@ def _ejecutar_una(tarea: TareaExp) -> tuple[TareaExp, str, dict | None, str | No
             # Kick reactivo: 30 iteraciones sin mejora -> perturbar; tope 10 kicks.
             max_iter_sin_mejora_kick=30,
             max_resets=10,
-            usar_gpu=True,
+            usar_gpu=False,
             semilla=None,
             repeticion=tarea.repeticion,
             guardar_csv=True,
