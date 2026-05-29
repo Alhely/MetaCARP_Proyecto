@@ -3,7 +3,7 @@
 % ---------------------------------------------------------------------
 % Documento LaTeX COMPLETO y AUTONOMO del capitulo de Experimentacion.
 % Preambulo + capitulo expandido (figuras, generacion de vecinos,
-% pseudocodigos) + bibliografia EMBEBIDA (no requiere bibtex ni .bib).
+% pseudocodigos, sintesis de optimizacion) + bibliografia EMBEBIDA.
 % Compilar:  pdflatex experimentos_full_combined_all.txt   (2 pasadas)
 % Requiere las imagenes PNG en figuras/ (o junto a este archivo).
 % =====================================================================
@@ -908,6 +908,8 @@ Los experimentos finales del programa (\texttt{p\_inter\_pr\_20260528},
 múltiples capas de monkey-patch. La Figura~\ref{fig:capas} esquematiza
 la composición (formato pseudo-ascii):
 
+\begin{figure}[h]
+\centering
 \begin{verbatim}
 +----------------------------------------------+
 | Capa 5: Evaluador greedy (orient. dinamica)  |  <- warmstart_greedy
@@ -925,6 +927,11 @@ la composición (formato pseudo-ascii):
 |     Base MH (SA, TS, RTS, ABC, Cuckoo)        |
 +----------------------------------------------+
 \end{verbatim}
+\caption{Composición por capas de los monkey-patches. Cada experimento
+         activa un subconjunto de capas sobre la metaheurística base; el
+         orden de aplicación es crítico (véase el texto).}
+\label{fig:capas}
+\end{figure}
 
 El \textbf{orden de aplicación es crítico} en dos puntos:
 
@@ -2348,6 +2355,225 @@ lo que sugiere que su mecanismo de exploración de enjambre no se
 beneficia del mismo modo del evaluador más preciso ni del presupuesto
 ampliado, posiblemente por la escasa diversidad entre agentes en
 instancias de tamano pequeno--mediano.
+
+% =====================================================================
+\section{Síntesis de la optimización del sistema}
+\label{sec:sintesis-optimizacion}
+% =====================================================================
+
+Esta sección consolida, de forma transversal a los experimentos, los
+cuatro pilares técnicos que explican la optimización lograda: la poda de
+operadores, su justificación en términos de eficiencia, la lógica de
+control operativo y el balance final de recursos bajo el evaluador
+validado. Todas las cifras de calidad provienen de la re-corrida con el
+evaluador greedy (Sección~\ref{sec:re-greedy}); los valores del evaluador
+canónico se excluyen deliberadamente.
+
+% ------------------------------------------------------------
+\subsection{Pilar 1: el experimento fundacional de poda}
+\label{subsec:pilar-poda}
+% ------------------------------------------------------------
+
+El primer experimento que aplicó una reducción efectiva del conjunto de
+operadores fue \texttt{strict\_intra\_inter\_20260524}
+(Sección~\ref{sec:exp-strict}), que sustituyó los nueve operadores de
+\texttt{OPERADORES\_POPULARES} por el conjunto reducido de cinco
+\texttt{OPERADORES\_STRICT\_5} (dos intra y tres inter,
+Sección~\ref{sec:operadores}).
+
+\paragraph{Metodología de la poda.}
+La selección no fue arbitraria: se sustentó en un análisis multidimensional
+sobre \textbf{92\,529 corridas} (5 MH $\times$ 23 instancias $\times$ $N$
+repeticiones). Un operador se marcó como candidato a poda si cumplía
+simultáneamente tres condiciones: (i)~baja tasa de mejora
+(mejoras/propuestas) en más de tres MH, (ii)~baja contribución a la
+trayectoria del mejor global, y (iii)~cobertura limitada de instancias. La
+Tabla~\ref{tab:poda-ranking} resume el ranking resultante.
+
+\begin{table}[h]
+\centering
+\caption{Ranking multidimensional de operadores (corpus de 92\,529 corridas).
+         La tasa de mejora y la contribución son métricas \emph{relativas}
+         entre operadores bajo el mismo evaluador, por lo que su orden es
+         robusto al sesgo del evaluador canónico.}
+\label{tab:poda-ranking}
+\small
+\begin{tabular}{rllrrrl}
+\toprule
+\# & Operador & Grupo & Tasa mej. & Contrib. & Score & Veredicto \\
+\midrule
+1 & \texttt{relocate\_intra} & intra & 0.141\% & 8.16\% & 0.591 & Pilar \\
+2 & \texttt{2opt\_intra}     & intra & 0.145\% & 7.70\% & 0.387 & Pilar \\
+3 & \texttt{2opt\_star}      & inter & 0.113\% & 2.90\% & 0.381 & Útil \\
+4 & \texttt{swap\_intra}     & intra & 0.133\% & 7.68\% & 0.361 & Pilar \\
+5 & \texttt{swap\_inter}     & inter & 0.107\% & 3.14\% & 0.175 & Útil \\
+6 & \texttt{relocate\_inter} & inter & 0.091\% & 2.33\% & 0.118 & Marginal \\
+7 & \texttt{cross\_exchange} & inter & 0.084\% & 2.63\% & 0.112 & Marginal \\
+8 & \texttt{or\_opt\_2}      & inter & 0.060\% & 1.37\% & 0.024 & \textbf{Poda} \\
+9 & \texttt{or\_opt\_3}      & inter & 0.053\% & 1.07\% & 0.000 & \textbf{Poda} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Validación de integridad tras la poda.}
+La integridad del espacio de búsqueda se verificó en dos niveles, el
+segundo ya con el evaluador greedy corregido:
+
+\begin{enumerate}
+\item \textbf{A priori (cuantitativo).} Los operadores \texttt{or\_opt\_2}
+  y \texttt{or\_opt\_3} obtuvieron score $\approx 0$; eliminarlos no podía
+  reducir la cobertura del espacio de soluciones.
+\item \textbf{A posteriori (empírico).} La prueba decisiva es que el
+  vecindario reducido \emph{sigue conteniendo los óptimos globales}: con
+  cinco operadores más Path Relinking (experimento R3) se alcanza el BKS
+  exacto en \textbf{23 de 23 instancias} (Tabla~\ref{tab:re-greedy-bks}).
+  Si la poda hubiera mutilado el espacio de búsqueda, esto sería imposible.
+\end{enumerate}
+
+\noindent Es importante subrayar que las métricas de poda son
+\emph{relativas} (comparan operadores entre sí bajo idéntico evaluador). El
+sesgo del evaluador canónico inflaba el costo de forma sistemática e igual
+para los nueve operadores, por lo que el ranking relativo es robusto; los
+gaps absolutos, en cambio, se descartan por completo.
+
+% ------------------------------------------------------------
+\subsection{Pilar 2: justificación de la optimización}
+\label{subsec:pilar-justificacion}
+% ------------------------------------------------------------
+
+El argumento central de la reducción \textbf{no es la complejidad
+asintótica por iteración}: elegir y aplicar un operador es
+$O(|\text{ruta}|)$ tanto con nueve como con cinco operadores. La ganancia
+real es la \textbf{concentración del presupuesto de muestreo}
+(Tabla~\ref{tab:concentracion-presupuesto}).
+
+\begin{table}[h]
+\centering
+\caption{Efecto de la poda sobre la asignación de recursos de muestreo.}
+\label{tab:concentracion-presupuesto}
+\small
+\begin{tabular}{lccl}
+\toprule
+Métrica & Antes (9 ops) & Después (5 ops) & Efecto \\
+\midrule
+Operadores en el conjunto        & 9   & 5   & $-44\%$ \\
+Operadores improductivos (score $<0.03$) & 2 & 0 & eliminados \\
+Propuestas por operador (presup.\ $B$ fijo) & $B/9$ & $B/5$ & $+80\%$ por operador útil \\
+Fallos del bucle de reintento    & mayores$^*$ & menores & menos desperdicio \\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\footnotesize $^*$\texttt{or\_opt\_3} exige rutas de $\geq 3$ tareas; en
+instancias con rutas cortas (gdb/kshs) falla con frecuencia y dispara el
+bucle de reintento del Algoritmo~\ref{alg:generar-vecino}.
+\end{table}
+
+Con un presupuesto fijo de $B$ propuestas, repartirlo entre cinco
+operadores productivos en lugar de nueve (cuatro de bajo rendimiento)
+entrega \textbf{aproximadamente un 80\,\% más de propuestas a cada operador
+que efectivamente cierra gap}. Es intensificación dirigida: el mismo
+cómputo, mejor asignado. A esto se suma la reducción de fallos del bucle de
+reintento, que en instancias pequeñas desperdiciaba muestreo en operadores
+inaplicables.
+
+% ------------------------------------------------------------
+\subsection{Pilar 3: lógica de control operativo}
+\label{subsec:pilar-control}
+% ------------------------------------------------------------
+
+El flujo de búsqueda se gobierna mediante cuatro mecanismos de control
+complementarios, resumidos en la Tabla~\ref{tab:mecanismos-control}.
+
+\begin{table}[h]
+\centering
+\caption{Mecanismos de control operativo del flujo de búsqueda.}
+\label{tab:mecanismos-control}
+\small
+\begin{tabular}{lp{4.3cm}p{4.6cm}}
+\toprule
+Mecanismo & Rol & Disparador \\
+\midrule
+Selector inter/intra & Decide qué familia de operadores activar & Estado de factibilidad, \emph{cada iteración} \\
+Reheat (SA) & Recupera tolerancia a empeoramientos & \texttt{patience} niveles de $T$ sin mejora \\
+Patience & Umbral de tolerancia y de parada & Conteo de estancamiento \\
+Kick reactivo & Perturba para diversificar & $K$ iteraciones sin mejora global \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Selector inter/intra (control basado en el estado).}
+Descrito en la Sección~\ref{sec:selector}, decide \emph{en cada iteración}
+si el próximo vecino se genera con un operador intra o inter en función del
+estado actual de la solución. Si la solución \textbf{viola capacidad}, usa
+una probabilidad alta $\alpha_{\text{inter}}$ de elegir el grupo inter-ruta
+(reparación, pues los movimientos inter redistribuyen carga entre
+vehículos); si es \textbf{factible}, usa $p_{\text{inter}}$ (exploración
+moderada para escapar de mínimos locales intra-ruta). Consume exactamente
+un número aleatorio por iteración, lo que preserva la reproducibilidad
+bit-a-bit. La variante estricta lo reemplaza por una decisión binaria
+determinista.
+
+\paragraph{Reheat y Patience (control de temperatura en SA).}
+Descritos en la Sección~\ref{sec:algoritmos-base}. Cuando la temperatura
+$T$ desciende demasiado, el SA se vuelve voraz y queda atrapado en un mínimo
+local. El \emph{reheat} reinicia $T$ a $\text{reheat\_factor} \cdot
+T_{\text{init}}$ cuando se acumulan \texttt{patience} niveles consecutivos
+sin mejora del mejor global, preservando siempre la mejor solución
+encontrada. \texttt{patience} es el umbral que dispara el recalentamiento;
+\texttt{max\_reheats\_sin\_mejora} es el freno que aborta la búsqueda si se
+agota la zona explorable.
+
+\paragraph{Kick reactivo (diversificación tras estancamiento).}
+Mecanismo distinto del anterior, aplicable a las cinco MH. Cuando se
+acumulan $K$ iteraciones sin mejora del mejor global
+(\texttt{max\_iter\_sin\_mejora\_kick}), se inyecta una ráfaga de
+movimientos inter-ruta que fuerza diversificación. En la configuración
+estándar $K=30$ (SA: $5$) con \texttt{max\_resets}$=10$; en la
+configuración de presupuesto extendido $K=300$ (SA: $20$) sin tope de
+resets.
+
+% ------------------------------------------------------------
+\subsection{Pilar 4: análisis de costos validados}
+\label{subsec:pilar-costos}
+% ------------------------------------------------------------
+
+La Tabla~\ref{tab:optimizacion-recursos} consolida el balance
+recurso/calidad de las tres configuraciones principales bajo el evaluador
+greedy, tomando SA (la MH dominante) como referencia. Complementa las
+Tablas~\ref{tab:re-greedy-gap} y~\ref{tab:tiempo-medio} con una vista
+unificada de la optimización.
+
+\begin{table}[h]
+\centering
+\caption{Optimización de recursos: baseline (R1) frente a las
+         configuraciones optimizadas (R3, R5). Evaluador greedy.}
+\label{tab:optimizacion-recursos}
+\small
+\begin{tabular}{lrrrl}
+\toprule
+Recurso & R1 Strict & R3 +PR & R5 +Budget & Lectura \\
+\midrule
+Gap medio (5 MH)        & 14.84\% & 5.27\%  & \textbf{3.08\%} & calidad $\uparrow$ \\
+Gap medio SA            & 15.11\% & 0.90\%  & \textbf{0.57\%} & calidad $\uparrow\uparrow$ \\
+Tiempo medio SA         & 28.1\,s & 40.6\,s & 260.5\,s & $+12$\,s (R3) vs $\times 9$ (R5) \\
+Corridas en BKS (todas) & 6       & 169     & \textbf{269} & $+2717\%$ (R3) \\
+Instancias con BKS      & 4/23    & \textbf{23/23} & 22/23 & cobertura total con PR \\
+Factibilidad            & $\approx 99$--$100\%$ & 100\% & 100\% & garantizada \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Conclusión de costos.}
+El mejor balance recurso/calidad es \textbf{R3} (cinco operadores más Path
+Relinking): reduce el gap de SA de 15.11\,\% a \textbf{0.90\,\%} con apenas
+$+12$\,s y alcanza el BKS en las 23 instancias del benchmark.
+\textbf{R5} (presupuesto $\times 25$) exprime 0.33\,pp adicionales
+(0.57\,\%) pero a un costo de $\times 9$ en tiempo, por lo que se reserva
+para escenarios sin restricción temporal. En conjunto, la poda a cinco
+operadores \emph{no penalizó la calidad}: el sistema reducido alcanza el
+óptimo global en todo el benchmark cuando se combina con Path Relinking, lo
+que cierra la validación de integridad iniciada en el
+Pilar~\ref{subsec:pilar-poda}.
 
 % =====================================================================
 \section{Conclusiones del capítulo}
