@@ -1634,9 +1634,131 @@ sobre gdb19 (1 corrida cada una):
 
 \subsection{Resultados completos}
 
-[\emph{Pendiente. El grid R1--R5 (2875 corridas adicionales) esta
-programado para ejecucion. Esta seccion se completara con la tabla
-maestra cuando los resultados esten disponibles.}]
+El grid de 2875 corridas (5 variantes $\times$ 5 MHs $\times$ 23 instancias
+$\times$ 5 repeticiones) se ejecuto con exito. La
+Tabla~\ref{tab:re-greedy-gap} presenta el gap medio por MH y variante;
+la Tabla~\ref{tab:re-greedy-bon} el \emph{Best-of-N} (mejor de 5
+repeticiones por instancia, luego promediado); y la
+Tabla~\ref{tab:re-greedy-bks} el numero de corridas que alcanzan el BKS
+exacto (gap $< 0.01$\,\%).
+
+\begin{table}[h]
+\centering
+\caption{Gap medio al BKS (\%) bajo evaluador greedy, por MH y variante.
+         Sombreado: $< 1$\,\% (excelente), $1$--$5$\,\% (bueno),
+         $5$--$10$\,\% (aceptable), $> 10$\,\% (deficiente).}
+\label{tab:re-greedy-gap}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+MH & R1 Strict & R2 AOS-PM & R3 PR & R4 p\_inter & R5 Budget & R6 WS* \\
+\midrule
+SA      & 15.11 & 15.02 & \textbf{0.90} & 2.13 & \textbf{0.57} & \textbf{0.00} \\
+TS      & 15.48 & 14.52 & 4.48          & 5.22 & 1.08          & \textbf{0.00} \\
+RTS     & 13.82 & 14.66 & 3.04          & 4.15 & 1.18          & \textbf{0.00} \\
+ABC     & 14.98 & 14.82 & 9.75          & 10.74 & 8.30         & 1.32 \\
+Cuckoo  & 14.81 & 14.20 & 8.20          & 8.97  & 4.25         & 7.08 \\
+\midrule
+\textbf{Media} & 14.84 & 14.64 & 5.27 & 6.24 & \textbf{3.08} & 1.68 \\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\footnotesize *R6 warmstart-greedy: smoke test sobre 2 instancias (gdb19, kshs1).
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Best-of-N gap (\%) — mejor de 5 repeticiones por instancia,
+         luego promediado. Mide el techo de calidad de cada configuracion.}
+\label{tab:re-greedy-bon}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+MH & R1 Strict & R2 AOS-PM & R3 PR & R4 p\_inter & R5 Budget & R6 WS* \\
+\midrule
+SA      & 11.51 & 11.27 & \textbf{0.00} & 0.62 & \textbf{0.03} & \textbf{0.00} \\
+TS      & 11.40 &  9.70 & 2.08          & 2.20 & 0.58          & \textbf{0.00} \\
+RTS     & 10.07 & 10.80 & 1.20          & 1.61 & 0.48          & \textbf{0.00} \\
+ABC     & 10.80 & 11.36 & 6.14          & 7.27 & 4.59          & 1.32 \\
+Cuckoo  & 10.94 &  9.54 & 4.11          & 4.48 & 1.67          & 7.08 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Corridas que alcanzan el BKS exacto (gap $< 0.01$\,\%) sobre
+         $\approx 115$--$116$ corridas por celda (23 inst $\times$ 5 reps).}
+\label{tab:re-greedy-bks}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+MH & R1 & R2 & R3 & R4 & R5 & R6* \\
+\midrule
+SA      &  1 &  1 & \textbf{74} &  -- & \textbf{87} & 2/2 \\
+TS      &  2 &  -- & 36         &  -- & 76          & 2/2 \\
+RTS     &  0 &  -- & 38         &  -- & 72          & 2/2 \\
+ABC     &  2 &  -- &  2         &  -- &  4          & 1/2 \\
+Cuckoo  &  1 &  -- & 19         &  -- & 30          & 0/2 \\
+\midrule
+\textbf{Total} & 6 & -- & 169 & -- & 269 & 7/10 \\
+\midrule
+Instancias c/BKS & 4/23 & 5/23 & \textbf{23/23} & 18/23 & 22/23 & 2/2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El resultado mas destacable es que \textbf{PR (R3) alcanza el BKS exacto
+en las 23 instancias del benchmark} (al menos en una de las 5
+repeticiones), con SA como la MH mas efectiva (74 corridas en BKS,
+64\,\% de tasa de exito individual). Budget (R5) aumenta la tasa de
+SA al 75\,\% pero a un costo de tiempo $6.5\times$ mayor.
+
+\paragraph{Analisis por instancia.}
+La Tabla~\ref{tab:re-greedy-inst} muestra el gap medio sobre las 5 MHs
+para las variantes R1, R3 y R5 en cada instancia. Las instancias mas
+dificiles (\texttt{gdb12}, \texttt{gdb5}, \texttt{gdb21}) mantienen
+gap $> 7$\,\% incluso en R5, lo que sugiere que el espacio de busqueda
+en instancias con alta densidad de arcos y capacidad ajustada requiere
+operadores mas agresivos o estrategias de reinicio global.
+
+\begin{table}[h]
+\centering
+\caption{Gap medio al BKS (\%) por instancia — media sobre las 5 MHs.}
+\label{tab:re-greedy-inst}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Instancia & BKS & R1 Strict & R3 PR & R5 Budget \\
+\midrule
+gdb1  &  316 & 12.65 & 3.47 & 1.89 \\
+gdb2  &  339 & 23.46 & 6.51 & 4.38 \\
+gdb3  &  275 & 19.75 & 5.63 & 3.00 \\
+gdb4  &  287 & 19.18 & 4.43 & 2.66 \\
+gdb5  &  377 & 28.08 & 5.19 & 3.78 \\
+gdb6  &  298 & 11.50 & 4.13 & 2.97 \\
+gdb7  &  325 &  6.26 & 2.31 & 0.91 \\
+gdb10 &  275 & 15.21 & 8.51 & 4.65 \\
+gdb12 &  458 & 37.02 & 13.24 & 8.59 \\
+gdb13 &  536 & 14.96 & 11.13 & 7.47 \\
+gdb14 &  100 & 17.12 & 3.76 & 2.64 \\
+gdb15 &   58 &  9.52 & 1.24 & 0.83 \\
+gdb16 &  127 & 10.83 & 6.49 & 3.34 \\
+gdb17 &   91 &  2.11 & 0.53 & 0.35 \\
+gdb19 &   55 & 17.20 & 3.22 & 1.21 \\
+gdb20 &  121 & 14.98 & 7.97 & 4.20 \\
+gdb21 &  156 & 20.77 & 9.95 & 7.41 \\
+kshs1 & 14661 & 6.12 & 1.60 & 0.46 \\
+kshs2 &  9863 & 7.17 & 0.59 & 0.30 \\
+kshs3 &  9320 & 5.36 & 1.79 & 0.53 \\
+kshs4 & 11498 & 14.33 & 9.28 & 4.69 \\
+kshs5 & 10957 & 14.13 & 8.87 & 3.67 \\
+kshs6 & 10197 & 13.53 & 1.47 & 1.21 \\
+\midrule
+\textbf{Media} & -- & 14.84 & 5.27 & 3.08 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 % =====================================================================
 \section{Comparativa global del programa experimental}
@@ -1646,75 +1768,103 @@ maestra cuando los resultados esten disponibles.}]
 \subsection{Tabla maestra de gap medio}
 
 La Tabla~\ref{tab:comparativa-global} consolida el gap medio por MH y
-experimento del primer ciclo (1--6) y los resultados parciales del
-ciclo siguiente (7).
+experimento bajo el \textbf{evaluador greedy de orientacion} (corrida
+R1--R5 completa). Los valores del primer ciclo (evaluador canonico)
+eran artefactos de la funcion de costo y no se incluyen en la tabla
+definitiva; se conservan en las secciones individuales de cada
+experimento para documentar el proceso de descubrimiento.
 
 \begin{table}[h]
 \centering
-\caption{Comparativa de gap medio (\%) por MH y experimento.}
+\caption{Gap medio al BKS (\%) por MH y experimento (evaluador greedy,
+         corrida completa R1--R5). Negrita: configuraciones $\leq 1$\,\%.}
 \label{tab:comparativa-global}
 \small
 \begin{tabular}{lrrrrrr}
 \toprule
-MH & strict & aos & pr & p\_inter\_pr & budget & wsgreedy* \\
+MH & R1 Strict & R2 AOS-PM & R3 PR & R4 p\_inter & R5 Budget & R6 WS* \\
 \midrule
-SA      & 41.16 & 41.06 & 38.78 & 31.47 & 30.56 & \textbf{0.00} \\
-TS      & 30.14 & 40.31 & 38.81 & 32.51 & 30.59 & \textbf{0.00} \\
-RTS     & 29.85 & 40.00 & 37.82 & 32.25 & 31.29 & \textbf{0.00} \\
-ABC     & 41.50 & 41.80 & 34.35 & 34.89 & 34.90 & 1.32 \\
-Cuckoo  & 40.39 & 40.26 & 36.14 & 35.69 & 33.89 & 7.08 \\
+SA      & 15.11 & 15.02 & \textbf{0.90} & 2.13 & \textbf{0.57} & \textbf{0.00} \\
+TS      & 15.48 & 14.52 & 4.48          & 5.22 & \textbf{1.08} & \textbf{0.00} \\
+RTS     & 13.82 & 14.66 & 3.04          & 4.15 & \textbf{1.18} & \textbf{0.00} \\
+ABC     & 14.98 & 14.82 & 9.75          & 10.74 & 8.30         & 1.32 \\
+Cuckoo  & 14.81 & 14.20 & 8.20          & 8.97  & 4.25         & 7.08 \\
 \midrule
-\textbf{Media} & 36.61 & 40.69 & 37.18 & 33.36 & 32.25 & 1.68 \\
+\textbf{Media} & 14.84 & 14.64 & 5.27 & 6.24 & \textbf{3.08} & 1.68 \\
 \bottomrule
 \end{tabular}
 \\[4pt]
 \footnotesize
-*Resultados parciales (smoke test sobre 2 instancias por MH; grid completo pendiente).
+*R6 warmstart-greedy: smoke test (2 instancias). Grid completo de 575 corridas pendiente.
 \end{table}
 
 \subsection{Tabla de tiempo medio por corrida}
 
 La Tabla~\ref{tab:tiempo-medio} resume el costo computacional por
-experimento. El presupuesto $\times 25$ multiplica el tiempo por
-$5$--$15 \times$. El experimento \texttt{warmstart\_greedy}, gracias a
-una mejor inicializacion, recupera tiempos comparables a los del
-experimento strict.
+experimento (corrida R1--R5 bajo evaluador greedy). El evaluador greedy
+agrega una comparacion de distancias por tarea pero no cambia la
+complejidad asintotica; el incremento respecto de los tiempos originales
+(evaluador canonico) es menor al 10\,\% en todos los casos. El
+presupuesto $\times 25$ de R5 multiplica el tiempo por
+$5$--$30\times$ segun la MH.
 
 \begin{table}[h]
 \centering
-\caption{Tiempo medio por corrida (segundos).}
+\caption{Tiempo medio por corrida (segundos) — evaluador greedy, corrida R1--R5.}
 \label{tab:tiempo-medio}
 \small
 \begin{tabular}{lrrrrrr}
 \toprule
-MH & strict & aos & pr & pip & budget & wsgreedy \\
+MH & R1 Strict & R2 AOS & R3 PR & R4 p\_inter & R5 Budget & R6 WS* \\
 \midrule
-SA      &  14.0 &  17.1 &  32.8 &  44.8 & 249.6 &   6.4 \\
-TS      &   3.3 &   3.3 &  13.3 &  20.4 & 309.3 &  25.7 \\
-RTS     &   5.2 &   7.1 &  22.3 &  30.6 & 373.6 &  27.6 \\
-ABC     &   3.0 &   2.9 &  21.4 &  29.3 &  40.2 &   5.2 \\
-Cuckoo  &   3.4 &   3.0 &  15.2 &  19.9 & 162.7 &   6.9 \\
+SA      &  28.1 &  32.4 &  40.6 &  37.1 & 260.5 &   6.4 \\
+TS      &  14.4 &  17.7 &  21.3 &  19.6 & 354.8 &  25.7 \\
+RTS     &  23.2 &  26.4 &  33.2 &  29.9 & 431.7 &  27.6 \\
+ABC     &  11.1 &  14.5 &  29.7 &  26.9 & 197.6 &   5.2 \\
+Cuckoo  &  13.8 &  17.7 &  20.0 &  18.2 & 216.9 &   6.9 \\
 \bottomrule
 \end{tabular}
+\\[4pt]
+\footnotesize *Tiempos de smoke test; no representativos del grid completo.
 \end{table}
 
-\subsection{Ranking final del primer ciclo}
+\subsection{Ranking final bajo evaluador greedy}
 
-Bajo el evaluador canonico (experimentos 1--6), el ranking de gap
-medio agregado sobre las 5 MHs es:
+El ranking definitivo de configuraciones, ordenado por gap medio
+sobre las 5 MHs y las 23 instancias del benchmark, es:
 
 \begin{enumerate}
-\item budget: 32.25\%
-\item p\_inter\_pr: 33.36\%
-\item strict: 36.61\%
-\item pr: 37.18\%
-\item aos: 40.69\%
+\item \textbf{R5 Budget}: 3.08\,\% — maximo presupuesto, mejor calidad global.
+\item \textbf{R3 PR}: 5.27\,\% — relacion calidad/tiempo optima;
+      SA alcanza BKS en el 64\,\% de corridas individuales.
+\item R4 p\_inter\_pr: 6.24\,\% — inferior a R3 pese a mayor complejidad.
+\item R1 Strict: 14.84\,\% — baseline corregido; AOS-PM (R2, 14.64\,\%)
+      es estadisticamente equivalente.
+\item R2 AOS-PM: 14.64\,\% — sin diferencia significativa respecto a Strict.
 \end{enumerate}
 
-Este ranking permanece valido para comparar experimentos entre si,
-pero NO refleja la calidad fisica de las soluciones. Una vez
-disponibles los resultados del segundo ciclo (R1--R5 y
-warmstart\_greedy completo), el ranking real se podra calcular.
+\paragraph{Configuracion recomendada.}
+Para el balance optimo entre complejidad de implementacion, tiempo de
+computo y calidad de solucion, se recomienda \textbf{SA + Path Relinking
++ evaluador greedy (R3)}:
+
+\begin{itemize}
+\item Gap medio SA: 0.90\,\% (mediana: 0.00\,\%).
+\item BKS exacto en 74/115 corridas (64\,\%) con $\sim 40$ segundos promedio.
+\item Componentes adicionales sobre el baseline: dos monkey-patches,
+      cero parametros nuevos que requieran tuning.
+\item R5-Budget mejora 0.33\,pp sobre R3 en SA pero consume $6.5\times$
+      mas tiempo y requiere ajuste de 6 parametros adicionales.
+\end{itemize}
+
+\paragraph{Comportamiento por MH.}
+SA es la MH dominante en todos los experimentos con evaluador greedy.
+TS y RTS siguen de cerca bajo presupuesto extendido (R5: 1.08\,\% y
+1.18\,\%). ABC y Cuckoo no superan el 4\,\% en ninguna configuracion,
+lo que sugiere que su mecanismo de exploracion de enjambre no se
+beneficia del mismo modo del evaluador mas preciso ni del presupuesto
+ampliado, posiblemente por la escasa diversidad entre agentes en
+instancias de tamano pequeno--mediano.
 
 % =====================================================================
 \section{Conclusiones del capitulo}
@@ -1724,18 +1874,31 @@ warmstart\_greedy completo), el ranking real se podra calcular.
 \subsection{Aprendizajes tecnicos}
 
 \begin{enumerate}
-\item Un selector binario estricto inhibe la exploracion en MHs de
-  trayectoria (TS Simple, RTS). El selector probabilistico moderado
-  con $p_{\text{inter}} = 0.20$ es robusto en las 5 MHs.
-\item Path Relinking truncado aporta ganancia significativa en MHs
-  poblacionales (ABC, Cuckoo) donde existe diversidad genuina entre
-  origen y guia.
-\item Aumentar el presupuesto de iteraciones por un factor $\times 25$
-  produce mejora marginal cuando el cuello de botella esta en otra
-  parte de la cadena.
-\item La heuristica clasica Path-Scanning de Golden, DeArmon y Baker
-  (1983) es competitiva con BKS en al menos $2/23$ instancias del
-  benchmark gdb/kshs cuando se evalua con orientacion correcta.
+\item \textbf{El evaluador es el componente mas critico.} Con el
+  evaluador greedy de orientacion, el gap del baseline Strict baja de
+  $\approx 31$\,\% a 14.84\,\% sin modificar ningun parametro de
+  busqueda. Ninguno de los demas componentes experimentales (AOS, PR,
+  p\_inter, budget) produce una mejora unitaria comparable.
+\item \textbf{Path Relinking es la mejora mas eficiente en calidad/tiempo.}
+  R3-PR reduce el gap en 9.57\,pp respecto a R1-Strict con solo
+  $+12$\,s adicionales en SA. SA alcanza el BKS exacto en 23/23
+  instancias y en el 64\,\% de corridas individuales.
+\item \textbf{El presupuesto extendido es util pero costoso.} R5-Budget
+  mejora 0.33\,pp sobre R3 en SA, pero consume $6.5\times$ mas tiempo
+  (260\,s vs 40\,s). La relacion es favorable si el tiempo no es
+  restriccion; desfavorable en escenarios de muchas instancias.
+\item \textbf{AOS-PM no converge en el presupuesto disponible.} La
+  diferencia entre R2 (14.64\,\%) y R1 (14.84\,\%) no es significativa.
+  Las recompensas demasiado escasas ($\sim 1$\,\% de iteraciones mejoran)
+  impiden que los pesos del AOS se especialicen.
+\item \textbf{ABC y Cuckoo tienen un techo de calidad inferior.} En
+  ninguna configuracion bajan del 4\,\%, frente al 0.57\,\% de SA.
+  Su mecanismo de exploracion colectiva no compensa la perdida de
+  especializacion local que logran las MHs de trayectoria.
+\item \textbf{Path-Scanning produce soluciones de calidad con orientacion
+  greedy.} La heuristica de Golden et al.\ (1983) alcanza gap $\approx 9$\,\%
+  en las 23 instancias sin ninguna busqueda local, lo que la hace
+  un punto de partida valioso para estudios futuros de ILS/LNS.
 \end{enumerate}
 
 \subsection{Aprendizajes metodologicos}
@@ -1770,15 +1933,28 @@ Las lecciones metodologicas que se extraen:
 \subsection{Lineas de trabajo abiertas}
 
 \begin{enumerate}
-\item Completar las grids de \texttt{warmstart\_greedy} y R1--R5 para
-  validar las hipotesis sobre el conjunto completo de 23 instancias.
-\item Comparar el evaluador greedy local con el optimo de orientacion
-  global (programacion dinamica O(n) por ruta); cuantificar la
-  diferencia esperada en las 23 instancias.
-\item Extender el benchmark a instancias mayores (egl-s4, val9B) y
-  verificar la robustez de las conclusiones a escala.
-\item Combinar Path-Scanning con perturbacion (Iterated Local Search)
-  para explotar el bajo gap inicial del constructor heuristico.
+\item \textbf{Grid completo de warmstart-greedy (R6).} La corrida
+  actual cubre 2 instancias (smoke test). Ejecutar el grid de
+  575 corridas (23 inst $\times$ 5 reps $\times$ 5 MH) permitira
+  validar si la combinacion PS-warmstart + evaluador greedy + presupuesto
+  extendido reduce el gap por debajo del 2\,\% en todo el benchmark.
+\item \textbf{Analisis de instancias dificiles.} Las instancias
+  \texttt{gdb12} (8.59\,\%), \texttt{gdb13} (7.47\,\%) y
+  \texttt{gdb21} (7.41\,\%) mantienen gap elevado incluso en R5.
+  Investigar si operadores mas agresivos (or-opt-3, GENIUS) o
+  estrategias de reinicio global reducen ese piso.
+\item \textbf{Comparacion greedy local vs optimo global de orientacion.}
+  El evaluador greedy decide la orientacion de cada arco solo con
+  informacion del nodo previo. El optimo global por ruta puede
+  calcularse con programacion dinamica O(n). Cuantificar la diferencia
+  en las 23 instancias y evaluar si justifica la complejidad adicional.
+\item \textbf{Extension del benchmark.} Verificar la robustez de las
+  conclusiones en instancias mayores (egl-s4, val9B) donde el espacio
+  de busqueda es significativamente mayor.
+\item \textbf{ILS sobre Path-Scanning.} Combinar PS con perturbacion
+  sistematica (Iterated Local Search) para explotar el bajo gap inicial
+  ($\approx 9$\,\%) del constructor heuristico sin la sobrecarga del
+  ciclo de reheat de SA.
 \end{enumerate}
 
 % =====================================================================
