@@ -1,3 +1,118 @@
+% =====================================================================
+% experimentos_full_combined_all.txt
+% ---------------------------------------------------------------------
+% Documento LaTeX COMPLETO y AUTONOMO del capitulo de Experimentacion.
+% Preambulo + capitulo expandido (figuras, generacion de vecinos,
+% pseudocodigos) + bibliografia EMBEBIDA (no requiere bibtex ni .bib).
+% Compilar:  pdflatex experimentos_full_combined_all.txt   (2 pasadas)
+% Requiere las imagenes PNG en figuras/ (o junto a este archivo).
+% =====================================================================
+% =====================================================================
+% Capitulo_Experimentos.tex
+% ---------------------------------------------------------------------
+% Capítulo de Experimentación para tesis MetaCARP.
+% Nivel: maestria, rigor completo. Narrativa cronológica, incluyendo
+% fracasos y descubrimientos metodológicos.
+% Compilable con pdflatex (>= 2 pases para resolver referencias).
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+% ----- Codificación e idioma -----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+
+% ----- Matemáticas -----
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\newtheorem{teorema}{Teorema}[section]
+\newtheorem{lema}[teorema]{Lema}
+\newtheorem{proposicion}[teorema]{Proposición}
+\theoremstyle{definition}
+\newtheorem{definicion}[teorema]{Definición}
+\newtheorem{ejemplo}[teorema]{Ejemplo}
+\theoremstyle{remark}
+\newtheorem{observacion}[teorema]{Observación}
+
+% ----- Tablas profesionales -----
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+
+% ----- Figuras -----
+\usepackage{graphicx}
+\graphicspath{{figuras/}{./}}     % busca las imagenes en docs/figuras/
+
+% ----- Pseudocódigo -----
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\algrenewcommand\algorithmicrequire{\textbf{Entradas:}}
+\algrenewcommand\algorithmicensure{\textbf{Devuelve:}}
+\algrenewcommand\algorithmicif{\textbf{si}}
+\algrenewcommand\algorithmicthen{\textbf{entonces}}
+\algrenewcommand\algorithmicelse{\textbf{si no}}
+\algrenewcommand\algorithmicend{\textbf{fin}}
+\algrenewcommand\algorithmicwhile{\textbf{mientras}}
+\algrenewcommand\algorithmicfor{\textbf{para}}
+\algrenewcommand\algorithmicdo{\textbf{hacer}}
+\algrenewcommand\algorithmicreturn{\textbf{devolver}}
+\algrenewcommand\algorithmicrepeat{\textbf{repetir}}
+\algrenewcommand\algorithmicuntil{\textbf{hasta}}
+
+% ----- Hipervinculos y color -----
+\usepackage{xcolor}
+\definecolor{verdebueno}{RGB}{0,128,0}
+\definecolor{rojomalo}{RGB}{200,0,0}
+\definecolor{azulneutro}{RGB}{0,60,140}
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% ----- Margenes y espacios -----
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+
+% ----- Cabeceras -----
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Capítulo de Experimentación --- MetaCARP}
+\fancyhead[R]{\thepage}
+
+% ----- Código en línea -----
+\usepackage{listings}
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    keywordstyle=\color{blue!70!black},
+    commentstyle=\color{gray!80!black},
+    stringstyle=\color{green!50!black},
+    showstringspaces=false,
+}
+
+% ----- Comandos -----
+\newcommand{\BKS}{\text{BKS}}
+\newcommand{\gap}{\text{gap}}
+\newcommand{\Q}{Q}
+\newcommand{\viol}{\text{viol}}
+\newcommand{\penal}{\text{pen}}
+
+% =====================================================================
+\title{\textbf{Capítulo X --- Experimentación}\\[6pt]
+\large Diseno, ejecución y análisis del programa experimental sobre el
+proyecto MetaCARP}
+\author{}
+\date{Mayo 2026}
+% =====================================================================
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% =====================================================================
 \section{Introducción del capítulo}
 % =====================================================================
 
@@ -2390,3 +2505,40 @@ en $u$ o terminar en $v$). La diferencia típica entre la versión
 greedy local y el óptimo global es menor al 5\% en instancias de
 tamano gdb/kshs; para benchmarks más grandes podría ser relevante
 considerarla.
+
+% =====================================================================
+% Bibliografia (embebida — version autonoma, no requiere bibtex ni .bib)
+% =====================================================================
+\begin{thebibliography}{99}
+
+\bibitem{battiti1994} R.~Battiti y G.~Tecchiolli. \newblock The reactive tabu search. \newblock \emph{ORSA Journal on Computing}, 6(2):126--140, 1994.
+
+\bibitem{fialho2008} {\'A}.~Fialho, L.~Da Costa, M.~Schoenauer y M.~Sebag. \newblock Extreme value based adaptive operator selection. \newblock En \emph{Parallel Problem Solving from Nature (PPSN X)}, LNCS 5199, pp.\ 175--184. Springer, 2008.
+
+\bibitem{gendreau1992} M.~Gendreau, A.~Hertz y G.~Laporte. \newblock New insertion and postoptimization procedures for the traveling salesman problem. \newblock \emph{Operations Research}, 40(6):1086--1094, 1992.
+
+\bibitem{glover1986} F.~Glover. \newblock Future paths for integer programming and links to artificial intelligence. \newblock \emph{Computers \& Operations Research}, 13(5):533--549, 1986.
+
+\bibitem{glover1997} F.~Glover y M.~Laguna. \newblock \emph{Tabu Search}. \newblock Kluwer Academic Publishers, Boston, 1997.
+
+\bibitem{glover2000} F.~Glover, M.~Laguna y R.~Mart{\'i}. \newblock Fundamentals of scatter search and path relinking. \newblock \emph{Control and Cybernetics}, 29(3):653--684, 2000.
+
+\bibitem{golden1981} B.~L. Golden y R.~T. Wong. \newblock Capacitated arc routing problems. \newblock \emph{Networks}, 11(3):305--315, 1981.
+
+\bibitem{golden1983} B.~L. Golden, J.~S. DeArmon y E.~K. Baker. \newblock Computational experiments with algorithms for a class of routing problems. \newblock \emph{Computers \& Operations Research}, 10(1):47--59, 1983.
+
+\bibitem{karaboga2005} D.~Karaboga. \newblock An idea based on honey bee swarm for numerical optimization. \newblock Reporte t{\'e}cnico TR06, Erciyes University, 2005.
+
+\bibitem{kirkpatrick1983} S.~Kirkpatrick, C.~D. Gelatt y M.~P. Vecchi. \newblock Optimization by simulated annealing. \newblock \emph{Science}, 220(4598):671--680, 1983.
+
+\bibitem{kiuchi1995} M.~Kiuchi, Y.~Shinano, R.~Hirabayashi y Y.~Saruwatari. \newblock An exact algorithm for the capacitated arc routing problem using parallel branch and bound method. \newblock En \emph{Abstracts of the 1995 Spring National Conference of the OR Society of Japan}, pp.\ 28--29, 1995.
+
+\bibitem{lourenco2003} H.~R. Louren{\c{c}}o, O.~C. Martin y T.~St{\"u}tzle. \newblock Iterated local search. \newblock En \emph{Handbook of Metaheuristics}, pp.\ 320--353. Springer, 2003.
+
+\bibitem{thierens2005} D.~Thierens. \newblock An adaptive pursuit strategy for allocating operator probabilities. \newblock En \emph{Proc.\ GECCO 2005}, pp.\ 1539--1546. ACM, 2005.
+
+\bibitem{yang2009} X.-S. Yang y S.~Deb. \newblock Cuckoo search via {L\'evy} flights. \newblock En \emph{World Congress on Nature \& Biologically Inspired Computing (NaBIC)}, pp.\ 210--214. IEEE, 2009.
+
+\end{thebibliography}
+
+\end{document}

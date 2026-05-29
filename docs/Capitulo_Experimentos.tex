@@ -1,29 +1,29 @@
 % =====================================================================
 % Capitulo_Experimentos.tex
 % ---------------------------------------------------------------------
-% Capitulo de Experimentacion para tesis MetaCARP.
-% Nivel: maestria, rigor completo. Narrativa cronologica, incluyendo
-% fracasos y descubrimientos metodologicos.
+% Capítulo de Experimentación para tesis MetaCARP.
+% Nivel: maestria, rigor completo. Narrativa cronológica, incluyendo
+% fracasos y descubrimientos metodológicos.
 % Compilable con pdflatex (>= 2 pases para resolver referencias).
 % =====================================================================
 \documentclass[11pt,a4paper]{article}
 
-% ----- Codificacion e idioma -----
+% ----- Codificación e idioma -----
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[spanish,es-nodecimaldot]{babel}
 
-% ----- Matematicas -----
+% ----- Matemáticas -----
 \usepackage{amsmath, amssymb, amsthm}
 \usepackage{mathtools}
 \newtheorem{teorema}{Teorema}[section]
 \newtheorem{lema}[teorema]{Lema}
-\newtheorem{proposicion}[teorema]{Proposicion}
+\newtheorem{proposicion}[teorema]{Proposición}
 \theoremstyle{definition}
-\newtheorem{definicion}[teorema]{Definicion}
+\newtheorem{definicion}[teorema]{Definición}
 \newtheorem{ejemplo}[teorema]{Ejemplo}
 \theoremstyle{remark}
-\newtheorem{observacion}[teorema]{Observacion}
+\newtheorem{observacion}[teorema]{Observación}
 
 % ----- Tablas profesionales -----
 \usepackage{booktabs}
@@ -32,7 +32,11 @@
 \usepackage{longtable}
 \usepackage{multirow}
 
-% ----- Pseudocodigo -----
+% ----- Figuras -----
+\usepackage{graphicx}
+\graphicspath{{figuras/}{./}}     % busca las imagenes en docs/figuras/
+
+% ----- Pseudocódigo -----
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \algrenewcommand\algorithmicrequire{\textbf{Entradas:}}
@@ -65,10 +69,10 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{Capitulo de Experimentacion --- MetaCARP}
+\fancyhead[L]{Capítulo de Experimentación --- MetaCARP}
 \fancyhead[R]{\thepage}
 
-% ----- Codigo en linea -----
+% ----- Código en línea -----
 \usepackage{listings}
 \lstset{
     basicstyle=\ttfamily\footnotesize,
@@ -87,8 +91,8 @@
 \newcommand{\penal}{\text{pen}}
 
 % =====================================================================
-\title{\textbf{Capitulo X --- Experimentacion}\\[6pt]
-\large Diseno, ejecucion y analisis del programa experimental sobre el
+\title{\textbf{Capítulo X --- Experimentación}\\[6pt]
+\large Diseno, ejecución y análisis del programa experimental sobre el
 proyecto MetaCARP}
 \author{}
 \date{Mayo 2026}
@@ -100,33 +104,33 @@ proyecto MetaCARP}
 \newpage
 
 % =====================================================================
-\section{Introduccion del capitulo}
+\section{Introducción del capítulo}
 % =====================================================================
 
-Este capitulo documenta el programa experimental construido sobre el
-proyecto \texttt{MetaCARP} para evaluar empiricamente la calidad de
-distintas estrategias de seleccion de operadores, mecanismos de
-intensificacion, esquemas de penalizacion de la infactibilidad y
-heuristicas de construccion inicial en el contexto del
+Este capítulo documenta el programa experimental construido sobre el
+proyecto \texttt{MetaCARP} para evaluar empíricamente la calidad de
+distintas estrategias de selección de operadores, mecanismos de
+intensificación, esquemas de penalización de la infactibilidad y
+heurísticas de construcción inicial en el contexto del
 \emph{Capacitated Arc Routing Problem} (CARP). El programa se
 desarrollo durante el mes de mayo de 2026 y comprende siete
 experimentos principales del grid completo $23\text{ instancias} \times
 5\text{ repeticiones} \times 5\text{ metaheuristicas}$ (\textbf{$575$
-corridas por experimento}), ademas de un conjunto de experimentos de
-control que se discuten en la Seccion~\ref{sec:re-greedy}.
+corridas por experimento}), además de un conjunto de experimentos de
+control que se discuten en la Sección~\ref{sec:re-greedy}.
 
-\subsection{Estructura del capitulo}
+\subsection{Estructura del capítulo}
 
-El capitulo sigue una organizacion \textbf{cronologica}, en el orden en
-que los experimentos se planearon y ejecutaron. Esta eleccion no es
-casual: cada experimento se origino como respuesta a una observacion
-puntual del experimento anterior. Mantener la narrativa cronologica
-permite reproducir el razonamiento que justifico cada hiperparametro,
+El capítulo sigue una organización \textbf{cronológica}, en el orden en
+que los experimentos se planearon y ejecutaron. Esta elección no es
+casual: cada experimento se origino como respuesta a una observación
+puntual del experimento anterior. Mantener la narrativa cronológica
+permite reproducir el razonamiento que justifico cada hiperparámetro,
 cada cambio de selector y cada mecanismo nuevo. En particular, la
-narrativa cronologica es la unica forma honesta de presentar el
-hallazgo metodologico mas importante del trabajo, que se documenta en
-la Seccion~\ref{sec:evaluador-canonico}: la deteccion de un artefacto
-en el evaluador de costo de las metaheuristicas que inflaba
+narrativa cronológica es la única forma honesta de presentar el
+hallazgo metodológico más importante del trabajo, que se documenta en
+la Sección~\ref{sec:evaluador-canonico}: la detección de un artefacto
+en el evaluador de costo de las metaheurísticas que inflaba
 artificialmente todos los \emph{gap} reportados.
 
 Las secciones se organizan como sigue:
@@ -136,56 +140,56 @@ Las secciones se organizan como sigue:
   describen el marco experimental: instancias, metricas,
   infraestructura, los cinco algoritmos base (SA, TS Simple, RTS, ABC,
   Cuckoo) y los operadores de vecindad.
-\item La Seccion~\ref{sec:arquitectura-software} documenta la
-  \emph{arquitectura de monkey-patching por capas}, una decision
-  metodologica que permitio incrementar componentes sin tocar el
-  codigo base de las metaheuristicas.
+\item La Sección~\ref{sec:arquitectura-software} documenta la
+  \emph{arquitectura de monkey-patching por capas}, una decisión
+  metodológica que permitió incrementar componentes sin tocar el
+  código base de las metaheurísticas.
 \item Las Secciones~\ref{sec:exp-strict}--\ref{sec:exp-budget}
   presentan los seis experimentos del primer ciclo, en orden
-  cronologico: \texttt{strict\_intra\_inter},
+  cronológico: \texttt{strict\_intra\_inter},
   \texttt{lambda\_grid}, \texttt{aos\_pm}, \texttt{path\_relinking},
   \texttt{p\_inter\_pr} y \texttt{budget}.
-\item La Seccion~\ref{sec:evaluador-canonico} expone el hallazgo
-  critico: el evaluador canonico de las metaheuristicas forzaba
-  orientacion fija $u \to v$ en cada arco, lo que producia
+\item La Sección~\ref{sec:evaluador-canonico} expone el hallazgo
+  crítico: el evaluador canónico de las metaheurísticas forzaba
+  orientación fija $u \to v$ en cada arco, lo que producia
   mediciones de costo fisicamente incorrectas y por tanto \emph{gap}
   inflados en TODOS los experimentos previos.
-\item La Seccion~\ref{sec:warmstart-greedy} introduce los dos
-  componentes que cierran el gap: Path-Scanning como heuristica
-  constructiva inicial y el evaluador con orientacion greedy.
-\item La Seccion~\ref{sec:re-greedy} presenta los experimentos de
+\item La Sección~\ref{sec:warmstart-greedy} introduce los dos
+  componentes que cierran el gap: Path-Scanning como heurística
+  constructiva inicial y el evaluador con orientación greedy.
+\item La Sección~\ref{sec:re-greedy} presenta los experimentos de
   control disenados para aislar el efecto del evaluador.
-\item La Seccion~\ref{sec:conclusiones} consolida los hallazgos
-  metodologicos y tecnicos del programa experimental.
+\item La Sección~\ref{sec:conclusiones} consolida los hallazgos
+  metodológicos y técnicos del programa experimental.
 \end{itemize}
 
-\subsection{Aprendizajes que el capitulo busca documentar}
+\subsection{Aprendizajes que el capítulo busca documentar}
 
 Los siguientes aprendizajes son el resultado neto del programa
-experimental. Cada uno se justifica empiricamente en la seccion
+experimental. Cada uno se justifica empíricamente en la sección
 correspondiente.
 
 \begin{enumerate}
 \item El \textbf{selector binario estricto} (factible $\to$ intra,
-  infactible $\to$ inter) inhibe la exploracion: las metaheuristicas
+  infactible $\to$ inter) inhibe la exploración: las metaheurísticas
   basadas en trayectoria (TS Simple, RTS) terminan con tasas de
   factibilidad final del 0--10\%.
-\item Un \textbf{selector probabilistico moderado} ($p_{\text{inter}}
+\item Un \textbf{selector probabilístico moderado} ($p_{\text{inter}}
   = 0.20$ en estado factible) supera al binario estricto y a un
   selector adaptativo de tipo Probability Matching en las cinco MHs.
 \item \textbf{Path Relinking truncado} contribuye especialmente en
-  metaheuristicas basadas en poblacion (ABC, Cuckoo), donde la
-  poblacion provee guias diversas; en metaheuristicas de trayectoria
-  la contribucion es marginal o nula.
+  metaheurísticas basadas en población (ABC, Cuckoo), donde la
+  población provee guías diversas; en metaheurísticas de trayectoria
+  la contribución es marginal o nula.
 \item \textbf{Aumentar el presupuesto computacional} en un factor
   $\times25$ produce ganancias marginales (0--2\,pp); el cuello de
-  botella en el regimen estudiado NO es el numero de iteraciones.
+  botella en el régimen estudiado NO es el número de iteraciones.
 \item El verdadero cuello de botella fue un \textbf{artefacto en el
-  evaluador}: la forzar orientacion canonica $u \to v$ por tarea
-  inflaba el costo de cualquier solucion entre 10 y 50\,pp.
-\item Una \textbf{construccion inicial heuristica} (Path-Scanning
-  clasico de Golden, DeArmon y Baker~\cite{golden1983}) combinada con la
-  correccion del evaluador permite alcanzar el BKS exacto en multiples
+  evaluador}: la forzar orientación canónica $u \to v$ por tarea
+  inflaba el costo de cualquier solución entre 10 y 50\,pp.
+\item Una \textbf{construcción inicial heurística} (Path-Scanning
+  clásico de Golden, DeArmon y Baker~\cite{golden1983}) combinada con la
+  corrección del evaluador permite alcanzar el BKS exacto en múltiples
   instancias del benchmark.
 \end{enumerate}
 
@@ -200,7 +204,7 @@ correspondiente.
 Las pruebas se realizaron sobre \textbf{23 instancias} de los
 benchmarks GDB~\cite{golden1983} y KSHS~\cite{kiuchi1995}, ampliamente
 utilizados en la literatura de CARP~\cite{golden1981}. La
-Tabla~\ref{tab:instancias} resume sus caracteristicas.
+Tabla~\ref{tab:instancias} resume sus características.
 
 \begin{table}[h]
 \centering
@@ -238,15 +242,15 @@ kshs6 & 9  & 15 & 3 & 100 & 10197 \\
 \end{tabular}
 \end{table}
 
-En la tabla, $|V|$ es el numero de vertices, $|E_R|$ el numero de aristas
-requeridas (las tareas), $|V|$eh el numero de vehiculos disponibles, $Q$
-la capacidad de cada vehiculo y BKS (\emph{Best Known Solution}) el
+En la tabla, $|V|$ es el número de vertices, $|E_R|$ el número de aristas
+requeridas (las tareas), $|V|$eh el número de vehículos disponibles, $Q$
+la capacidad de cada vehículo y BKS (\emph{Best Known Solution}) el
 mejor valor conocido en la literatura para esa instancia. Estas
 instancias representan un rango amplio de tamanos y proporciones
 $|E_R|/|V|$, lo que permite observar comportamientos diferenciados de
-las metaheuristicas.
+las metaheurísticas.
 
-\subsection{Metrica de evaluacion}
+\subsection{Metrica de evaluación}
 \label{sec:metrica}
 
 La metrica principal es el \emph{gap relativo al BKS}:
@@ -256,23 +260,23 @@ La metrica principal es el \emph{gap relativo al BKS}:
 \label{eq:gap}
 \end{equation}
 
-donde $c(s)$ es el costo total de la solucion $s$ entregada por la
-metaheuristica y BKS es el mejor valor conocido. Un gap del 0\%
+donde $c(s)$ es el costo total de la solución $s$ entregada por la
+metaheurística y BKS es el mejor valor conocido. Un gap del 0\%
 significa que se igualo el BKS. Cuando se reporta el gap de un
-experimento, sin mas calificadores, se entiende como la media
+experimento, sin más calificadores, se entiende como la media
 aritmetica del gap sobre las 23 instancias y las 5 repeticiones
 ejecutadas.
 
-Cuando se busca aislar la calidad maxima alcanzable se reporta el
-\emph{best-of-N}: el minimo del gap entre las $N$ repeticiones de cada
+Cuando se busca aislar la calidad máxima alcanzable se reporta el
+\emph{best-of-N}: el mínimo del gap entre las $N$ repeticiones de cada
 instancia, promediado sobre las 23 instancias. Esta es la metrica de
 referencia para concursos y rankings.
 
-\subsection{Funcion de costo penalizada}
+\subsection{Función de costo penalizada}
 \label{sec:costo-penalizado}
 
-Las metaheuristicas trabajan sobre el siguiente \emph{objetivo
-penalizado}, que combina el costo puro con un termino de violacion de
+Las metaheurísticas trabajan sobre el siguiente \emph{objetivo
+penalizado}, que combina el costo puro con un término de violación de
 capacidad:
 
 \begin{equation}
@@ -282,8 +286,8 @@ capacidad:
 
 donde $\viol(s) = \sum_{r \in s} \max(0, d(r) - Q)$ es el exceso total
 de demanda sobre la capacidad $Q$ sumado sobre todas las rutas $r$ de
-$s$, y $\lambda \ge 0$ es un factor de penalizacion que el experimento
-\texttt{lambda\_grid} (Seccion~\ref{sec:exp-lambda}) calibra.
+$s$, y $\lambda \ge 0$ es un factor de penalización que el experimento
+\texttt{lambda\_grid} (Sección~\ref{sec:exp-lambda}) calibra.
 
 El valor $\lambda$ por defecto, instance-aware, es
 
@@ -293,8 +297,8 @@ El valor $\lambda$ por defecto, instance-aware, es
 \end{equation}
 
 donde $D_{ij}$ son las entradas positivas de la matriz de distancias
-minimas de la instancia. Este valor escala con el tamano de la
-instancia y garantiza que la penalizacion sea ni dominante ni
+mínimas de la instancia. Este valor escala con el tamano de la
+instancia y garantiza que la penalización sea ni dominante ni
 inocua.
 
 \subsection{Infraestructura computacional}
@@ -302,10 +306,10 @@ inocua.
 
 Las corridas se ejecutaron en la siguiente plataforma:
 \begin{itemize}
-\item CPU: AMD Ryzen / Intel x86\_64 (segun nodo).
+\item CPU: AMD Ryzen / Intel x86\_64 (según nodo).
 \item Sistema: Linux con kernel 6.17.
 \item Python 3.12 con NumPy 1.26, NetworkX 3.4.
-\item GPU: deshabilitada explicitamente (\texttt{usar\_gpu=False}) en
+\item GPU: deshabilitada explícitamente (\texttt{usar\_gpu=False}) en
   todos los experimentos por incompatibilidad de \texttt{libnvrtc.so.12}.
 \item Paralelismo: \texttt{ProcessPoolExecutor} con un worker por
   corrida, tantos workers como nucleos disponibles.
@@ -316,79 +320,79 @@ Las corridas se ejecutaron en la siguiente plataforma:
 \subsection{Replicabilidad y semillas aleatorias}
 \label{sec:semillas}
 
-Las cinco metaheuristicas dependen de un generador \texttt{random.Random}
+Las cinco metaheurísticas dependen de un generador \texttt{random.Random}
 de Python. Todas las repeticiones invocan al wrapper con
-\texttt{semilla=None}, lo que delega la inicializacion a
+\texttt{semilla=None}, lo que delega la inicialización a
 \texttt{os.urandom} (entropia del sistema operativo). Cada una de las
 $575$ corridas por experimento utiliza por tanto una trayectoria
-estocastica \emph{independiente}, pero NO reproducible: el campo
+estocástica \emph{independiente}, pero NO reproducible: el campo
 \texttt{semilla} del CSV almacena \texttt{None}, no la semilla
 efectivamente sorteada por el SO.
 
 La ausencia de \texttt{numpy.random} o \texttt{cupy.random} en el
-codigo de las metaheuristicas garantiza que NO hay estado global
+código de las metaheurísticas garantiza que NO hay estado global
 contaminante entre repeticiones. Esto se verifico inspeccionando con
-\texttt{grep} todos los modulos del paquete \texttt{metacarp}.
+\texttt{grep} todos los módulos del paquete \texttt{metacarp}.
 
 % =====================================================================
 \section{Algoritmos base}
 \label{sec:algoritmos-base}
 % =====================================================================
 
-El programa experimental utiliza cinco metaheuristicas, divididas en dos
-familias: metaheuristicas de \emph{trayectoria} (operan sobre una unica
-solucion actual) y metaheuristicas \emph{poblacionales} (mantienen un
+El programa experimental utiliza cinco metaheurísticas, divididas en dos
+familias: metaheurísticas de \emph{trayectoria} (operan sobre una única
+solución actual) y metaheurísticas \emph{poblacionales} (mantienen un
 conjunto de soluciones simultaneamente).
 
 \subsection{Recocido Simulado (SA)}
 
-SA~\cite{kirkpatrick1983} es una metaheuristica de trayectoria que acepta
+SA~\cite{kirkpatrick1983} es una metaheurística de trayectoria que acepta
 movimientos deteriorantes con probabilidad $\exp(-\Delta/T)$, donde $T$ es la
-temperatura que decrece en cada nivel segun
+temperatura que decrece en cada nivel según
 $T_{k+1} = \alpha \cdot T_k$. El esquema implementado anade
 \emph{reheating} (cuando se acumulan \texttt{patience} niveles sin
 mejora, $T$ se reinicia a $\text{reheat\_factor} \cdot T_{\text{init}}$).
 
-\subsection{Busqueda Tabu Simple}
+\subsection{Búsqueda Tabú Simple}
 
-TS Simple~\cite{glover1986, glover1997} mantiene una lista \emph{tabu} de movimientos prohibidos
-durante un \texttt{tabu\_tenure} iteraciones. En cada iteracion explora
+TS Simple~\cite{glover1986, glover1997} mantiene una lista \emph{tabú} de movimientos prohibidos
+durante un \texttt{tabu\_tenure} iteraciones. En cada iteración explora
 un vecindario de tamano \texttt{tam\_vecindario} y elige el mejor vecino
-no tabu (o que cumpla la condicion de aspiracion: mejorar la mejor
-solucion global).
+no tabú (o que cumpla la condición de aspiración: mejorar la mejor
+solución global).
 
-\subsection{Busqueda Tabu Reactiva (RTS)}
+\subsection{Búsqueda Tabú Reactiva (RTS)}
 
 RTS~\cite{battiti1994} extiende TS Simple con dos mecanismos adicionales:
 (i) \emph{tenure adaptativo}: aumenta el \texttt{tabu\_tenure} cuando
-detecta ciclos, lo reduce cuando hay diversificacion;
-(ii) \emph{escape}: si una solucion se visita mas de
-\texttt{umbral\_repeticiones\_escape} veces, se aplica una perturbacion
+detecta ciclos, lo reduce cuando hay diversificación;
+(ii) \emph{escape}: si una solución se visita más de
+\texttt{umbral\_repeticiones\_escape} veces, se aplica una perturbación
 de \texttt{num\_movimientos\_escape} pasos aleatorios.
 
 \subsection{Colonia Artificial de Abejas (ABC)}
 
-ABC~\cite{karaboga2005} es una metaheuristica poblacional. Mantiene un conjunto de
+ABC~\cite{karaboga2005} es una metaheurística poblacional. Mantiene un conjunto de
 \texttt{num\_fuentes} soluciones (las \emph{fuentes de alimento}). En
 cada ciclo, cada abeja \emph{empleada} explora un vecino de su fuente;
 las abejas \emph{observadoras} eligen una fuente con probabilidad
 proporcional a su fitness y la perturban; cuando una fuente no mejora
 en \texttt{limite\_abandono} ciclos, se abandona y se sustituye por una
-solucion aleatoria nueva (\emph{scout}).
+solución aleatoria nueva (\emph{scout}).
 
 \subsection{Cuckoo Search}
 
 Cuckoo Search~\cite{yang2009} mantiene un conjunto de \texttt{num\_nidos} soluciones.
-En cada iteracion, cada nido genera un nuevo huevo aplicando un
+En cada iteración, cada nido genera un nuevo huevo aplicando un
 \emph{Levy flight} (\texttt{pasos\_levy\_base} pasos aleatorios con
-distribucion de cola pesada). El nuevo huevo reemplaza al nido si
-mejora la calidad. Una fraccion \texttt{pa\_abandono} de los peores
-nidos se abandonan al final de cada iteracion y se sustituyen.
+distribución de cola pesada). El nuevo huevo reemplaza al nido si
+mejora la calidad. Una fracción \texttt{pa\_abandono} de los peores
+nidos se abandonan al final de cada iteración y se sustituyen.
 
-Los pseudocodigos detallados de las cinco MHs se encuentran en el
+Los pseudocódigos detallados de las cinco MHs se encuentran en el
 directorio \texttt{pseudocodigos/} del repositorio del proyecto y son
-identicos a los presentados en el Reporte previo
-\emph{Seleccion de operadores y su efecto}; este capitulo se concentra
+idénticos a los presentados en el Reporte previo
+\emph{Selección de operadores y su efecto}; este capítulo se concentra
 en las decisiones experimentales que se construyeron \emph{encima} de
 estas implementaciones.
 
@@ -397,18 +401,18 @@ estas implementaciones.
 \label{sec:operadores}
 % =====================================================================
 
-CARP se modela sobre rutas: una solucion es una lista de rutas, donde
+CARP se modela sobre rutas: una solución es una lista de rutas, donde
 cada ruta es una secuencia de tareas servidas $(t_1, t_2, \dots, t_k)$.
 Los \emph{operadores de vecindad} producen perturbaciones locales.
 
 \subsection{Operadores intra-ruta}
 
-Modifican el orden de las tareas \emph{dentro de una unica ruta}; no
-cambian la asignacion de tareas a vehiculos, por lo que NUNCA introducen
-violaciones de capacidad. Tres operadores intra estan implementados:
+Modifican el orden de las tareas \emph{dentro de una única ruta}; no
+cambian la asignación de tareas a vehículos, por lo que NUNCA introducen
+violaciones de capacidad. Tres operadores intra están implementados:
 
 \begin{itemize}
-\item \texttt{relocate\_intra}: retira una tarea de una posicion y la
+\item \texttt{relocate\_intra}: retira una tarea de una posición y la
   inserta en otra dentro de la misma ruta.
 \item \texttt{swap\_intra}: intercambia dos tareas no consecutivas de
   la misma ruta.
@@ -420,7 +424,7 @@ violaciones de capacidad. Tres operadores intra estan implementados:
 
 Mueven tareas entre rutas distintas. Pueden cambiar las cargas de las
 rutas, por lo que SI pueden introducir o reparar violaciones de
-capacidad. Seis operadores inter estan implementados, de los cuales se
+capacidad. Seis operadores inter están implementados, de los cuales se
 usaron cinco como el conjunto \texttt{OPERADORES\_STRICT\_5} en los
 experimentos del programa:
 
@@ -429,7 +433,7 @@ experimentos del programa:
   inserta en otra. (\emph{No incluido en el conjunto STRICT\_5}.)
 \item \texttt{swap\_inter}: intercambia una tarea de la ruta $r_1$ con
   una de la ruta $r_2$.
-\item \texttt{2opt\_star}: dada una posicion $i$ en $r_1$ y $j$ en $r_2$,
+\item \texttt{2opt\_star}: dada una posición $i$ en $r_1$ y $j$ en $r_2$,
   reemplaza ambos sufijos por sus contrapartes cruzadas. (\emph{Incluido en STRICT\_5}.)
 \item \texttt{cross\_exchange}: intercambia dos segmentos entre dos rutas.
 \item \texttt{or\_opt\_2}: mueve un segmento de longitud 2 entre rutas.
@@ -440,59 +444,435 @@ El conjunto \texttt{OPERADORES\_STRICT\_5} usado en todos los
 experimentos del programa esta compuesto por
 $\{\texttt{relocate\_intra}, \texttt{swap\_intra},
 \texttt{swap\_inter}, \texttt{2opt\_star}, \texttt{cross\_exchange}\}$:
-dos intra y tres inter. Esta seleccion se fundamenta en analisis
-previos de tasa de mejora por operador (Seccion 12 del notebook del
-proyecto), no se repite aqui.
+dos intra y tres inter. Esta selección se fundamenta en análisis
+previos de tasa de mejora por operador (Sección 12 del notebook del
+proyecto), no se repite aquí.
 
 \subsection{Selector de grupo de operadores}
 \label{sec:selector}
 
-Cada iteracion de cualquier metaheuristica requiere decidir si el
-proximo vecino se generara con un operador intra o uno inter, y luego
+Cada iteración de cualquier metaheurística requiere decidir si el
+próximo vecino se generara con un operador intra o uno inter, y luego
 elegir el operador concreto dentro del grupo. El \emph{selector}
-gobierna esa primera decision.
+gobierna esa primera decisión.
 
 El selector original (\texttt{seleccionar\_grupo\_operadores\_inter\_intra}
-en \texttt{metacarp.metaheuristicas\_utils}) usa dos parametros:
+en \texttt{metacarp.metaheuristicas\_utils}) usa dos parámetros:
 
 \begin{itemize}
 \item $\alpha_{\text{inter}}$: probabilidad de elegir inter cuando la
-  solucion actual VIOLA capacidad.
+  solución actual VIOLA capacidad.
 \item $p_{\text{inter}}$: probabilidad de elegir inter cuando la
-  solucion actual es FACTIBLE.
+  solución actual es FACTIBLE.
 \end{itemize}
 
 El experimento \texttt{strict\_intra\_inter\_20260524} sustituye este
-selector probabilistico por uno binario estricto; el experimento
-\texttt{p\_inter\_pr\_20260528} regresa a uno probabilistico con
+selector probabilístico por uno binario estricto; el experimento
+\texttt{p\_inter\_pr\_20260528} regresa a uno probabilístico con
 $p_{\text{inter}} = 0.20$ moderado. Estas decisiones se justifican en
 sus respectivas secciones.
+
+La Sección~\ref{sec:generacion-vecinos} documenta en detalle la representación de las soluciones, el procedimiento maestro de generación, los diagramas de los nueve operadores y un ejemplo de uso completo.
+
+% =====================================================================
+\section{Generación de vecinos: representación y mecánica detallada}
+\label{sec:generacion-vecinos}
+% =====================================================================
+
+Esta sección documenta en profundidad el sistema de generación de vecinos
+del proyecto: la representación de una solución, el procedimiento maestro
+que invocan todas las metaheurísticas, el catálogo visual de los nueve
+operadores y un ejemplo de uso completo. El material reproduce y formaliza
+la documentación interna del módulo \texttt{metacarp.vecindarios}.
+
+% ------------------------------------------------------------
+\subsection{Concepto de vecindario}
+% ------------------------------------------------------------
+
+En optimización combinatoria, una \emph{solución vecina} es cualquier
+solución que se obtiene de la solución actual aplicando un cambio pequeño
+y bien definido. El conjunto de todos los vecinos posibles de una solución
+es su \emph{vecindario}. Las metaheurísticas de búsqueda local no exploran
+todo el espacio (exponencialmente grande), sino que navegan de solución en
+solución moviéndose por el vecindario en cada paso. La calidad del operador
+de vecindad determina directamente la velocidad de convergencia y la
+calidad de la solución final.
+
+Las cinco metaheurísticas del programa consumen el vecindario de forma
+diferente:
+
+\begin{itemize}
+\item \textbf{Recocido Simulado}: genera un vecino por iteración y lo acepta
+  siempre que mejore, o con probabilidad $\exp(-\Delta/T)$ si empeora.
+\item \textbf{Búsqueda Tabú}: genera un lote de \texttt{tam\_vecindario}
+  vecinos por iteración y elige el mejor no prohibido.
+\item \textbf{Colonia de Abejas}: cada abeja empleada y cada observadora
+  genera un vecino de su fuente de alimento.
+\item \textbf{Cuckoo Search}: cada huevo de cucú es un vecino perturbado
+  mediante un vuelo de Lévy discreto.
+\end{itemize}
+
+% ------------------------------------------------------------
+\subsection{Representación de una solución CARP}
+\label{subsec:repr-carp}
+% ------------------------------------------------------------
+
+Una solución del CARP es una \emph{lista de rutas}. En el paquete el tipo
+concreto es \texttt{list[list[str]]}:
+
+\begin{lstlisting}[language=Python]
+# Solucion con 2 rutas y 5 tareas en total
+solucion = [
+    ["D", "TR1", "TR3", "TR5", "D"],   # ruta 0: deposito -> TR1 -> TR3 -> TR5 -> deposito
+    ["D", "TR2", "TR4", "D"],          # ruta 1: deposito -> TR2 -> TR4 -> deposito
+]
+\end{lstlisting}
+
+Convenciones:
+
+\begin{itemize}
+\item \texttt{"D"} es el marcador de depósito (configurable). Aparece al
+  inicio y al final de cada ruta: el vehículo parte y regresa al depósito.
+\item \texttt{"TR<n>"} son las etiquetas de tareas requeridas (cada una
+  corresponde a un arco que debe recorrerse exactamente una vez).
+\end{itemize}
+
+El multiconjunto total de tareas se conserva tras cualquier operador:
+ningún vecino añade ni elimina tareas; solo cambia su orden o su
+distribución entre rutas.
+
+\paragraph{Normalización interna.}
+Antes de operar, el módulo elimina los marcadores \texttt{"D"} con
+\texttt{normalizar\_para\_vecindario}, dejando solo las etiquetas de tareas,
+y los restaura al devolver el vecino:
+\begin{lstlisting}[language=Python]
+# Entrada:  [["D","TR1","TR3","D"], ["D","TR2","D"]]
+# Normaliza:[["TR1","TR3"], ["TR2"]]      <- los operadores trabajan aqui
+# Devuelve: [["D","TR1","TR3","D"], ["D","TR2","D"]]
+\end{lstlisting}
+
+% ------------------------------------------------------------
+\subsection{Procedimiento maestro de generación}
+\label{subsec:gen-maestro}
+% ------------------------------------------------------------
+
+El Algoritmo~\ref{alg:generar-vecino} es la rutina que invocan todas las
+metaheurísticas en cada iteración. Elige un operador (al azar uniforme, o
+por ruleta sesgada si se proporciona un vector de pesos) y lo aplica. Si el
+operador elegido no es aplicable a la solución actual (por ejemplo,
+\texttt{2opt\_intra} requiere una ruta con al menos tres tareas), reintenta
+con otro operador hasta un máximo de 500 veces.
+
+\begin{algorithm}[h]
+\caption{\textsc{GenerarVecino} --- rutina maestra de generación de vecinos}
+\label{alg:generar-vecino}
+\begin{algorithmic}[1]
+\Require Solución $s$; conjunto de operadores $\mathcal{O}$; pesos $w$ (o \texttt{null}); generador $\mathit{rng}$
+\Ensure Vecino $s'$; registro de movimiento $m$
+\State $\mathit{intentos} \gets 0$
+\Repeat
+  \State $\mathit{intentos} \gets \mathit{intentos} + 1$
+  \If{$\mathit{intentos} > 500$}
+     \State \textbf{lanzar} \texttt{RuntimeError} \Comment{solución demasiado pequeña para algún operador}
+  \EndIf
+  \If{$w \neq \texttt{null}$}
+     \State $o \gets \textsc{RuletaSesgada}(\mathcal{O},\, w,\, \mathit{rng})$ \Comment{selección por pesos}
+  \Else
+     \State $o \gets \mathit{rng}.\textsc{elegir}(\mathcal{O})$ \Comment{selección uniforme}
+  \EndIf
+  \State $(s',\, m) \gets \textsc{Aplicar}(o,\, s,\, \mathit{rng})$ \Comment{\texttt{null} si $o$ no es aplicable}
+\Until{$s' \neq \texttt{null}$}
+\State \Return $(s',\, m)$
+\end{algorithmic}
+\end{algorithm}
+
+% ------------------------------------------------------------
+\subsection{Catálogo visual de los nueve operadores}
+\label{subsec:catalogo-operadores}
+% ------------------------------------------------------------
+
+Se emplea la notación: $r[i]$ es la tarea en la posición $i$ (base 0) de la
+ruta $r$; $r[i{:}j]$ es la subsecuencia de $i$ a $j$ (ambos inclusive);
+$r_a, r_b$ son dos rutas distintas; $\|$ denota concatenación. Las tareas
+se escriben $\mathtt{TR1}, \mathtt{TR2}, \dots$
+
+\subsubsection{\texttt{relocate\_intra} (intra-ruta)}
+Retira la tarea de la posición $i$ y la reinserta en la posición $j \neq i$
+de la \emph{misma} ruta. Requiere $|r_a| \geq 2$.
+\[
+    r_a = [\,\mathtt{TR1},\, \mathtt{TR2},\, \mathtt{TR3},\, \mathtt{TR4}\,]
+    \;\xrightarrow{\;\text{extraer}(0),\;\text{insertar}(2)\;}\;
+    r'_a = [\,\mathtt{TR2},\, \mathtt{TR3},\, \mathtt{TR1},\, \mathtt{TR4}\,]
+\]
+
+\subsubsection{\texttt{swap\_intra} (intra-ruta)}
+Intercambia las tareas de las posiciones $i$ y $j$ dentro de la misma ruta.
+Requiere $|r_a| \geq 2$.
+\[
+    r_a = [\,\mathtt{TR1},\, \mathtt{TR2},\, \mathtt{TR3},\, \mathtt{TR4}\,]
+    \;\xrightarrow{\;\text{intercambiar}(0,3)\;}\;
+    r'_a = [\,\mathtt{TR4},\, \mathtt{TR2},\, \mathtt{TR3},\, \mathtt{TR1}\,]
+\]
+
+\subsubsection{\texttt{2opt\_intra} (intra-ruta)}
+Invierte la subsecuencia contigua $r_a[i{:}j]$. Requiere $|r_a| \geq 3$. Es
+la generalización del 2-opt clásico del TSP al dominio de arcos.
+\[
+    r_a = \bigl[\,\mathtt{TR1},\,
+    \underbrace{\mathtt{TR2},\, \mathtt{TR3},\, \mathtt{TR4}}_{i=1,\;j=3},\,
+    \mathtt{TR5}\,\bigr]
+    \;\longrightarrow\;
+    r'_a = [\,\mathtt{TR1},\, \mathtt{TR4},\, \mathtt{TR3},\, \mathtt{TR2},\, \mathtt{TR5}\,]
+\]
+
+\subsubsection{\texttt{relocate\_inter} (inter-ruta)}
+Retira la tarea de la posición $i$ de $r_a$ y la inserta en la posición $j$
+de $r_b$. Puede vaciar la ruta origen. Requiere $|r_a| \geq 1$.
+\[
+    \begin{array}{ll}
+        r_a = [\mathtt{TR1},\,\mathtt{TR2},\,\mathtt{TR3}]
+        & r_b = [\mathtt{TR4},\,\mathtt{TR5}] \\[4pt]
+        \multicolumn{2}{c}{\xrightarrow{\;\text{mover}\;\mathtt{TR3}\;\text{de}\;r_a[2]\;\text{a}\;r_b[1]\;}} \\[4pt]
+        r'_a = [\mathtt{TR1},\,\mathtt{TR2}]
+        & r'_b = [\mathtt{TR4},\,\mathtt{TR3},\,\mathtt{TR5}]
+    \end{array}
+\]
+
+\subsubsection{\texttt{swap\_inter} (inter-ruta)}
+Intercambia una tarea de $r_a$ con una de $r_b$. Ambas rutas conservan su
+cardinalidad. Requiere $|r_a| \geq 1$ y $|r_b| \geq 1$.
+\[
+    \begin{array}{ll}
+        r_a = [\mathtt{TR1},\,\mathtt{TR2}]
+        & r_b = [\mathtt{TR3},\,\mathtt{TR4}] \\[4pt]
+        \multicolumn{2}{c}{\xrightarrow{\;\text{intercambiar}\;\mathtt{TR1}\leftrightarrow\mathtt{TR4}\;}} \\[4pt]
+        r'_a = [\mathtt{TR4},\,\mathtt{TR2}]
+        & r'_b = [\mathtt{TR3},\,\mathtt{TR1}]
+    \end{array}
+\]
+
+\subsubsection{\texttt{2opt\_star} (inter-ruta)}
+Parte cada ruta en cabeza y cola por un punto de corte e intercambia las
+colas: $r'_a = \mathit{cabeza}_a \| \mathit{cola}_b$ y
+$r'_b = \mathit{cabeza}_b \| \mathit{cola}_a$. Es el análogo inter-ruta del
+2-opt; corrige rutas que se cruzan geográficamente.
+\[
+    \begin{array}{ll}
+        r_a = \bigl[\,\underbrace{\mathtt{TR1},\,\mathtt{TR2}}_{\mathit{cabeza}_a},\,
+                     \overbrace{\mathtt{TR3},\,\mathtt{TR4}}^{\mathit{cola}_a}\,\bigr]
+        &
+        r_b = \bigl[\,\underbrace{\mathtt{TR5},\,\mathtt{TR6}}_{\mathit{cabeza}_b},\,
+                     \overbrace{\mathtt{TR7}}^{\mathit{cola}_b}\,\bigr] \\[10pt]
+        \multicolumn{2}{c}{\Downarrow} \\[4pt]
+        r'_a = [\mathtt{TR1},\,\mathtt{TR2},\,\mathtt{TR7}]
+        &
+        r'_b = [\mathtt{TR5},\,\mathtt{TR6},\,\mathtt{TR3},\,\mathtt{TR4}]
+    \end{array}
+\]
+
+\subsubsection{\texttt{cross\_exchange} (inter-ruta)}
+Intercambia un segmento contiguo de $r_a$ con uno de $r_b$. Los segmentos
+pueden tener longitudes distintas, lo que lo hace más disruptivo que
+\texttt{swap\_inter}. Requiere $|r_a| \geq 2$ y $|r_b| \geq 2$.
+\[
+    \begin{array}{ll}
+        r_a = \bigl[\mathtt{TR1},\,
+                    \overbrace{\mathtt{TR2},\,\mathtt{TR3}}^{\mathit{seg}_a},\,
+                    \mathtt{TR4}\bigr]
+        &
+        r_b = \bigl[\overbrace{\mathtt{TR5},\,\mathtt{TR6}}^{\mathit{seg}_b},\,
+                    \mathtt{TR7}\bigr] \\[8pt]
+        \multicolumn{2}{c}{\Downarrow} \\[4pt]
+        r'_a = [\mathtt{TR1},\,\mathtt{TR5},\,\mathtt{TR6},\,\mathtt{TR4}]
+        &
+        r'_b = [\mathtt{TR2},\,\mathtt{TR3},\,\mathtt{TR7}]
+    \end{array}
+\]
+
+\subsubsection{\texttt{or\_opt\_2} (inter-ruta)}
+Extrae un bloque de exactamente 2 tareas consecutivas de $r_a$ y lo inserta
+en $r_b$ \emph{en el mismo orden} (nunca invertido). Requiere $|r_a| \geq 2$.
+\[
+    \begin{array}{ll}
+        r_a = \bigl[\mathtt{TR1},\,
+                    \overbrace{\mathtt{TR2},\,\mathtt{TR3}}^{\mathit{bloque}},\,
+                    \mathtt{TR4}\bigr]
+        &
+        r_b = [\mathtt{TR5},\,\mathtt{TR6},\,\mathtt{TR7}] \\[8pt]
+        \multicolumn{2}{c}{\xrightarrow{\;\text{quitar bloque de }r_a,\;\text{insertar en }r_b[1]\;}} \\[4pt]
+        r'_a = [\mathtt{TR1},\,\mathtt{TR4}]
+        &
+        r'_b = [\mathtt{TR5},\,\mathtt{TR2},\,\mathtt{TR3},\,\mathtt{TR6},\,\mathtt{TR7}]
+    \end{array}
+\]
+
+\subsubsection{\texttt{or\_opt\_3} (inter-ruta)}
+Idéntico a \texttt{or\_opt\_2} pero con un bloque de 3 tareas consecutivas.
+Es el movimiento más disruptivo de la familia Or-opt; ayuda a escapar de
+mínimos locales profundos. Requiere $|r_a| \geq 3$.
+\[
+    \begin{array}{ll}
+        r_a = \bigl[\overbrace{\mathtt{TR1},\,\mathtt{TR2},\,\mathtt{TR3}}^{\mathit{bloque}},\,
+                    \mathtt{TR4}\bigr]
+        &
+        r_b = [\mathtt{TR5},\,\mathtt{TR6},\,\mathtt{TR7}] \\[8pt]
+        \multicolumn{2}{c}{\xrightarrow{\;\text{quitar bloque de }r_a,\;\text{insertar en }r_b[1]\;}} \\[4pt]
+        r'_a = [\mathtt{TR4}]
+        &
+        r'_b = [\mathtt{TR5},\,\mathtt{TR1},\,\mathtt{TR2},\,\mathtt{TR3},\,\mathtt{TR6},\,\mathtt{TR7}]
+    \end{array}
+\]
+
+% ------------------------------------------------------------
+\subsection{La estructura \texttt{MovimientoVecindario}}
+\label{subsec:movimiento}
+% ------------------------------------------------------------
+
+Cada llamada devuelve, además del vecino, un registro inmutable que
+describe con precisión qué movimiento se aplicó. Es una \texttt{dataclass}
+con \texttt{frozen=True} (inmutable y hashable, apta como clave de la lista
+tabú) y \texttt{slots=True} (menor consumo de memoria al crear miles de
+registros por corrida).
+
+\begin{table}[h]
+\centering
+\caption{Campos de \texttt{MovimientoVecindario}.}
+\label{tab:movimiento}
+\small
+\begin{tabular}{lp{9.5cm}}
+\toprule
+Campo & Significado \\
+\midrule
+\texttt{operador}        & Nombre del operador aplicado, p.\,ej.\ \texttt{"swap\_inter"}. \\
+\texttt{ruta\_a}         & Índice de la primera ruta involucrada. \\
+\texttt{ruta\_b}         & Índice de la segunda ruta (solo operadores inter). \\
+\texttt{i}, \texttt{j}   & Posiciones dentro de las rutas; para \texttt{2opt\_star} son los puntos de corte. \\
+\texttt{k}, \texttt{l}   & Inicio y fin del segmento en \texttt{ruta\_b} (solo \texttt{cross\_exchange}). \\
+\texttt{id\_movidos}     & IDs enteros de las tareas desplazadas (backend \texttt{"ids"}). \\
+\texttt{labels\_movidos} & Etiquetas de las tareas desplazadas (si se pasa el \texttt{encoding}). \\
+\texttt{backend\_real}   & Backend que ejecutó el movimiento (hoy siempre \texttt{"cpu"}). \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------------------------------------------------
+\subsection{Ejemplo completo de uso}
+\label{subsec:ejemplo-vecino}
+% ------------------------------------------------------------
+
+El siguiente fragmento muestra el flujo completo: cargar la instancia,
+construir el contexto de evaluación, generar un vecino y decidir si
+aceptarlo bajo un criterio voraz.
+
+\begin{lstlisting}[language=Python]
+import random
+from metacarp.instances import load_instances
+from metacarp.cargar_grafos import cargar_objeto_gexf
+from metacarp.cargar_soluciones_iniciales import cargar_solucion_inicial
+from metacarp.busqueda_indices import build_search_encoding
+from metacarp.evaluador_costo import construir_contexto, costo_rapido
+from metacarp.vecindarios import generar_vecino, OPERADORES_POPULARES
+
+# 1. Cargar instancia y solucion inicial
+data = load_instances("gdb1")
+G = cargar_objeto_gexf("gdb1")
+solucion_actual = cargar_solucion_inicial("gdb1")
+if isinstance(solucion_actual, dict):
+    solucion_actual = next(iter(solucion_actual.values()))
+
+# 2. Contexto de evaluacion (una sola vez) y encoding entero
+ctx = construir_contexto(data, G=G)
+encoding = build_search_encoding(data)
+rng = random.Random(42)                       # reproducible
+
+# 3. Evaluar la solucion actual
+costo_actual = costo_rapido(solucion_actual, ctx)
+
+# 4. Generar un vecino
+vecino, movimiento = generar_vecino(
+    solucion_actual, rng=rng,
+    operadores=OPERADORES_POPULARES,
+    devolver_con_deposito=True, encoding=encoding,
+)
+print("Operador aplicado:", movimiento.operador)
+
+# 5. Aceptar si mejora (criterio voraz)
+costo_vecino = costo_rapido(vecino, ctx)
+if costo_vecino < costo_actual:
+    solucion_actual, costo_actual = vecino, costo_vecino
+    print("Vecino aceptado:", costo_vecino)
+else:
+    print("Vecino rechazado (no mejora).")
+\end{lstlisting}
+
+\paragraph{Backends \texttt{labels} e \texttt{ids}.}
+El backend \texttt{"labels"} opera directamente sobre cadenas y es ideal
+para prototipos y depuración. El backend \texttt{"ids"} codifica la
+solución a enteros (mediante \texttt{encode\_solution}), aplica el operador
+sobre IDs y decodifica; es más rápido en instancias grandes y rellena
+siempre el campo \texttt{id\_movidos} del registro de movimiento.
+
+% ------------------------------------------------------------
+\subsection{Tabla de referencia rápida}
+\label{subsec:referencia-operadores}
+% ------------------------------------------------------------
+
+La Tabla~\ref{tab:resumen-operadores} resume las propiedades de los nueve
+operadores y sus requisitos mínimos.
+
+\begin{table}[h]
+\centering
+\caption{Resumen de los nueve operadores de vecindad. ``Mín.\ tareas''
+         indica el número mínimo de tareas en la(s) ruta(s) origen.}
+\label{tab:resumen-operadores}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{llcp{6.4cm}}
+\toprule
+Operador & Tipo & Mín. & Efecto \\
+\midrule
+\texttt{relocate\_intra} & intra & 2 & Mueve una tarea a otra posición de la misma ruta. \\
+\texttt{swap\_intra}     & intra & 2 & Intercambia dos tareas de la misma ruta. \\
+\texttt{2opt\_intra}     & intra & 3 & Invierte un segmento contiguo de la misma ruta. \\
+\texttt{relocate\_inter} & inter & 1 & Mueve una tarea de una ruta a otra (destino puede estar vacío). \\
+\texttt{swap\_inter}     & inter & $1{+}1$ & Intercambia una tarea entre dos rutas distintas. \\
+\texttt{2opt\_star}      & inter & $1{+}1$ & Intercambia las colas de dos rutas desde un corte. \\
+\texttt{cross\_exchange} & inter & $2{+}2$ & Intercambia segmentos contiguos de $\geq 2$ tareas. \\
+\texttt{or\_opt\_2}      & inter & 2 & Reubica un bloque de 2 tareas (orden preservado). \\
+\texttt{or\_opt\_3}      & inter & 3 & Reubica un bloque de 3 tareas (orden preservado). \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Si los requisitos del operador elegido al azar no se cumplen, la rutina
+maestra (Algoritmo~\ref{alg:generar-vecino}) reintenta con otro operador,
+hasta un límite de 500 intentos.
 
 % =====================================================================
 \section{Arquitectura de monkey-patching por capas}
 \label{sec:arquitectura-software}
 % =====================================================================
 
-Una decision metodologica importante del programa experimental fue
-NUNCA modificar el codigo de las metaheuristicas base
+Una decisión metodológica importante del programa experimental fue
+NUNCA modificar el código de las metaheurísticas base
 (\texttt{metacarp/recocido\_simulado.py}, etc.) durante el desarrollo
 de las variantes experimentales. En su lugar, cada experimento
 implementa sus cambios via \emph{monkey-patching} en tiempo de
-ejecucion, aplicado al inicio de cada worker.
+ejecución, aplicado al inicio de cada worker.
 
-\subsection{Motivacion}
+\subsection{Motivación}
 
 El monkey-patching ofrece tres ventajas en el contexto experimental:
 
 \begin{enumerate}
 \item \textbf{Comparabilidad}: cada experimento corre sobre exactamente
-  el mismo codigo base, garantizando que los efectos observados son
-  imputables a la modificacion del experimento.
+  el mismo código base, garantizando que los efectos observados son
+  imputables a la modificación del experimento.
 \item \textbf{Composabilidad}: capas distintas (selector, kick reactivo,
   Path Relinking, evaluador) se pueden combinar sin reescribir el
-  codigo de las metaheuristicas.
-\item \textbf{Trazabilidad}: cada modulo experimental contiene en una
-  funcion \texttt{aplicar\_patch\_X(modulo\_mh)} una documentacion
+  código de las metaheurísticas.
+\item \textbf{Trazabilidad}: cada módulo experimental contiene en una
+  función \texttt{aplicar\_patch\_X(modulo\_mh)} una documentación
   ejecutable de exactamente que simbolos modifica.
 \end{enumerate}
 
@@ -502,22 +882,22 @@ Cada experimento del programa expone un par
 \texttt{(metacarp/X\_YYYYMMDD.py, scripts/run\_<mh>\_X\_YYYYMMDD.py)}:
 
 \begin{itemize}
-\item El modulo en \texttt{metacarp/} define las funciones de
-  reemplazo y una funcion \texttt{aplicar\_patch\_X(modulo\_mh)} que
-  sustituye los simbolos relevantes en el modulo de la MH.
+\item El módulo en \texttt{metacarp/} define las funciones de
+  reemplazo y una función \texttt{aplicar\_patch\_X(modulo\_mh)} que
+  sustituye los simbolos relevantes en el módulo de la MH.
 \item El script en \texttt{scripts/} implementa el bucle del grid
   experimental: itera sobre las $23 \times 5$ tareas, las distribuye
   con \texttt{ProcessPoolExecutor}, y dentro de cada worker llama
   \texttt{aplicar\_patch\_X(...)} ANTES de importar el wrapper
-  \texttt{X\_desde\_instancia} de la metaheuristica.
+  \texttt{X\_desde\_instancia} de la metaheurística.
 \end{itemize}
 
-\subsection{Composicion de capas}
+\subsection{Composición de capas}
 
 Los experimentos finales del programa (\texttt{p\_inter\_pr\_20260528},
 \texttt{budget\_20260528}, \texttt{warmstart\_greedy\_20260529}) APILAN
-multiples capas de monkey-patch. La Figura~\ref{fig:capas} esquematiza
-la composicion (formato pseudo-ascii):
+múltiples capas de monkey-patch. La Figura~\ref{fig:capas} esquematiza
+la composición (formato pseudo-ascii):
 
 \begin{verbatim}
 +----------------------------------------------+
@@ -537,16 +917,16 @@ la composicion (formato pseudo-ascii):
 +----------------------------------------------+
 \end{verbatim}
 
-El \textbf{orden de aplicacion es critico} en dos puntos:
+El \textbf{orden de aplicación es crítico} en dos puntos:
 
 \begin{itemize}
 \item La Capa 2 (\texttt{p\_inter}) sobrescribe el selector binario
   que la Capa 3 (PR) deja instalado. Por tanto, el orden correcto es:
   primero PR, luego \texttt{p\_inter}, para que el selector
-  probabilistico prevalezca.
+  probabilístico prevalezca.
 \item Las Capas 4 y 5 (Path-Scanning y evaluador greedy) son
-  ortogonales al stack inferior y se pueden aplicar antes o despues,
-  pero deben aplicarse en cada worker antes de la importacion del
+  ortogonales al stack inferior y se pueden aplicar antes o después,
+  pero deben aplicarse en cada worker antes de la importación del
   wrapper \texttt{<mh>\_desde\_instancia}.
 \end{itemize}
 
@@ -555,45 +935,45 @@ El \textbf{orden de aplicacion es critico} en dos puntos:
 \label{sec:exp-strict}
 % =====================================================================
 
-\subsection{Hipotesis y motivacion}
+\subsection{Hipótesis y motivación}
 
-El primer experimento del programa parte de la siguiente observacion:
-el selector probabilistico original
+El primer experimento del programa parte de la siguiente observación:
+el selector probabilístico original
 ($\alpha_{\text{inter}} = 0.80$, $p_{\text{inter}} = 0.60$) puede
-proponer un operador inter incluso cuando la solucion ya es factible,
-arriesgando introducir una violacion innecesaria. La hipotesis que el
+proponer un operador inter incluso cuando la solución ya es factible,
+arriesgando introducir una violación innecesaria. La hipótesis que el
 experimento se propone validar es:
 
 \begin{quote}
-\textit{Una regla \emph{binaria estricta} ---``si la solucion viola
+\textit{Una regla \emph{binaria estricta} ---``si la solución viola
 capacidad, proponer SIEMPRE un operador inter; si es factible, proponer
-SIEMPRE un operador intra''--- produce trayectorias mas concentradas y
-mejores tasas de factibilidad final que el selector probabilistico
+SIEMPRE un operador intra''--- produce trayectorias más concentradas y
+mejores tasas de factibilidad final que el selector probabilístico
 original.}
 \end{quote}
 
 Adicionalmente se introduce un \emph{kick reactivo}: tras
 \texttt{max\_iter\_sin\_mejora\_kick} iteraciones consecutivas sin
-mejorar el mejor global, se aplica una perturbacion inter-ruta sobre
-la solucion actual. Esto provee un mecanismo de \emph{diversificacion}
+mejorar el mejor global, se aplica una perturbación inter-ruta sobre
+la solución actual. Esto provee un mecanismo de \emph{diversificación}
 que el selector estricto, por su naturaleza determinista, no posee
 intrinsecamente.
 
-\subsection{Selector estricto: pseudocodigo}
+\subsection{Selector estricto: pseudocódigo}
 
 El Algoritmo~\ref{alg:selector-strict} formaliza el selector instalado.
-Es relevante notar que NO consume ningun valor del generador
-aleatorio: el selector binario estricto es \emph{deterministico}.
+Es relevante notar que NO consume ningún valor del generador
+aleatorio: el selector binario estricto es \emph{determinístico}.
 
 \begin{algorithm}[h]
 \caption{Selector binario estricto.}
 \label{alg:selector-strict}
 \begin{algorithmic}[1]
-\Require $\viol \in \mathbb{R}_{\ge 0}$ violacion actual de capacidad;
+\Require $\viol \in \mathbb{R}_{\ge 0}$ violación actual de capacidad;
   conjuntos $\mathcal{O}_{\text{intra}}, \mathcal{O}_{\text{inter}}$ de operadores;
   $\mathcal{O}_{\text{fb}}$ operadores fallback.
-\Ensure Conjunto de operadores $\mathcal{O}$ a usar en esta iteracion.
-\If{$\viol > 0$} \Comment{Solucion infactible}
+\Ensure Conjunto de operadores $\mathcal{O}$ a usar en esta iteración.
+\If{$\viol > 0$} \Comment{Solución infactible}
   \State \Return $\mathcal{O}_{\text{inter}}$
 \Else
   \State \Return $\mathcal{O}_{\text{intra}}$
@@ -601,18 +981,18 @@ aleatorio: el selector binario estricto es \emph{deterministico}.
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Kick reactivo: pseudocodigo}
+\subsection{Kick reactivo: pseudocódigo}
 
 El Algoritmo~\ref{alg:kick} describe el kick instalado para SA, TS,
-RTS, ABC y Cuckoo. El detalle de la perturbacion intercambia el orden
+RTS, ABC y Cuckoo. El detalle de la perturbación intercambia el orden
 de 3--5 tareas escogidas aleatoriamente entre dos rutas distintas.
 
 \begin{algorithm}[h]
 \caption{Kick reactivo poblacional.}
 \label{alg:kick}
 \begin{algorithmic}[1]
-\Require Solucion actual $s$; generador $rng$; encoding de la instancia.
-\Ensure Solucion perturbada $s'$ con al menos un swap inter-ruta forzado.
+\Require Solución actual $s$; generador $rng$; encoding de la instancia.
+\Ensure Solución perturbada $s'$ con al menos un swap inter-ruta forzado.
 \State $r_1, r_2 \gets$ dos rutas distintas seleccionadas al azar de $s$
 \State $k \gets$ entero aleatorio en $[3, 5]$
 \State Intercambiar $k$ tareas escogidas al azar entre $r_1$ y $r_2$
@@ -620,7 +1000,7 @@ de 3--5 tareas escogidas aleatoriamente entre dos rutas distintas.
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Configuracion}
+\subsection{Configuración}
 
 \begin{itemize}
 \item Selector: binario estricto (Algoritmo~\ref{alg:selector-strict}).
@@ -629,18 +1009,18 @@ de 3--5 tareas escogidas aleatoriamente entre dos rutas distintas.
 \item Kick: SA con \texttt{max\_iter\_sin\_mejora\_kick=5},
   resto con \texttt{30}.
 \item Tope de kicks: \texttt{max\_resets=10}.
-\item Penalizacion: $\lambda$ por defecto instance-aware.
-\item Construccion inicial: pickle aleatorio precomputado
+\item Penalización: $\lambda$ por defecto instance-aware.
+\item Construcción inicial: pickle aleatorio precomputado
   (\texttt{InitialSolution/<inst>\_init\_sol.pkl}).
 \end{itemize}
 
 \subsection{Resultados}
 
-La Tabla~\ref{tab:strict-resultados} consolida las estadisticas
+La Tabla~\ref{tab:strict-resultados} consolida las estadísticas
 descriptivas. El experimento revela un \textbf{patron preocupante}: la
-tasa de factibilidad final en TS Simple y RTS es practicamente nula
+tasa de factibilidad final en TS Simple y RTS es prácticamente nula
 (10\% y 0\%). Es decir, las soluciones reportadas como ``mejor'' por
-estas dos MHs son en su mayoria \emph{infactibles}.
+estas dos MHs son en su mayoría \emph{infactibles}.
 
 \begin{table}[h]
 \centering
@@ -663,7 +1043,7 @@ Cuckoo  & 40.39 & 40.30 & 11.77 & 17.75 & 64.85 &  97 \\
 
 \subsection{Diagnostico}
 
-El selector estricto, al forzar operadores intra cuando la solucion es
+El selector estricto, al forzar operadores intra cuando la solución es
 factible, impide \emph{salir} de la factibilidad para explorar
 configuraciones potencialmente mejores que requieren cruzar tareas
 entre rutas. SA, ABC y Cuckoo sortean este problema por dos rutas
@@ -671,95 +1051,95 @@ distintas:
 
 \begin{itemize}
 \item SA acepta movimientos deteriorantes con probabilidad termica;
-  esto puede llevar a una solucion intermedia infactible aunque sea
-  por una unica iteracion, lo que activa una propuesta inter en la
+  esto puede llevar a una solución intermedia infactible aunque sea
+  por una única iteración, lo que activa una propuesta inter en la
   siguiente.
 \item ABC y Cuckoo mantienen poblaciones diversas; con suficientes
   fuentes/nidos, alguna esta casi siempre en estado infactible y
   recibe propuestas inter.
 \end{itemize}
 
-TS Simple y RTS, en cambio, son metaheuristicas de trayectoria
-\emph{deterministas} respecto a la aceptacion: solo aceptan mejoras
-puras (o que cumplan aspiracion). Una vez que llegan a una solucion
+TS Simple y RTS, en cambio, son metaheurísticas de trayectoria
+\emph{deterministas} respecto a la aceptación: solo aceptan mejoras
+puras (o que cumplan aspiración). Una vez que llegan a una solución
 factible, el selector estricto NUNCA les propone un operador inter, y
 la trayectoria queda atrapada en el subespacio factible local sin
-posibilidad de cruzar a regiones mas convenientes via infactibilidad
+posibilidad de cruzar a regiones más convenientes via infactibilidad
 intermedia.
 
-\subsection{Conclusion del experimento 1}
+\subsection{Conclusión del experimento 1}
 
 El selector binario estricto NO es una mejora sobre el selector
-probabilistico original; al contrario, en MHs de trayectoria pura
+probabilístico original; al contrario, en MHs de trayectoria pura
 introduce un sesgo destructivo que se traduce en factibilidad final
 del 0--10\%. Los resultados que SI parecen mejores en gap (TS Simple
 30\%, RTS 30\%) son ENGANOSOS: como las soluciones son infactibles,
 ese gap no es directamente comparable con el de SA, ABC, Cuckoo (que
 SI son factibles).
 
-Esta observacion motivara dos experimentos: \texttt{lambda\_grid}
-(Seccion~\ref{sec:exp-lambda}) para calibrar mejor la penalizacion, y
-\texttt{p\_inter\_pr} (Seccion~\ref{sec:exp-pip}) para retornar a un
-selector probabilistico moderado.
+Esta observación motivara dos experimentos: \texttt{lambda\_grid}
+(Sección~\ref{sec:exp-lambda}) para calibrar mejor la penalización, y
+\texttt{p\_inter\_pr} (Sección~\ref{sec:exp-pip}) para retornar a un
+selector probabilístico moderado.
 
 % =====================================================================
 \section{Experimento 2: lambda\_grid\_20260525}
 \label{sec:exp-lambda}
 % =====================================================================
 
-\subsection{Hipotesis}
+\subsection{Hipótesis}
 
 Si el problema del experimento anterior es que TS y RTS terminan
-infactibles, una hipotesis razonable es que el factor de penalizacion
+infactibles, una hipótesis razonable es que el factor de penalización
 $\lambda$ por defecto, calculado con la formula~(\ref{eq:lambda-def}),
 es \emph{demasiado bajo}: el algoritmo no esta suficientemente
 incentivado a evitar violaciones de capacidad.
 
 El experimento explora una \textbf{rejilla} de valores de $\lambda$ y
-analiza el gap final en funcion de cada combinacion (MH, instancia,
+analiza el gap final en función de cada combinación (MH, instancia,
 $\lambda$).
 
-\subsection{Configuracion}
+\subsection{Configuración}
 
 La rejilla explorada contiene los valores
 $\{1, 5, 10, 50, 100, 500\}$ multiplicados por el $\lambda_{\text{def}}$
-instance-aware, mas tres valores fijos absolutos. Para cada
-combinacion se ejecutan 3 repeticiones sobre cada una de las 23
+instance-aware, más tres valores fijos absolutos. Para cada
+combinación se ejecutan 3 repeticiones sobre cada una de las 23
 instancias y cada una de las 5 MHs.
 
-Salvo $\lambda$ y la nueva exposicion del parametro
+Salvo $\lambda$ y la nueva exposición del parámetro
 \texttt{lambda\_capacidad} en los wrappers de TS Simple y RTS (que
-hasta entonces lo ignoraban), el resto de la configuracion replica el
+hasta entonces lo ignoraban), el resto de la configuración replica el
 experimento \texttt{strict\_intra\_inter}.
 
 \subsection{Resultados resumen}
 
-El resultado del grid (analizado en la Seccion 10 del notebook del
+El resultado del grid (analizado en la Sección 10 del notebook del
 proyecto) muestra:
 
 \begin{itemize}
 \item El $\lambda$ ``mejor'' por instancia y MH varia entre $0.5x$ y
-  $5x$ el valor por defecto; \textbf{no hay un multiplicador unico que
+  $5x$ el valor por defecto; \textbf{no hay un multiplicador único que
   domine}.
 \item En SA y ABC, valores moderados ($1x$--$5x$) dominan; en TS y RTS,
-  valores ligeramente menores ($0.5x$--$1x$) son optimos.
+  valores ligeramente menores ($0.5x$--$1x$) son óptimos.
 \item En todos los casos, valores extremos ($\ge 100x$) degradan
-  significativamente la calidad: la penalizacion enorme bloquea
-  movimientos exploratorios validos.
+  significativamente la calidad: la penalización enorme bloquea
+  movimientos exploratorios válidos.
 \end{itemize}
 
-Para mantener la simplicidad metodologica, los experimentos
+Para mantener la simplicidad metodológica, los experimentos
 posteriores adoptan $\lambda_{\text{def}}$ instance-aware
-(equivalente a $1x$ del grid). La calibracion fina por instancia y MH
-se deja como linea de trabajo abierta.
+(equivalente a $1x$ del grid). La calibración fina por instancia y MH
+se deja como línea de trabajo abierta.
 
-\subsection{Conclusion del experimento 2}
+\subsection{Conclusión del experimento 2}
 
 \texttt{lambda\_grid} NO resuelve el problema de factibilidad observado
-en el experimento anterior; revela que la calibracion de $\lambda$
-tiene un efecto secundario al del selector. La verdadera solucion no
+en el experimento anterior; revela que la calibración de $\lambda$
+tiene un efecto secundario al del selector. La verdadera solución no
 es ajustar $\lambda$ sino \emph{evitar la infactibilidad}, lo que
-requiere un selector que NO bloquee operadores inter cuando la solucion
+requiere un selector que NO bloquee operadores inter cuando la solución
 esta cerca de la frontera factible.
 
 % =====================================================================
@@ -767,18 +1147,18 @@ esta cerca de la frontera factible.
 \label{sec:exp-aos}
 % =====================================================================
 
-\subsection{Hipotesis}
+\subsection{Hipótesis}
 
-La motivacion del experimento es \emph{adaptar} la frecuencia con que
-cada operador se invoca en funcion de su efectividad historica. Esta es
+La motivación del experimento es \emph{adaptar} la frecuencia con que
+cada operador se invoca en función de su efectividad historica. Esta es
 la idea central de \emph{Adaptive Operator Selection} (AOS), un area
-activa de la metaheuristica desde Fialho et al.~\cite{fialho2008}. El esquema
+activa de la metaheurística desde Fialho et al.~\cite{fialho2008}. El esquema
 elegido es \emph{Probability Matching} (PM)~\cite{thierens2005}: la probabilidad asignada a
-cada operador se actualiza como una media movil exponencial sobre las
+cada operador se actualiza como una media móvil exponencial sobre las
 recompensas recibidas.
 
 \begin{quote}
-\textit{Si AOS-PM funciona, se adaptara automaticamente al perfil de la
+\textit{Si AOS-PM funciona, se adaptara automáticamente al perfil de la
 instancia y producira pesos relativos por operador que dominen
 estrategias estaticas.}
 \end{quote}
@@ -786,39 +1166,39 @@ estrategias estaticas.}
 \subsection{Algoritmo Probability Matching}
 
 El Algoritmo~\ref{alg:aos-pm} formaliza el esquema. Cada operador
-$o \in \mathcal{O}$ tiene un peso $w_o \ge w_{\min}$. En cada iteracion
+$o \in \mathcal{O}$ tiene un peso $w_o \ge w_{\min}$. En cada iteración
 se selecciona $o$ con probabilidad proporcional a $w_o$. Tras observar
 la recompensa $r_o$ (cambio de costo / cambio normalizado), el peso se
-actualiza segun el factor de aprendizaje $\alpha$.
+actualiza según el factor de aprendizaje $\alpha$.
 
 \begin{algorithm}[h]
 \caption{AOS Probability Matching.}
 \label{alg:aos-pm}
 \begin{algorithmic}[1]
-\Require Operadores $\mathcal{O}$; tasa $\alpha \in (0,1)$; peso minimo $w_{\min} \ge 0$.
+\Require Operadores $\mathcal{O}$; tasa $\alpha \in (0,1)$; peso mínimo $w_{\min} \ge 0$.
 \State \textbf{Inicializar:} $w_o \gets 1 / |\mathcal{O}|$ para todo $o \in \mathcal{O}$.
-\For{cada iteracion de la MH}
+\For{cada iteración de la MH}
   \State Calcular $p_o = w_o / \sum_{o' \in \mathcal{O}} w_{o'}$
   \State Muestrear $o \sim \text{Cat}(p_o)$
-  \State Aplicar $o$ a la solucion actual; medir recompensa $r_o$
+  \State Aplicar $o$ a la solución actual; medir recompensa $r_o$
   \State $w_o \gets (1-\alpha) \cdot w_o + \alpha \cdot r_o$
   \State $w_o \gets \max(w_o, w_{\min})$ \Comment{Piso garantiza diversidad}
 \EndFor
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Configuracion}
+\subsection{Configuración}
 
 \begin{itemize}
 \item Tasa de aprendizaje: $\alpha = 0.2$.
-\item Peso minimo: $w_{\min} = 0.05$.
+\item Peso mínimo: $w_{\min} = 0.05$.
 \item Recompensa: $r_o = \max(0, \Delta\Phi_\lambda(o)) / c_{\text{ref}}$
   donde $c_{\text{ref}}$ es el costo actual.
-\item Operadores: \texttt{OPERADORES\_AOS\_5}, identico al
+\item Operadores: \texttt{OPERADORES\_AOS\_5}, idéntico al
   \texttt{OPERADORES\_STRICT\_5}.
 \item Kick: \texttt{max\_iter\_sin\_mejora\_kick=30, max\_resets=10}
   (igual que strict).
-\item Construccion inicial: pickle aleatorio.
+\item Construcción inicial: pickle aleatorio.
 \end{itemize}
 
 \subsection{Resultados}
@@ -851,19 +1231,19 @@ $\approx 10$\,pp en TS/RTS}: 40\% vs 30\% del experimento strict. En
 SA, ABC y Cuckoo, AOS-PM esta dentro del ruido del strict (diferencias
 menores a 1\,pp).
 
-El analisis de los pesos finales de AOS-PM (Seccion 11 del notebook)
-revela el por que: las recompensas son extremadamente escasas
-($w_o = w_{\min}$ para la mayoria de los operadores casi siempre),
-porque la mayoria de las iteraciones producen vecinos que NO mejoran.
+El análisis de los pesos finales de AOS-PM (Sección 11 del notebook)
+revela el porqué: las recompensas son extremadamente escasas
+($w_o = w_{\min}$ para la mayoría de los operadores casi siempre),
+porque la mayoría de las iteraciones producen vecinos que NO mejoran.
 Con recompensas casi nulas, los pesos convergen al uniforme y AOS-PM
-degenera en muestreo aleatorio. La adaptacion efectiva NO ocurre.
+degenera en muestreo aleatorio. La adaptación efectiva NO ocurre.
 
-\subsection{Conclusion del experimento 3}
+\subsection{Conclusión del experimento 3}
 
-AOS-PM, con los hiperparametros explorados, NO supera a un selector
-estatico. El problema no es del algoritmo PM en si, sino que las
-recompensas por mejora son demasiado escasas en este regimen ($\sim$1\%
-de iteraciones con mejora). Esquemas mas avanzados (UCB, Adaptive
+AOS-PM, con los hiperparámetros explorados, NO supera a un selector
+estático. El problema no es del algoritmo PM en si, sino que las
+recompensas por mejora son demasiado escasas en este régimen ($\sim$1\%
+de iteraciones con mejora). Esquemas más avanzados (UCB, Adaptive
 Pursuit) podrian funcionar mejor, pero quedan fuera del alcance del
 programa experimental.
 
@@ -872,43 +1252,43 @@ programa experimental.
 \label{sec:exp-pr}
 % =====================================================================
 
-\subsection{Hipotesis}
+\subsection{Hipótesis}
 
-\emph{Path Relinking} (PR)~\cite{glover2000} es un mecanismo de intensificacion que
+\emph{Path Relinking} (PR)~\cite{glover2000} es un mecanismo de intensificación que
 construye soluciones intermedias en la \emph{ruta} entre dos
-soluciones extremas: una solucion ``actual'' (origen) y una solucion
-``guia'' de alta calidad (destino). Al recorrer este camino, PR puede
+soluciones extremas: una solución ``actual'' (origen) y una solución
+``guía'' de alta calidad (destino). Al recorrer este camino, PR puede
 descubrir composiciones de movimientos que ninguno de los dos extremos
 alcanza por si solo.
 
-La hipotesis del experimento es:
+La hipótesis del experimento es:
 
 \begin{quote}
 \textit{Tras un kick reactivo, ejecutar Path Relinking con probabilidad
-$p_{PR} = 0.5$ desde la solucion perturbada hacia la mejor solucion
-global encontrada hasta el momento intensifica la busqueda en zonas
+$p_{PR} = 0.5$ desde la solución perturbada hacia la mejor solución
+global encontrada hasta el momento intensifica la búsqueda en zonas
 prometedoras y mejora el gap final.}
 \end{quote}
 
-\subsection{Path Relinking truncado: pseudocodigo}
+\subsection{Path Relinking truncado: pseudocódigo}
 
 La variante implementada es \emph{truncated PR}: en lugar de recorrer
 toda la ruta entre origen y destino (lo que puede ser muy costoso), se
-limita el numero de pasos a una fraccion de la diferencia entre las
+limita el número de pasos a una fracción de la diferencia entre las
 dos soluciones. El Algoritmo~\ref{alg:pr} formaliza el proceso.
 
 \begin{algorithm}[h]
 \caption{Path Relinking truncado (capa 3).}
 \label{alg:pr}
 \begin{algorithmic}[1]
-\Require Solucion origen $s_0$; solucion guia $s_g$; razon de truncado
+\Require Solución origen $s_0$; solución guía $s_g$; razón de truncado
   $\tau \in (0,1]$; evaluador $\Phi_\lambda$.
-\Ensure Solucion $s^*$ con $\Phi_\lambda(s^*) \le \Phi_\lambda(s_0)$.
+\Ensure Solución $s^*$ con $\Phi_\lambda(s^*) \le \Phi_\lambda(s_0)$.
 \State $\Delta \gets$ conjunto de pares (tarea, ruta) que difieren entre $s_0$ y $s_g$
 \State $K \gets \lceil \tau \cdot |\Delta| \rceil$
 \State $s \gets s_0$, $s^* \gets s_0$
 \For{$k = 1$ \textbf{a} $K$}
-  \State Elegir $\delta \in \Delta$ que reduzca mas $\|s, s_g\|$
+  \State Elegir $\delta \in \Delta$ que reduzca más $\|s, s_g\|$
   \State $s \gets s$ con $\delta$ aplicado
   \If{$\Phi_\lambda(s) < \Phi_\lambda(s^*)$}
     \State $s^* \gets s$
@@ -920,36 +1300,36 @@ dos soluciones. El Algoritmo~\ref{alg:pr} formaliza el proceso.
 \end{algorithm}
 
 PR se invoca SOLO tras un kick reactivo. El kick ya saca al algoritmo
-de un minimo local; PR aprovecha esa perturbacion para guiarlo hacia
-una zona conocida de alta calidad (la mejor solucion global). El
-parametro $p_{PR} = 0.5$ controla la probabilidad de invocar PR vs
+de un mínimo local; PR aprovecha esa perturbación para guiarlo hacia
+una zona conocida de alta calidad (la mejor solución global). El
+parámetro $p_{PR} = 0.5$ controla la probabilidad de invocar PR vs
 realizar solo el kick puro.
 
-\subsection{Configuracion}
+\subsection{Configuración}
 
 \begin{itemize}
 \item Selector: binario estricto (heredado de \texttt{strict}).
 \item Operadores: \texttt{OPERADORES\_STRICT\_5}.
-\item Kick reactivo: mismos parametros que \texttt{strict}.
+\item Kick reactivo: mismos parámetros que \texttt{strict}.
 \item PR: $p_{PR} = 0.5$, $\tau$ adaptativo (capa 3 con
   truncado intermedio).
-\item Construccion inicial: pickle aleatorio.
+\item Construcción inicial: pickle aleatorio.
 \end{itemize}
 
-\subsection{Captura de la solucion guia}
+\subsection{Captura de la solución guía}
 
-PR necesita conocer en todo momento la mejor solucion global. Las MHs
+PR necesita conocer en todo momento la mejor solución global. Las MHs
 no exponen este dato directamente, por lo que el experimento instala
 DOS monkey-patches adicionales:
 
 \begin{itemize}
 \item \texttt{copiar\_solucion\_labels/ids}: se reemplaza por una
-  version que copia el resultado a una variable global del modulo PR.
+  versión que copia el resultado a una variable global del módulo PR.
 \item \texttt{ContadorOperadores.registrar\_mejora}: se reemplaza por
-  una version que tambien actualiza la mejor solucion global.
+  una versión que también actualiza la mejor solución global.
 \end{itemize}
 
-Estas tecnicas son ortogonales al monkey-patch del kick y se aplican en
+Estas técnicas son ortogonales al monkey-patch del kick y se aplican en
 la misma llamada \texttt{aplicar\_patch\_pr(modulo\_mh, p\_pr)}.
 
 \subsection{Resultados}
@@ -978,65 +1358,65 @@ Cuckoo  & 260 & 36.14 & 36.24 & $-4.25$ \\
 \subsection{Diagnostico}
 
 PR produce un resultado \emph{mixto}: mejora SA, ABC y Cuckoo (los tres
-con poblacion o aceptacion estocastica) y EMPEORA TS y RTS en
-$+8\,$pp. La interpretacion mas coherente con los datos es:
+con población o aceptación estocástica) y EMPEORA TS y RTS en
+$+8\,$pp. La interpretación más coherente con los datos es:
 
 \begin{itemize}
-\item En SA, ABC y Cuckoo, PR aprovecha la diversidad estocastica de la
-  busqueda actual: el origen $s_0$ del relink es genuinamente
-  diferente de la mejor solucion $s_g$, y el camino entre ellas
+\item En SA, ABC y Cuckoo, PR aprovecha la diversidad estocástica de la
+  búsqueda actual: el origen $s_0$ del relink es genuinamente
+  diferente de la mejor solución $s_g$, y el camino entre ellas
   contiene composiciones de movimientos prometedoras.
-\item En TS y RTS, donde la trayectoria es mas deterministica, el
+\item En TS y RTS, donde la trayectoria es más determinística, el
   origen $s_0$ es muy similar a $s_g$. El relink entonces realiza
-  movimientos REDUNDANTES respecto a la propia busqueda tabu y
+  movimientos REDUNDANTES respecto a la propia búsqueda tabú y
   desperdicia presupuesto.
 \item Adicionalmente, en TS y RTS el costo computacional de PR es
-  comparable al de unas pocas decenas de iteraciones tabu. En el
+  comparable al de unas pocas decenas de iteraciones tabú. En el
   presupuesto fijo de 400 iteraciones, esto se nota.
 \end{itemize}
 
-\subsection{Conclusion del experimento 4}
+\subsection{Conclusión del experimento 4}
 
-PR es la primera tecnica del programa que produce una mejora
+PR es la primera técnica del programa que produce una mejora
 \emph{significativa} respecto al baseline (SA, ABC, Cuckoo). Su
 aplicabilidad selectiva (rompe TS y RTS) sugiere que PR debe combinarse
 con otros mecanismos antes de generalizarlo. El experimento siguiente
-explora una combinacion con un nuevo selector.
+explora una combinación con un nuevo selector.
 
 % =====================================================================
 \section{Experimento 5: p\_inter\_pr\_20260528}
 \label{sec:exp-pip}
 % =====================================================================
 
-\subsection{Hipotesis}
+\subsection{Hipótesis}
 
 Combinando los aprendizajes de los experimentos 1 y 4:
 
 \begin{quote}
-\textit{Un selector probabilistico moderado con $p_{\text{inter}} = 0.20$
+\textit{Un selector probabilístico moderado con $p_{\text{inter}} = 0.20$
 en estado factible (es decir, 20\% de las iteraciones en factibilidad
-proponen un operador inter) deberia capturar ganancia de cruce entre
+proponen un operador inter) debería capturar ganancia de cruce entre
 rutas sin caer en el extremo destructivo de un selector inter-agresivo.
-Combinado con PR, esto deberia mejorar las cinco MHs simultaneamente.}
+Combinado con PR, esto debería mejorar las cinco MHs simultaneamente.}
 \end{quote}
 
-El valor $p_{\text{inter}} = 0.20$ es moderado por construccion:
+El valor $p_{\text{inter}} = 0.20$ es moderado por construcción:
 suficiente para que el operador inter se invoque (4--5 veces por cada
 20 iteraciones factibles), pero lejos del extremo $p_{\text{inter}} =
-0.5+$ que en experimentos previos (sin documentar aqui) degrado el
+0.5+$ que en experimentos previos (sin documentar aquí) degrado el
 rendimiento.
 
-\subsection{Selector p\_inter probabilistico: pseudocodigo}
+\subsection{Selector p\_inter probabilístico: pseudocódigo}
 
 El Algoritmo~\ref{alg:selector-pip} formaliza el selector instalado.
 En estado factible, sortea un Bernoulli($p_{\text{inter}}$); en estado
 infactible, fuerza $\alpha_{\text{inter}}$ como en el baseline original.
 
 \begin{algorithm}[h]
-\caption{Selector p\_inter probabilistico.}
+\caption{Selector p\_inter probabilístico.}
 \label{alg:selector-pip}
 \begin{algorithmic}[1]
-\Require $\viol$ violacion actual; $p_{\text{inter}}, \alpha_{\text{inter}} \in [0,1]$;
+\Require $\viol$ violación actual; $p_{\text{inter}}, \alpha_{\text{inter}} \in [0,1]$;
   generador $rng$; conjuntos $\mathcal{O}_{\text{intra}}, \mathcal{O}_{\text{inter}}$.
 \Ensure Conjunto de operadores $\mathcal{O}$.
 \If{$\viol > 0$}
@@ -1052,33 +1432,33 @@ infactible, fuerza $\alpha_{\text{inter}}$ como en el baseline original.
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Configuracion}
+\subsection{Configuración}
 
 \begin{itemize}
-\item Selector: p\_inter probabilistico (Algoritmo~\ref{alg:selector-pip})
+\item Selector: p\_inter probabilístico (Algoritmo~\ref{alg:selector-pip})
   con $p_{\text{inter}} = 0.20, \alpha_{\text{inter}} = 0.80$.
 \item PR: $p_{PR} = 0.5$ (heredado de Experimento 4).
 \item Operadores: \texttt{OPERADORES\_STRICT\_5}.
-\item Kick: mismos parametros que strict.
-\item Construccion inicial: pickle aleatorio.
+\item Kick: mismos parámetros que strict.
+\item Construcción inicial: pickle aleatorio.
 \end{itemize}
 
 \subsection{Orden de los monkey-patches}
 
-El experimento instala los patches en este orden critico:
+El experimento instala los patches en este orden crítico:
 
 \begin{enumerate}
 \item \texttt{aplicar\_patch\_pr(modulo\_mh, p\_pr=0.5)}: instala
   internamente el selector binario estricto, la captura de mejor
   global y el kick con PR.
 \item \texttt{aplicar\_patch\_p\_inter(modulo\_mh)}: SOBRESCRIBE el
-  selector binario estricto que el paso 1 dejo instalado, con el
-  selector p\_inter probabilistico.
+  selector binario estricto que el paso 1 dejó instalado, con el
+  selector p\_inter probabilístico.
 \end{enumerate}
 
 El paso 2 no afecta al kick ni a la captura de la mejor global; solo
 sustituye el simbolo
-\texttt{seleccionar\_grupo\_operadores\_inter\_intra} en el modulo de
+\texttt{seleccionar\_grupo\_operadores\_inter\_intra} en el módulo de
 la MH.
 
 \subsection{Resultados}
@@ -1103,27 +1483,75 @@ Cuckoo  & 35.69 & 35.44 & 11.33 & $-4.70$ & $-0.45$ \\
 \end{tabular}
 \end{table}
 
+Las Figuras~\ref{fig:pip-barras}--\ref{fig:pip-tiempo} ilustran la
+comparación de este experimento (Sección~13 del notebook).
+
+\begin{observacion}[Sobre la escala de gap de estas figuras]
+Los valores absolutos de gap de estas cuatro figuras corresponden al
+\emph{evaluador canónico}, cuyo artefacto se descubrió posteriormente
+(Sección~\ref{sec:evaluador-canonico}). Por tanto deben leerse en
+términos \emph{relativos} (comparación entre experimentos), no como la
+calidad física real de las soluciones. La Figura~\ref{fig:pip-pct-inter},
+en cambio, mide el porcentaje de propuestas inter-ruta, una magnitud que
+no depende del evaluador de costo y por tanto es válida sin reservas.
+\end{observacion}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig_sec13_barras_gap.png}
+\caption{Gap medio por MH para Strict, PR y \texttt{p\_inter\_pr}
+         (evaluador canónico). El selector probabilístico iguala o supera
+         a PR en las MHs de trayectoria.}
+\label{fig:pip-barras}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig_sec13_boxplot_gap.png}
+\caption{Distribución del gap (boxplot) de \texttt{p\_inter\_pr} frente a
+         PR y Strict (evaluador canónico).}
+\label{fig:pip-boxplot}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig_sec13_pct_inter.png}
+\caption{Porcentaje de propuestas inter-ruta por experimento. El selector
+         \texttt{p\_inter}$=0.20$ recupera actividad inter-ruta en estado
+         factible, frente al $0$\,\% del selector binario estricto. Esta
+         magnitud no depende del evaluador de costo.}
+\label{fig:pip-pct-inter}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig_sec13_tiempo.png}
+\caption{Tiempo de ejecución por MH y experimento. El sobrecosto de
+         \texttt{p\_inter\_pr} respecto a PR es marginal.}
+\label{fig:pip-tiempo}
+\end{figure}
+
 \subsection{Diagnostico}
 
-El selector probabilistico moderado logra dos efectos:
+El selector probabilístico moderado logra dos efectos:
 
 \begin{itemize}
 \item Mejora claramente sobre PR puro en TS y RTS ($-6.30, -5.57$\,pp);
-  recupera el problema de degradacion que PR habia introducido.
+  recupera el problema de degradación que PR había introducido.
 \item Mejora claramente sobre strict en SA ($-9.69$\,pp); este es el
   mayor delta del programa hasta este punto.
 \item En ABC, donde PR ya saturaba, $p_{\text{inter}}$ no aporta:
   $\Delta = +0.54$ pp (dentro del ruido).
 \end{itemize}
 
-El resultado mas importante: \textbf{p\_inter\_pr es el primer
+El resultado más importante: \textbf{p\_inter\_pr es el primer
 experimento que produce mejora consistente en las 5 MH respecto a un
 baseline (PR)}. Su ganancia agregada lo convierte en la base sobre la
 que se construyen los experimentos posteriores.
 
-\subsection{Conclusion del experimento 5}
+\subsection{Conclusión del experimento 5}
 
-El selector probabilistico moderado, combinado con PR, supera al
+El selector probabilístico moderado, combinado con PR, supera al
 selector binario estricto Y al PR puro en cuatro de las cinco MHs.
 Sin embargo, el gap final medio sigue siendo alto (31--35\%): aun
 queda margen para cerrar.
@@ -1133,42 +1561,42 @@ queda margen para cerrar.
 \label{sec:exp-budget}
 % =====================================================================
 
-\subsection{Hipotesis}
+\subsection{Hipótesis}
 
 Si las MHs se atascan en aproximadamente 30\% de gap medio con 400
-iteraciones, una hipotesis razonable es que el presupuesto es
+iteraciones, una hipótesis razonable es que el presupuesto es
 insuficiente. Cuando se inspecciona el campo
 \texttt{iteracion\_mejor / iteraciones\_totales} de los CSV de
-p\_inter\_pr, se observa que las MHs encuentran su mejor solucion
+p\_inter\_pr, se observa que las MHs encuentran su mejor solución
 hacia el 33\% del presupuesto: el 67\% restante NO mejora. Esto
-sugiere que las iteraciones tardias no estan agregando valor.
+sugiere que las iteraciones tardias no están agregando valor.
 
 Hay dos posibilidades:
 
 \begin{enumerate}
-\item Las MHs se atascan en un minimo local del que no pueden salir
+\item Las MHs se atascan en un mínimo local del que no pueden salir
   con los operadores actuales. En este caso, MAS iteraciones no
   ayudaran.
 \item Las MHs SI mejoran con suficiente presupuesto pero el kick
-  reactivo se dispara demasiado tarde. En este caso, mas iteraciones
-  Y un kick mas frecuente ayudarian.
+  reactivo se dispara demasiado tarde. En este caso, más iteraciones
+  Y un kick más frecuente ayudarian.
 \end{enumerate}
 
 Adicionalmente, la baja tasa de factibilidad final observada en TS y
 RTS bajo el selector binario (experimento 1) sugiere que $\lambda$
-deberia amplificarse para garantizar factibilidad al cierre. El
-experimento prueba ambas hipotesis simultaneamente:
+debería amplificarse para garantizar factibilidad al cierre. El
+experimento prueba ambas hipótesis simultaneamente:
 
 \begin{quote}
 \textit{Multiplicar el presupuesto de iteraciones por 25 (TS/RTS) o
 $10$ (ABC/Cuckoo) y amplificar el $\lambda$ por defecto por 10
-deberia cerrar el gap si las MHs aun tienen margen explotable.}
+debería cerrar el gap si las MHs aun tienen margen explotable.}
 \end{quote}
 
-\subsection{Configuracion}
+\subsection{Configuración}
 
 \begin{itemize}
-\item Selector: p\_inter probabilistico (heredado).
+\item Selector: p\_inter probabilístico (heredado).
 \item PR: $p_{PR} = 0.5$ (heredado).
 \item Operadores: \texttt{OPERADORES\_STRICT\_5} (heredado).
 \item \textbf{Cambio 1 (presupuesto)}:
@@ -1183,13 +1611,13 @@ deberia cerrar el gap si las MHs aun tienen margen explotable.}
     \texttt{temperatura\_minima} $10^{-3}$ $\to$ \textbf{$10^{-4}$}.
   \item Kick: \texttt{max\_iter\_sin\_mejora\_kick} 30 $\to$
     \textbf{300} (TS/RTS/ABC/Cuckoo); 5 $\to$ \textbf{20} (SA).
-  \item Sin tope de kicks (\texttt{max\_resets=None}); el limite es el
+  \item Sin tope de kicks (\texttt{max\_resets=None}); el límite es el
     presupuesto duro.
   \end{itemize}
-\item \textbf{Cambio 2 ($\lambda$ amplificado)}: la funcion
+\item \textbf{Cambio 2 ($\lambda$ amplificado)}: la función
   \texttt{lambda\_penal\_capacidad\_por\_defecto} se sustituye por
   $\lambda(\text{ctx}) \to 10 \cdot \lambda_{\text{def}}(\text{ctx})$.
-\item Construccion inicial: pickle aleatorio (heredado).
+\item Construcción inicial: pickle aleatorio (heredado).
 \end{itemize}
 
 \subsection{Resultados}
@@ -1222,16 +1650,16 @@ Considerando que el costo computacional aumenta $5$--$15 \times$
 (SA pasa de 45\,s a 250\,s, TS de 20\,s a 309\,s), el retorno es
 \textbf{NO rentable}.
 
-Tres observaciones clave salen del analisis detallado:
+Tres observaciones clave salen del análisis detallado:
 
 \begin{enumerate}
 \item \textbf{La factibilidad final pasa a 100\% en las 5 MHs}, sin
-  excepcion. El $\lambda \times 10$ cumple su rol: garantiza
+  excepción. El $\lambda \times 10$ cumple su rol: garantiza
   factibilidad al cierre.
 \item \textbf{Las 5 MHs convergen al MISMO gap por instancia}. El
-  rango max--min entre MHs por instancia es tipicamente $<2$\,pp.
-  Esto es la \emph{firma de un minimo local compartido}: las cinco
-  estan atrapadas en una vecindad de la misma solucion, y NO pueden
+  rango max--min entre MHs por instancia es típicamente $<2$\,pp.
+  Esto es la \emph{firma de un mínimo local compartido}: las cinco
+  están atrapadas en una vecindad de la misma solución, y NO pueden
   escapar con los operadores actuales.
 \item \textbf{El gap inicial del pickle es alto y muy variable}: 52\%
   en promedio, llegando a 87\% en gdb10 y bajando hasta 28\% en kshs2.
@@ -1239,50 +1667,50 @@ Tres observaciones clave salen del analisis detallado:
   $\sim 30\%$ de gap final.
 \end{enumerate}
 
-\subsection{Conclusion del experimento 6}
+\subsection{Conclusión del experimento 6}
 
 \textbf{El budget extra no cierra el gap}. El cuello de botella NO es
-el numero de iteraciones; es algo \emph{anterior} en la cadena. El
-analisis detallado sugiere dos sospechosos: (i) la solucion inicial
+el número de iteraciones; es algo \emph{anterior} en la cadena. El
+análisis detallado sugiere dos sospechosos: (i) la solución inicial
 del pickle es muy mala, y (ii) las 5 MHs se atascan en el mismo
-minimo local. La siguiente seccion documenta como, al investigar
-estos sospechosos, se encontro un tercer y mas profundo culpable: el
+mínimo local. La siguiente sección documenta como, al investigar
+estos sospechosos, se encontró un tercer y más profundo culpable: el
 evaluador.
 
 % =====================================================================
-\section{Hallazgo critico: el evaluador canonico inflaba los gaps}
+\section{Hallazgo crítico: el evaluador canónico inflaba los gaps}
 \label{sec:evaluador-canonico}
 % =====================================================================
 
-\subsection{Observacion inicial}
+\subsection{Observación inicial}
 
 Tras el fracaso del experimento budget, se decidio investigar la causa
-del minimo local compartido. El primer paso fue inspeccionar la
+del mínimo local compartido. El primer paso fue inspeccionar la
 calidad de las soluciones iniciales del pickle precomputado. Cuando se
-intento generar soluciones iniciales de mayor calidad con la heuristica
-clasica de \emph{Path-Scanning} (que se documenta en la
-Seccion~\ref{sec:warmstart-greedy}), surgio una observacion
+intento generar soluciones iniciales de mayor calidad con la heurística
+clásica de \emph{Path-Scanning} (que se documenta en la
+Sección~\ref{sec:warmstart-greedy}), surgio una observación
 desconcertante:
 
 \begin{itemize}
-\item Path-Scanning, evaluando sus propias soluciones con orientacion
-  greedy (entrar a cada arco por el extremo mas cercano al nodo
+\item Path-Scanning, evaluando sus propias soluciones con orientación
+  greedy (entrar a cada arco por el extremo más cercano al nodo
   previo), reportaba un gap medio de $\sim 9.3\%$ en las 23
   instancias.
-\item Cuando esa misma solucion se pasaba a la MH y el wrapper la
-  evaluaba con el evaluador rapido del proyecto, el costo reportado
+\item Cuando esa misma solución se pasaba a la MH y el wrapper la
+  evaluaba con el evaluador rápido del proyecto, el costo reportado
   era SIGNIFICATIVAMENTE mayor, dando un gap inicial de $\sim 42\%$.
 \end{itemize}
 
-Diferencia: $\sim 33$\,pp en la misma solucion fisica. La unica
-explicacion posible es que los dos evaluadores estaban contando los
+Diferencia: $\sim 33$\,pp en la misma solución física. La única
+explicación posible es que los dos evaluadores estaban contando los
 mismos arcos de forma distinta.
 
-\subsection{Inspeccion del codigo}
+\subsection{Inspección del código}
 
-El evaluador rapido (\texttt{costo\_rapido\_ids} en
-\texttt{metacarp/evaluador\_costo.py}, lineas 674--749) tiene la
-siguiente logica vectorizada:
+El evaluador rápido (\texttt{costo\_rapido\_ids} en
+\texttt{metacarp/evaluador\_costo.py}, líneas 674--749) tiene la
+siguiente lógica vectorizada:
 
 \begin{lstlisting}[language=Python]
 us = u_arr[ids]   # nodo de inicio FIJO de cada tarea
@@ -1293,84 +1721,84 @@ dh = dist[origen_prev, us]   # deadheading SIEMPRE entrando por u
 
 Es decir, \emph{para cada tarea (u, v) la entrada es siempre por $u$ y
 la salida es siempre por $v$}, sin importar cual de los dos extremos
-este mas cerca del nodo donde dejo el vehiculo la tarea anterior.
+este más cerca del nodo donde dejó el vehículo la tarea anterior.
 
-Este comportamiento del evaluador es ARTIFICIAL: en CARP fisico, un
-vehiculo puede recorrer un arco $(u, v)$ en cualquier direccion. Si
+Este comportamiento del evaluador es ARTIFICIAL: en CARP físico, un
+vehículo puede recorrer un arco $(u, v)$ en cualquier dirección. Si
 $\mathrm{dist}(\text{prev}, v) < \mathrm{dist}(\text{prev}, u)$,
 \emph{el costo correcto del paso} es entrar por $v$, servir el arco y
-salir por $u$. El evaluador canonico forzaba la primera opcion incluso
+salir por $u$. El evaluador canónico forzaba la primera opción incluso
 cuando era subobtima.
 
-\subsection{Cuantificacion del artefacto}
+\subsection{Cuantificación del artefacto}
 
-Para una solucion arbitraria $s$, sea $c_{\text{can}}(s)$ el costo
-con evaluador canonico (orientacion fija) y $c_{\text{gr}}(s)$ el
-costo con orientacion greedy (entrar por el extremo mas cercano). Se
+Para una solución arbitraria $s$, sea $c_{\text{can}}(s)$ el costo
+con evaluador canónico (orientación fija) y $c_{\text{gr}}(s)$ el
+costo con orientación greedy (entrar por el extremo más cercano). Se
 cumple
 \[ c_{\text{gr}}(s) \le c_{\text{can}}(s), \]
-con igualdad si y solo si para cada tarea de cada ruta la orientacion
-canonica coincide con la greedy. Se midio empiricamente la diferencia
-relativa en las 23 instancias para una construccion de Path-Scanning
+con igualdad si y solo si para cada tarea de cada ruta la orientación
+canónica coincide con la greedy. Se midio empíricamente la diferencia
+relativa en las 23 instancias para una construcción de Path-Scanning
 fija:
 
 \begin{itemize}
 \item Diferencia media: $\sim 33$ pp del gap relativo (32.7\% vs
   $\sim 9.3\%$).
-\item Diferencia maxima: $\sim 56$ pp (gdb19: 29.1\% canonico vs
+\item Diferencia máxima: $\sim 56$ pp (gdb19: 29.1\% canónico vs
   $\sim 3.6\%$ greedy).
-\item En ninguna de las 23 instancias el evaluador canonico produce
+\item En ninguna de las 23 instancias el evaluador canónico produce
   un costo menor que el greedy.
 \end{itemize}
 
-\subsection{Invariancia del costo CARP a la orientacion}
+\subsection{Invariancia del costo CARP a la orientación}
 
-Que el costo CARP \emph{fisico} es invariante a la orientacion de cada
+Que el costo CARP \emph{físico} es invariante a la orientación de cada
 arco es una consecuencia de la simetria de la matriz de distancias
 $D_{ij} = D_{ji}$ (las instancias del benchmark son no dirigidas) y de
 la simetria del costo de servicio de cada arco.
 
-\begin{proposicion}[Invariancia del costo CARP a la orientacion de arcos]
+\begin{proposicion}[Invariancia del costo CARP a la orientación de arcos]
 \label{prop:invariancia}
-Sea $s$ una solucion CARP. Para cualquier eleccion de orientacion para
+Sea $s$ una solución CARP. Para cualquier elección de orientación para
 cada arco servido, el costo total de $s$ esta acotado superiormente por
 $c_{\text{can}}(s)$ y inferiormente por $c_{\text{gr}}^{\text{glob}}(s)$,
-donde $c_{\text{gr}}^{\text{glob}}$ es el optimo de orientacion
-(programacion dinamica O(n) por ruta sobre dos estados). En particular,
-$c_{\text{gr}}(s)$ (orientacion greedy local) cumple
+donde $c_{\text{gr}}^{\text{glob}}$ es el óptimo de orientación
+(programación dinámica O(n) por ruta sobre dos estados). En particular,
+$c_{\text{gr}}(s)$ (orientación greedy local) cumple
 $c_{\text{gr}}^{\text{glob}}(s) \le c_{\text{gr}}(s) \le c_{\text{can}}(s)$.
 \end{proposicion}
 
 \begin{proof}[Idea de la prueba]
 Considerese la primera tarea $t_1$ con extremos $(u_1, v_1)$. La
-contribucion de $t_1$ al costo total es $\mathrm{dist}(\text{prev}, e_1) +
+contribución de $t_1$ al costo total es $\mathrm{dist}(\text{prev}, e_1) +
 \mathrm{costo\_serv}(t_1) + \mathrm{dist}(s_1, \text{next})$, donde
 $(e_1, s_1) \in \{(u_1, v_1), (v_1, u_1)\}$. Como
 $\mathrm{costo\_serv}(t_1)$ es la misma en ambas orientaciones y los
-deadheadings dependen de la eleccion, la orientacion optima MINIMIZA la
-suma de dos terminos por tarea. La orientacion greedy (que elige el
-extremo mas cercano de \texttt{prev}) minimiza el primer termino pero
-puede sub-minimizar el segundo; la orientacion canonica fija no
-minimiza ninguno. De ahi las desigualdades.
+deadheadings dependen de la elección, la orientación óptima MINIMIZA la
+suma de dos términos por tarea. La orientación greedy (que elige el
+extremo más cercano de \texttt{prev}) minimiza el primer término pero
+puede sub-minimizar el segundo; la orientación canónica fija no
+minimiza ninguno. De ahí las desigualdades.
 \end{proof}
 
-\subsection{Implicacion sobre los experimentos previos}
+\subsection{Implicación sobre los experimentos previos}
 
-\textbf{Los gap reportados en los experimentos 1--6 estan inflados.}
-Las cinco MHs estaban buscando minimos en el espacio
+\textbf{Los gap reportados en los experimentos 1--6 están inflados.}
+Las cinco MHs estaban buscando mínimos en el espacio
 $c_{\text{can}}$, no en $c_{\text{gr}}^{\text{glob}}$. Esto explica el
 patron observado en budget (las 5 MHs convergen al mismo gap por
-instancia): el evaluador canonico crea minimos locales artificiales
-que coinciden por construccion para todas las MHs. Cualquier solucion
+instancia): el evaluador canónico crea mínimos locales artificiales
+que coinciden por construcción para todas las MHs. Cualquier solución
 en la que las tareas tengan orientaciones subobtimas pero localmente
-estables es un atractor del evaluador canonico, indistintamente de
+estables es un atractor del evaluador canónico, indistintamente de
 que la MH sea de trayectoria o poblacional.
 
-\subsection{Cuantificacion experimental del artefacto en MHs}
+\subsection{Cuantificación experimental del artefacto en MHs}
 
 Para verificar que el evaluador es el cuello de botella, se ejecuto
 TS Simple con: (a) el patch del experimento budget, (b) Path-Scanning
-como inicializacion, (c) el evaluador greedy en lugar del canonico.
+como inicialización, (c) el evaluador greedy en lugar del canónico.
 Resultados sobre 5 instancias seleccionadas (1 corrida cada una):
 
 \begin{table}[h]
@@ -1380,7 +1808,7 @@ Resultados sobre 5 instancias seleccionadas (1 corrida cada una):
 \small
 \begin{tabular}{lrrrr}
 \toprule
-Instancia & Budget canonico (gap \%) & TS+greedy+PS (gap \%) & $\Delta$ (pp) \\
+Instancia & Budget canónico (gap \%) & TS+greedy+PS (gap \%) & $\Delta$ (pp) \\
 \midrule
 gdb19 & 14.55 & \textbf{0.00} & $-14.55$ \\
 gdb10 & 52.00 & \textbf{3.27} & $-48.73$ \\
@@ -1392,33 +1820,33 @@ kshs5 & 38.71 & \textbf{8.63} & $-30.08$ \\
 \end{table}
 
 Tres de las cinco instancias alcanzan el BKS EXACTO (gap 0\%). La
-hipotesis del evaluador como cuello de botella queda CONFIRMADA: una
-fraccion sustancial del gap reportado en los experimentos previos es
-artefacto del evaluador, no deficiencia de la busqueda.
+hipótesis del evaluador como cuello de botella queda CONFIRMADA: una
+fracción sustancial del gap reportado en los experimentos previos es
+artefacto del evaluador, no deficiencia de la búsqueda.
 
 % =====================================================================
 \section{Experimento 7: warmstart\_greedy\_20260529}
 \label{sec:warmstart-greedy}
 % =====================================================================
 
-\subsection{Hipotesis}
+\subsection{Hipótesis}
 
 Con el evaluador correcto identificado, se construye el experimento
 final del programa, que apila DOS nuevas capas:
 
 \begin{quote}
-\textit{Sobre el stack de budget, anadir (i) la construccion inicial
+\textit{Sobre el stack de budget, anadir (i) la construcción inicial
 de Path-Scanning de Golden, DeArmon y Baker~\cite{golden1983} y (ii) el evaluador
-greedy con orientacion dinamica por tarea cierra el gap a $\le 5$\,pp
-en la mayoria de las instancias del benchmark.}
+greedy con orientación dinámica por tarea cierra el gap a $\le 5$\,pp
+en la mayoría de las instancias del benchmark.}
 \end{quote}
 
-\subsection{Path-Scanning: pseudocodigo}
+\subsection{Path-Scanning: pseudocódigo}
 
-Path-Scanning~\cite{golden1983} es la heuristica constructiva clasica para CARP. El
-Algoritmo~\ref{alg:ps} describe la version con una unica regla; el
+Path-Scanning~\cite{golden1983} es la heurística constructiva clásica para CARP. El
+Algoritmo~\ref{alg:ps} describe la versión con una única regla; el
 algoritmo completo se ejecuta con las 5 reglas de Golden et al. y
-devuelve la mejor solucion entre ellas.
+devuelve la mejor solución entre ellas.
 
 \begin{algorithm}[h]
 \caption{Path-Scanning con regla $r$.}
@@ -1426,7 +1854,7 @@ devuelve la mejor solucion entre ellas.
 \begin{algorithmic}[1]
 \Require Datos de la instancia ($\mathcal{T}$ tareas, $\text{depot}$, $Q$);
   matriz $D_{ij}$; regla $r \in \{1, \dots, 5\}$.
-\Ensure Solucion CARP como lista de rutas en formato labels.
+\Ensure Solución CARP como lista de rutas en formato labels.
 \State $\mathcal{T}_{\text{sin servir}} \gets \mathcal{T}$
 \State $\mathcal{R} \gets \emptyset$
 \While{$\mathcal{T}_{\text{sin servir}} \neq \emptyset$}
@@ -1452,36 +1880,36 @@ devuelve la mejor solucion entre ellas.
 \textbf{Las 5 reglas de Golden et al. (tie-break)}:
 
 \begin{itemize}
-\item Regla 1: $\max D_{v_t, \text{depot}}$ (alejarse del deposito).
-\item Regla 2: $\min D_{v_t, \text{depot}}$ (acercarse al deposito).
+\item Regla 1: $\max D_{v_t, \text{depot}}$ (alejarse del depósito).
+\item Regla 2: $\min D_{v_t, \text{depot}}$ (acercarse al depósito).
 \item Regla 3: $\max d_t / c_t^{\text{serv}}$ (densidad demanda/servicio alta).
 \item Regla 4: $\min d_t / c_t^{\text{serv}}$ (densidad demanda/servicio baja).
 \item Regla 5: si $q < Q/2$, regla 1; en caso contrario, regla 2.
 \end{itemize}
 
 El procedimiento mejor-de-5 ejecuta las cinco variantes con cada regla
-y devuelve la solucion con menor costo total (deadheading + servicio).
+y devuelve la solución con menor costo total (deadheading + servicio).
 
 \subsection{Calidad de Path-Scanning}
 
 Path-Scanning produce un gap inicial medio de $\sim 9.3\%$ cuando se
-evalua con orientacion greedy y de $\sim 42\%$ con orientacion
-canonica. En dos instancias (gdb4 y gdb17) Path-Scanning alcanza el
+evalua con orientación greedy y de $\sim 42\%$ con orientación
+canónica. En dos instancias (gdb4 y gdb17) Path-Scanning alcanza el
 BKS exacto (gap 0\%).
 
-\subsection{Evaluador greedy: pseudocodigo}
+\subsection{Evaluador greedy: pseudocódigo}
 
 El Algoritmo~\ref{alg:eval-greedy} formaliza el evaluador con
-orientacion dinamica por tarea. Es matematicamente la cota superior
-del optimo de orientacion (Proposicion~\ref{prop:invariancia}) y
-captura $> 95\%$ de la ganancia del optimo global con complejidad
-$O(\sum |\rho|)$ por evaluacion.
+orientación dinámica por tarea. Es matematicamente la cota superior
+del óptimo de orientación (Proposición~\ref{prop:invariancia}) y
+captura $> 95\%$ de la ganancia del óptimo global con complejidad
+$O(\sum |\rho|)$ por evaluación.
 
 \begin{algorithm}[h]
-\caption{Evaluador greedy con orientacion dinamica por tarea.}
+\caption{Evaluador greedy con orientación dinámica por tarea.}
 \label{alg:eval-greedy}
 \begin{algorithmic}[1]
-\Require Solucion $s = (\rho_1, \dots, \rho_k)$; matriz $D_{ij}$;
+\Require Solución $s = (\rho_1, \dots, \rho_k)$; matriz $D_{ij}$;
   arrays $u_t, v_t, c_t^{\text{serv}}$.
 \Ensure Costo total $\Phi(s)$.
 \State $\Phi \gets 0$
@@ -1490,10 +1918,10 @@ $O(\sum |\rho|)$ por evaluacion.
   \For{cada tarea $t \in \rho$}
     \State $d_u \gets D_{\text{prev}, u_t}$
     \State $d_v \gets D_{\text{prev}, v_t}$
-    \If{$d_u \le d_v$} \Comment{Orientacion canonica}
+    \If{$d_u \le d_v$} \Comment{Orientación canónica}
       \State $\Phi \gets \Phi + d_u + c_t^{\text{serv}}$
       \State $\text{prev} \gets v_t$
-    \Else \Comment{Orientacion invertida}
+    \Else \Comment{Orientación invertida}
       \State $\Phi \gets \Phi + d_v + c_t^{\text{serv}}$
       \State $\text{prev} \gets u_t$
     \EndIf
@@ -1506,19 +1934,19 @@ $O(\sum |\rho|)$ por evaluacion.
 
 El evaluador greedy se aplica como monkey-patch a tres funciones:
 \texttt{costo\_rapido\_ids}, \texttt{costo\_lote\_ids} y
-\texttt{costo\_lote\_penalizado\_ids}. La penalizacion de capacidad NO
-depende de la orientacion (depende solo de demandas por ruta), por lo
-que se computa con la funcion original.
+\texttt{costo\_lote\_penalizado\_ids}. La penalización de capacidad NO
+depende de la orientación (depende solo de demandas por ruta), por lo
+que se computa con la función original.
 
-\subsection{Configuracion}
+\subsection{Configuración}
 
 \begin{itemize}
-\item Selector: p\_inter probabilistico (heredado).
+\item Selector: p\_inter probabilístico (heredado).
 \item PR: $p_{PR} = 0.5$ (heredado).
 \item Operadores: \texttt{OPERADORES\_STRICT\_5}.
 \item Budget: $\times 25$ (heredado de Experimento 6).
 \item $\lambda \times 10$ (heredado de Experimento 6).
-\item \textbf{Cambio 1}: construccion inicial = Path-Scanning
+\item \textbf{Cambio 1}: construcción inicial = Path-Scanning
   mejor-de-5 (Algoritmo~\ref{alg:ps}).
 \item \textbf{Cambio 2}: evaluador = greedy
   (Algoritmo~\ref{alg:eval-greedy}).
@@ -1526,9 +1954,9 @@ que se computa con la funcion original.
 
 \subsection{Resultados parciales}
 
-Al momento de redactar este capitulo, el grid completo de
-\texttt{warmstart\_greedy} esta pendiente de ejecucion (esta fuera del
-alcance temporal del capitulo). Los resultados disponibles son los del
+Al momento de redactar este capítulo, el grid completo de
+\texttt{warmstart\_greedy} esta pendiente de ejecución (esta fuera del
+alcance temporal del capítulo). Los resultados disponibles son los del
 smoke test inicial: 1 corrida por (MH, instancia) sobre 2 instancias
 (gdb19, kshs1) por MH. La Tabla~\ref{tab:wsgreedy-smoke} resume.
 
@@ -1550,27 +1978,27 @@ Cuckoo  & 10.91 & 3.26 &  6.9 \\
 \end{tabular}
 \end{table}
 
-Tres metaheuristicas (SA, TS Simple, RTS) alcanzan el BKS exacto en
+Tres metaheurísticas (SA, TS Simple, RTS) alcanzan el BKS exacto en
 ambas instancias testeadas. ABC alcanza BKS en gdb19 y un gap de
-$2.64\%$ en kshs1. Cuckoo presenta mas variabilidad
+$2.64\%$ en kshs1. Cuckoo presenta más variabilidad
 ($10.91\%$ y $3.26\%$). El experimento del grid completo
-deberia confirmar estos resultados sobre las 23 instancias.
+debería confirmar estos resultados sobre las 23 instancias.
 
 \subsection{Diagnostico retrospectivo}
 
-El experimento warmstart\_greedy confirma que la combinacion
-(i) construccion inicial heuristica + (ii) evaluador correcto cierra
+El experimento warmstart\_greedy confirma que la combinación
+(i) construcción inicial heurística + (ii) evaluador correcto cierra
 casi todo el gap residual. Esto reformula el storytelling del programa:
 
 \begin{itemize}
 \item Los experimentos 1--6 estuvieron buscando mejoras a un
-  problema mal medido. Cualquier ganancia ahi era recuperar
-  artefactos del evaluador, no descubrir politicas de busqueda mejores.
-\item La unica diferencia VERDADERA entre los experimentos 1--6 que
+  problema mal medido. Cualquier ganancia ahí era recuperar
+  artefactos del evaluador, no descubrir políticas de búsqueda mejores.
+\item La única diferencia VERDADERA entre los experimentos 1--6 que
   permanece bajo el evaluador correcto es el aporte de cada
   componente: selector, kick, PR, $\lambda$. Para cuantificar este
   aporte real, hace falta re-correr cada baseline bajo el evaluador
-  greedy. Esto se documenta en la seccion siguiente.
+  greedy. Esto se documenta en la sección siguiente.
 \end{itemize}
 
 % =====================================================================
@@ -1578,7 +2006,7 @@ casi todo el gap residual. Esto reformula el storytelling del programa:
 \label{sec:re-greedy}
 % =====================================================================
 
-\subsection{Motivacion}
+\subsection{Motivación}
 
 Para AISLAR el aporte real de cada componente experimental bajo el
 evaluador correcto, se disena un conjunto de cinco experimentos de
@@ -1598,8 +2026,8 @@ patch del evaluador greedy en cada worker:
   + evaluador greedy.
 \end{itemize}
 
-Cada experimento R$_i$ es identico a su contraparte original SALVO por
-la activacion del evaluador greedy. Esto permite descomponer el gap
+Cada experimento R$_i$ es idéntico a su contraparte original SALVO por
+la activación del evaluador greedy. Esto permite descomponer el gap
 medido en cada baseline en dos componentes:
 
 \begin{equation}
@@ -1608,14 +2036,14 @@ medido en cada baseline en dos componentes:
 \end{equation}
 
 donde $\Delta_{\text{evaluador}}$ es el artefacto del evaluador
-canonico (siempre $\ge 0$) y $\gap_{\text{real}}$ es la deficiencia
-real de la busqueda.
+canónico (siempre $\ge 0$) y $\gap_{\text{real}}$ es la deficiencia
+real de la búsqueda.
 
-\subsection{Implementacion}
+\subsection{Implementación}
 
-La implementacion se concentra en un solo modulo
+La implementación se concentra en un solo módulo
 (\texttt{scripts/\_re\_greedy\_20260529\_common.py}) que despacha por
-los parametros CLI \texttt{--variant} y \texttt{--mh}. Un script
+los parámetros CLI \texttt{--variant} y \texttt{--mh}. Un script
 master de bash (\texttt{scripts/run\_all\_re\_greedy\_20260529.sh})
 lanza las 25 grids (5 variantes en secuencia, 5 MHs en paralelo dentro
 de cada variante).
@@ -1636,11 +2064,11 @@ sobre gdb19 (1 corrida cada una):
 \subsection{Resultados completos}
 
 El grid de 2875 corridas (5 variantes $\times$ 5 MHs $\times$ 23 instancias
-$\times$ 5 repeticiones) se ejecuto con exito. La
+$\times$ 5 repeticiones) se ejecutó con éxito. La
 Tabla~\ref{tab:re-greedy-gap} presenta el gap medio por MH y variante;
 la Tabla~\ref{tab:re-greedy-bon} el \emph{Best-of-N} (mejor de 5
 repeticiones por instancia, luego promediado); y la
-Tabla~\ref{tab:re-greedy-bks} el numero de corridas que alcanzan el BKS
+Tabla~\ref{tab:re-greedy-bks} el número de corridas que alcanzan el BKS
 exacto (gap $< 0.01$\,\%).
 
 \begin{table}[h]
@@ -1670,7 +2098,7 @@ Cuckoo  & 14.81 & 14.20 & 8.20          & 8.97  & 4.25         & 7.08 \\
 \begin{table}[h]
 \centering
 \caption{Best-of-N gap (\%) — mejor de 5 repeticiones por instancia,
-         luego promediado. Mide el techo de calidad de cada configuracion.}
+         luego promediado. Mide el techo de calidad de cada configuración.}
 \label{tab:re-greedy-bon}
 \small
 \begin{tabular}{lrrrrrr}
@@ -1709,19 +2137,19 @@ Instancias c/BKS & 4/23 & 5/23 & \textbf{23/23} & 18/23 & 22/23 & 2/2 \\
 \end{tabular}
 \end{table}
 
-El resultado mas destacable es que \textbf{PR (R3) alcanza el BKS exacto
+El resultado más destacable es que \textbf{PR (R3) alcanza el BKS exacto
 en las 23 instancias del benchmark} (al menos en una de las 5
-repeticiones), con SA como la MH mas efectiva (74 corridas en BKS,
-64\,\% de tasa de exito individual). Budget (R5) aumenta la tasa de
+repeticiones), con SA como la MH más efectiva (74 corridas en BKS,
+64\,\% de tasa de éxito individual). Budget (R5) aumenta la tasa de
 SA al 75\,\% pero a un costo de tiempo $6.5\times$ mayor.
 
-\paragraph{Analisis por instancia.}
+\paragraph{Análisis por instancia.}
 La Tabla~\ref{tab:re-greedy-inst} muestra el gap medio sobre las 5 MHs
-para las variantes R1, R3 y R5 en cada instancia. Las instancias mas
-dificiles (\texttt{gdb12}, \texttt{gdb5}, \texttt{gdb21}) mantienen
-gap $> 7$\,\% incluso en R5, lo que sugiere que el espacio de busqueda
+para las variantes R1, R3 y R5 en cada instancia. Las instancias más
+difíciles (\texttt{gdb12}, \texttt{gdb5}, \texttt{gdb21}) mantienen
+gap $> 7$\,\% incluso en R5, lo que sugiere que el espacio de búsqueda
 en instancias con alta densidad de arcos y capacidad ajustada requiere
-operadores mas agresivos o estrategias de reinicio global.
+operadores más agresivos o estrategias de reinicio global.
 
 \begin{table}[h]
 \centering
@@ -1761,6 +2189,51 @@ kshs6 & 10197 & 13.53 & 1.47 & 1.21 \\
 \end{tabular}
 \end{table}
 
+\subsection{Visualización de resultados}
+\label{subsec:viz-re-greedy}
+
+Las Figuras~\ref{fig:re-barras}--\ref{fig:re-bks} resumen gráficamente los
+resultados de la corrida R1--R5 bajo el evaluador greedy. Fueron generadas
+por la Sección~14 del notebook de análisis
+(\texttt{analisis\_exploratorio\_operadores.ipynb}).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig_sec14_barras_gap.png}
+\caption{Gap medio (izquierda) y Best-of-N (derecha) por MH y experimento.
+         Path Relinking (R3) y Budget (R5) reducen drásticamente el gap
+         respecto a Strict (R1) y AOS-PM (R2); SA es la MH dominante.}
+\label{fig:re-barras}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig_sec14_boxplot_gap.png}
+\caption{Distribución del gap al BKS para SA (izquierda) y RTS (derecha)
+         a través de los seis experimentos. La mediana de SA cae a cero
+         en R3, R5 y R6.}
+\label{fig:re-boxplot}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{fig_sec14_instancias.png}
+\caption{Gap medio al BKS por instancia (promedio de las cinco MHs) para
+         R1 Strict, R3 PR y R5 Budget. Las instancias \texttt{gdb12},
+         \texttt{gdb13} y \texttt{gdb21} resisten incluso bajo presupuesto
+         extendido.}
+\label{fig:re-instancias}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\linewidth]{fig_sec14_bks_hits.png}
+\caption{Mapa de calor del número de corridas que alcanzan el BKS exacto
+         (gap $< 0.01$\,\%) por MH y experimento. SA bajo Budget (R5)
+         alcanza el óptimo en 87 de 116 corridas.}
+\label{fig:re-bks}
+\end{figure}
+
 % =====================================================================
 \section{Comparativa global del programa experimental}
 \label{sec:comparativa-global}
@@ -1769,9 +2242,9 @@ kshs6 & 10197 & 13.53 & 1.47 & 1.21 \\
 \subsection{Tabla maestra de gap medio}
 
 La Tabla~\ref{tab:comparativa-global} consolida el gap medio por MH y
-experimento bajo el \textbf{evaluador greedy de orientacion} (corrida
-R1--R5 completa). Los valores del primer ciclo (evaluador canonico)
-eran artefactos de la funcion de costo y no se incluyen en la tabla
+experimento bajo el \textbf{evaluador greedy de orientación} (corrida
+R1--R5 completa). Los valores del primer ciclo (evaluador canónico)
+eran artefactos de la función de costo y no se incluyen en la tabla
 definitiva; se conservan en las secciones individuales de cada
 experimento para documentar el proceso de descubrimiento.
 
@@ -1803,11 +2276,11 @@ Cuckoo  & 14.81 & 14.20 & 8.20          & 8.97  & 4.25         & 7.08 \\
 
 La Tabla~\ref{tab:tiempo-medio} resume el costo computacional por
 experimento (corrida R1--R5 bajo evaluador greedy). El evaluador greedy
-agrega una comparacion de distancias por tarea pero no cambia la
-complejidad asintotica; el incremento respecto de los tiempos originales
-(evaluador canonico) es menor al 10\,\% en todos los casos. El
+agrega una comparación de distancias por tarea pero no cambia la
+complejidad asintótica; el incremento respecto de los tiempos originales
+(evaluador canónico) es menor al 10\,\% en todos los casos. El
 presupuesto $\times 25$ de R5 multiplica el tiempo por
-$5$--$30\times$ segun la MH.
+$5$--$30\times$ según la MH.
 
 \begin{table}[h]
 \centering
@@ -1835,8 +2308,8 @@ El ranking definitivo de configuraciones, ordenado por gap medio
 sobre las 5 MHs y las 23 instancias del benchmark, es:
 
 \begin{enumerate}
-\item \textbf{R5 Budget}: 3.08\,\% — maximo presupuesto, mejor calidad global.
-\item \textbf{R3 PR}: 5.27\,\% — relacion calidad/tiempo optima;
+\item \textbf{R5 Budget}: 3.08\,\% — máximo presupuesto, mejor calidad global.
+\item \textbf{R3 PR}: 5.27\,\% — relación calidad/tiempo óptima;
       SA alcanza BKS en el 64\,\% de corridas individuales.
 \item R4 p\_inter\_pr: 6.24\,\% — inferior a R3 pese a mayor complejidad.
 \item R1 Strict: 14.84\,\% — baseline corregido; AOS-PM (R2, 14.64\,\%)
@@ -1844,117 +2317,117 @@ sobre las 5 MHs y las 23 instancias del benchmark, es:
 \item R2 AOS-PM: 14.64\,\% — sin diferencia significativa respecto a Strict.
 \end{enumerate}
 
-\paragraph{Configuracion recomendada.}
-Para el balance optimo entre complejidad de implementacion, tiempo de
-computo y calidad de solucion, se recomienda \textbf{SA + Path Relinking
+\paragraph{Configuración recomendada.}
+Para el balance óptimo entre complejidad de implementación, tiempo de
+computo y calidad de solución, se recomienda \textbf{SA + Path Relinking
 + evaluador greedy (R3)}:
 
 \begin{itemize}
 \item Gap medio SA: 0.90\,\% (mediana: 0.00\,\%).
 \item BKS exacto en 74/115 corridas (64\,\%) con $\sim 40$ segundos promedio.
 \item Componentes adicionales sobre el baseline: dos monkey-patches,
-      cero parametros nuevos que requieran tuning.
+      cero parámetros nuevos que requieran tuning.
 \item R5-Budget mejora 0.33\,pp sobre R3 en SA pero consume $6.5\times$
-      mas tiempo y requiere ajuste de 6 parametros adicionales.
+      más tiempo y requiere ajuste de 6 parámetros adicionales.
 \end{itemize}
 
 \paragraph{Comportamiento por MH.}
 SA es la MH dominante en todos los experimentos con evaluador greedy.
 TS y RTS siguen de cerca bajo presupuesto extendido (R5: 1.08\,\% y
-1.18\,\%). ABC y Cuckoo no superan el 4\,\% en ninguna configuracion,
-lo que sugiere que su mecanismo de exploracion de enjambre no se
-beneficia del mismo modo del evaluador mas preciso ni del presupuesto
+1.18\,\%). ABC y Cuckoo no superan el 4\,\% en ninguna configuración,
+lo que sugiere que su mecanismo de exploración de enjambre no se
+beneficia del mismo modo del evaluador más preciso ni del presupuesto
 ampliado, posiblemente por la escasa diversidad entre agentes en
 instancias de tamano pequeno--mediano.
 
 % =====================================================================
-\section{Conclusiones del capitulo}
+\section{Conclusiones del capítulo}
 \label{sec:conclusiones}
 % =====================================================================
 
-\subsection{Aprendizajes tecnicos}
+\subsection{Aprendizajes técnicos}
 
 \begin{enumerate}
-\item \textbf{El evaluador es el componente mas critico.} Con el
-  evaluador greedy de orientacion, el gap del baseline Strict baja de
-  $\approx 31$\,\% a 14.84\,\% sin modificar ningun parametro de
-  busqueda. Ninguno de los demas componentes experimentales (AOS, PR,
+\item \textbf{El evaluador es el componente más crítico.} Con el
+  evaluador greedy de orientación, el gap del baseline Strict baja de
+  $\approx 31$\,\% a 14.84\,\% sin modificar ningún parámetro de
+  búsqueda. Ninguno de los demas componentes experimentales (AOS, PR,
   p\_inter, budget) produce una mejora unitaria comparable.
-\item \textbf{Path Relinking es la mejora mas eficiente en calidad/tiempo.}
+\item \textbf{Path Relinking es la mejora más eficiente en calidad/tiempo.}
   R3-PR reduce el gap en 9.57\,pp respecto a R1-Strict con solo
   $+12$\,s adicionales en SA. SA alcanza el BKS exacto en 23/23
   instancias y en el 64\,\% de corridas individuales.
-\item \textbf{El presupuesto extendido es util pero costoso.} R5-Budget
-  mejora 0.33\,pp sobre R3 en SA, pero consume $6.5\times$ mas tiempo
-  (260\,s vs 40\,s). La relacion es favorable si el tiempo no es
-  restriccion; desfavorable en escenarios de muchas instancias.
+\item \textbf{El presupuesto extendido es útil pero costoso.} R5-Budget
+  mejora 0.33\,pp sobre R3 en SA, pero consume $6.5\times$ más tiempo
+  (260\,s vs 40\,s). La relación es favorable si el tiempo no es
+  restricción; desfavorable en escenarios de muchas instancias.
 \item \textbf{AOS-PM no converge en el presupuesto disponible.} La
   diferencia entre R2 (14.64\,\%) y R1 (14.84\,\%) no es significativa.
   Las recompensas demasiado escasas ($\sim 1$\,\% de iteraciones mejoran)
   impiden que los pesos del AOS se especialicen.
 \item \textbf{ABC y Cuckoo tienen un techo de calidad inferior.} En
-  ninguna configuracion bajan del 4\,\%, frente al 0.57\,\% de SA.
-  Su mecanismo de exploracion colectiva no compensa la perdida de
-  especializacion local que logran las MHs de trayectoria.
-\item \textbf{Path-Scanning produce soluciones de calidad con orientacion
-  greedy.} La heuristica de Golden et al.~\cite{golden1983} alcanza gap $\approx 9$\,\%
-  en las 23 instancias sin ninguna busqueda local, lo que la hace
+  ninguna configuración bajan del 4\,\%, frente al 0.57\,\% de SA.
+  Su mecanismo de exploración colectiva no compensa la perdida de
+  especialización local que logran las MHs de trayectoria.
+\item \textbf{Path-Scanning produce soluciones de calidad con orientación
+  greedy.} La heurística de Golden et al.~\cite{golden1983} alcanza gap $\approx 9$\,\%
+  en las 23 instancias sin ninguna búsqueda local, lo que la hace
   un punto de partida valioso para estudios futuros de ILS/LNS.
 \end{enumerate}
 
-\subsection{Aprendizajes metodologicos}
+\subsection{Aprendizajes metodológicos}
 
-El aprendizaje metodologico mas importante del programa es el de la
-Seccion~\ref{sec:evaluador-canonico}: una observacion empirica
+El aprendizaje metodológico más importante del programa es el de la
+Sección~\ref{sec:evaluador-canonico}: una observación empírica
 aparentemente anecdota (que dos evaluadores diferian en $\sim 33$\,pp
-sobre la misma solucion) revelo un artefacto en el evaluador rapido
-del proyecto que estaba inflando todos los gaps de manera sistematica
+sobre la misma solución) reveló un artefacto en el evaluador rápido
+del proyecto que estaba inflando todos los gaps de manera sistemática
 y por igual en las cinco MHs.
 
-Las lecciones metodologicas que se extraen:
+Las lecciones metodológicas que se extraen:
 
 \begin{enumerate}
-\item \textbf{Validar el evaluador antes que la busqueda}: los gaps
-  observados se interpretaron consistentemente como ``la busqueda no
-  llega'' cuando la causa real era ``la medicion esta mal''. Una
-  prueba ortogonal del evaluador con una construccion alternativa
-  habria revelado el problema en el primer experimento.
+\item \textbf{Validar el evaluador antes que la búsqueda}: los gaps
+  observados se interpretaron consistentemente como ``la búsqueda no
+  llega'' cuando la causa real era ``la medición esta mal''. Una
+  prueba ortogonal del evaluador con una construcción alternativa
+  habría revelado el problema en el primer experimento.
 \item \textbf{Atender a coincidencias sospechosas}: que las cinco
   MHs convergieran al mismo gap por instancia (sin importar su
-  filosofia interna) era una senal fuerte de que el problema no
+  filosofía interna) era una senal fuerte de que el problema no
   estaba en las MHs. Esta senal se interpreto inicialmente como
   ``robustez'' cuando era ``firma de un artefacto comun''.
 \item \textbf{El monkey-patching habilita comparaciones limpias}:
-  poder activar/desactivar un componente sin tocar el codigo base de
+  poder activar/desactivar un componente sin tocar el código base de
   las MHs fue determinante para diagnosticar el artefacto del
   evaluador. La arquitectura por capas, aunque inicialmente disenada
-  por comodidad, demostro su valor metodologico.
+  por comodidad, demostro su valor metodológico.
 \end{enumerate}
 
-\subsection{Lineas de trabajo abiertas}
+\subsection{Líneas de trabajo abiertas}
 
 \begin{enumerate}
 \item \textbf{Grid completo de warmstart-greedy (R6).} La corrida
   actual cubre 2 instancias (smoke test). Ejecutar el grid de
   575 corridas (23 inst $\times$ 5 reps $\times$ 5 MH) permitira
-  validar si la combinacion PS-warmstart + evaluador greedy + presupuesto
+  validar si la combinación PS-warmstart + evaluador greedy + presupuesto
   extendido reduce el gap por debajo del 2\,\% en todo el benchmark.
-\item \textbf{Analisis de instancias dificiles.} Las instancias
+\item \textbf{Análisis de instancias difíciles.} Las instancias
   \texttt{gdb12} (8.59\,\%), \texttt{gdb13} (7.47\,\%) y
   \texttt{gdb21} (7.41\,\%) mantienen gap elevado incluso en R5.
-  Investigar si operadores mas agresivos (or-opt-3, GENIUS~\cite{gendreau1992}) o
+  Investigar si operadores más agresivos (or-opt-3, GENIUS~\cite{gendreau1992}) o
   estrategias de reinicio global reducen ese piso.
-\item \textbf{Comparacion greedy local vs optimo global de orientacion.}
-  El evaluador greedy decide la orientacion de cada arco solo con
-  informacion del nodo previo. El optimo global por ruta puede
-  calcularse con programacion dinamica O(n). Cuantificar la diferencia
+\item \textbf{Comparación greedy local vs óptimo global de orientación.}
+  El evaluador greedy decide la orientación de cada arco solo con
+  información del nodo previo. El óptimo global por ruta puede
+  calcularse con programación dinámica O(n). Cuantificar la diferencia
   en las 23 instancias y evaluar si justifica la complejidad adicional.
-\item \textbf{Extension del benchmark.} Verificar la robustez de las
+\item \textbf{Extensión del benchmark.} Verificar la robustez de las
   conclusiones en instancias mayores (egl-s4, val9B) donde el espacio
-  de busqueda es significativamente mayor.
-\item \textbf{ILS sobre Path-Scanning.} Combinar PS con perturbacion
-  sistematica (Iterated Local Search~\cite{lourenco2003}) para explotar el bajo gap inicial
-  ($\approx 9$\,\%) del constructor heuristico sin la sobrecarga del
+  de búsqueda es significativamente mayor.
+\item \textbf{ILS sobre Path-Scanning.} Combinar PS con perturbación
+  sistemática (Iterated Local Search~\cite{lourenco2003}) para explotar el bajo gap inicial
+  ($\approx 9$\,\%) del constructor heurístico sin la sobrecarga del
   ciclo de reheat de SA.
 \end{enumerate}
 
@@ -1962,15 +2435,15 @@ Las lecciones metodologicas que se extraen:
 \appendix
 % =====================================================================
 
-\section{Listado de modulos y scripts del programa}
+\section{Listado de módulos y scripts del programa}
 
 \begin{table}[h]
 \centering
-\caption{Modulos del paquete metacarp asociados a cada experimento.}
+\caption{Módulos del paquete metacarp asociados a cada experimento.}
 \small
 \begin{tabular}{ll}
 \toprule
-Experimento & Modulo \\
+Experimento & Módulo \\
 \midrule
 strict\_intra\_inter & \texttt{metacarp/strict\_intra\_inter\_20260524.py} \\
 lambda\_grid & (kwargs en wrappers) \\
@@ -2010,25 +2483,25 @@ wait
 bash scripts/run_all_re_greedy_20260529.sh
 \end{lstlisting}
 
-\section{Notas sobre el evaluador greedy y el optimo global de orientacion}
+\section{Notas sobre el evaluador greedy y el óptimo global de orientación}
 
-El evaluador greedy implementado decide la orientacion de cada arco en
-funcion del nodo previo solamente. Esta decision es localmente optima
-pero NO globalmente optima: en una ruta, la orientacion optima de un
-arco puede depender no solo del previo sino tambien del siguiente.
+El evaluador greedy implementado decide la orientación de cada arco en
+función del nodo previo solamente. Esta decisión es localmente óptima
+pero NO globalmente óptima: en una ruta, la orientación óptima de un
+arco puede depender no solo del previo sino también del siguiente.
 
-El optimo global de orientacion para una ruta fija puede computarse
-con programacion dinamica O(n) sobre dos estados por tarea (terminar
-en $u$ o terminar en $v$). La diferencia tipica entre la version
-greedy local y el optimo global es menor al 5\% en instancias de
-tamano gdb/kshs; para benchmarks mas grandes podria ser relevante
+El óptimo global de orientación para una ruta fija puede computarse
+con programación dinámica O(n) sobre dos estados por tarea (terminar
+en $u$ o terminar en $v$). La diferencia típica entre la versión
+greedy local y el óptimo global es menor al 5\% en instancias de
+tamano gdb/kshs; para benchmarks más grandes podría ser relevante
 considerarla.
 
 % =====================================================================
 % Bibliografia
 % ---------------------------------------------------------------------
 % Si se integra en una tesis con bibliografia centralizada, eliminar
-% estas dos lineas y anadir las claves de referencias.bib al .bib global.
+% estas dos líneas y anadir las claves de referencias.bib al .bib global.
 % =====================================================================
 \bibliographystyle{plain}
 \bibliography{referencias}
