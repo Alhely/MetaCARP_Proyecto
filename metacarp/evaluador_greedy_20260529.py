@@ -260,6 +260,37 @@ def costo_lote_penalizado_ids_greedy(
 
 
 # ============================================================
+# Reporte textual con orientacion greedy (consistencia del CSV)
+# ============================================================
+
+def generar_reporte_detallado_greedy(
+    solucion: Sequence[Sequence[Hashable]],
+    *args: Any,
+    **kwargs: Any,
+) -> tuple[str, float]:
+    """Genera el reporte textual de deadheading con orientacion GREEDY.
+
+    Las metaheuristicas escriben dos cosas en el CSV:
+      - ``mejor_costo``: calculado con el evaluador parcheado (greedy).
+      - ``reporte_detalle_deadheading`` / ``costo_total_desde_reporte``:
+        calculado por ``generar_reporte_detallado`` que, por defecto, usa la
+        orientacion CANONICA fija (entrar siempre por ``u``).
+
+    Si no se fuerza la orientacion greedy en el reporte, el costo del reporte
+    queda SISTEMATICAMENTE por encima de ``mejor_costo`` y resulta imposible
+    verificar a mano que el evaluador greedy calcula bien. Este wrapper fuerza
+    ``orientacion_greedy=True`` para que ambos numeros coincidan.
+
+    Importa la implementacion ORIGINAL de ``metaheuristicas_utils`` (que NUNCA
+    se parchea) para evitar recursion: el patch solo reemplaza el binding
+    LOCAL de ``generar_reporte_detallado`` dentro de cada modulo MH.
+    """
+    from metacarp.metaheuristicas_utils import generar_reporte_detallado as _orig
+    kwargs["orientacion_greedy"] = True
+    return _orig(solucion, *args, **kwargs)
+
+
+# ============================================================
 # Monkey-patch: instala las versiones greedy en evaluador_costo y MHs
 # ============================================================
 
@@ -286,6 +317,21 @@ _REEMPLAZOS: dict[str, Any] = {
     "costo_lote_penalizado_ids":  costo_lote_penalizado_ids_greedy,
 }
 
+# Modulos MH que importan ``generar_reporte_detallado`` con binding LOCAL y
+# escriben el CSV. Se reemplaza SOLO aqui (no en ``metaheuristicas_utils``)
+# para que ``generar_reporte_detallado_greedy`` pueda llamar a la original
+# sin recursion. Es un mapeo aparte porque el simbolo del reporte no vive en
+# ``evaluador_costo`` sino en ``metaheuristicas_utils``.
+_MODULOS_MH_REPORTE: tuple[str, ...] = (
+    "metacarp.recocido_simulado",
+    "metacarp.busqueda_tabu_simple",
+    "metacarp.busqueda_tabu_reactiva",
+    "metacarp.abejas_simple",
+    "metacarp.cuckoo_search",
+    "metacarp.busqueda_tabu",
+    "metacarp.abejas",
+)
+
 
 def aplicar_patch_evaluador_greedy() -> None:
     """Reemplaza los evaluadores canonicos por sus versiones greedy.
@@ -306,3 +352,13 @@ def aplicar_patch_evaluador_greedy() -> None:
         for nombre_simbolo, impl_greedy in _REEMPLAZOS.items():
             if hasattr(mod, nombre_simbolo):
                 setattr(mod, nombre_simbolo, impl_greedy)
+
+    # Reemplazo del reporte textual: solo en los modulos MH ya cargados, para
+    # que ``reporte_detalle_deadheading`` y ``costo_total_desde_reporte`` se
+    # calculen con orientacion greedy y coincidan con ``mejor_costo``.
+    for mod_name in _MODULOS_MH_REPORTE:
+        mod = sys.modules.get(mod_name)
+        if mod is None:
+            continue
+        if hasattr(mod, "generar_reporte_detallado"):
+            setattr(mod, "generar_reporte_detallado", generar_reporte_detallado_greedy)

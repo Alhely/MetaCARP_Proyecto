@@ -57,6 +57,45 @@ class ReporteSolucionResult:
     demandas_por_vehiculo: list[float]  # Demanda total atendida por cada vehículo
 
 
+# ------------------------------------------------------------
+# AUXILIAR: _orientacion_min_deadheading
+# ------------------------------------------------------------
+# Decide por cuál extremo del arco (u o v) entra el vehículo para minimizar
+# el deadheading. Es la MISMA regla greedy que usa costo_rapido_ids_greedy
+# en el evaluador: un arco no dirigido (u, v) puede recorrerse en cualquier
+# sentido, así que se entra por el extremo más cercano al nodo actual y se
+# sale por el opuesto. Garantiza que el costo del reporte coincida con el
+# mejor_costo cuando la corrida usó el evaluador greedy.
+def _orientacion_min_deadheading(
+    G: nx.Graph,
+    nodo_actual: int,
+    u: int,
+    v: int,
+    *,
+    usar_gpu: bool = False,
+) -> tuple[int, int]:
+    """Devuelve (entrada, salida): el extremo más cercano a ``nodo_actual``
+    como entrada y el opuesto como salida.
+
+    Empate (costo_u == costo_v) se resuelve a favor de ``u``, idéntico al
+    criterio ``d_u <= d_v`` del evaluador greedy, para que ambas rutas de
+    cálculo tomen exactamente la misma decisión.
+    """
+    # Si el vehículo ya está sobre uno de los extremos, ese es la entrada
+    # (deadheading nulo); no hace falta calcular caminos.
+    if nodo_grafo(nodo_actual) == nodo_grafo(u):
+        return u, v
+    if nodo_grafo(nodo_actual) == nodo_grafo(v):
+        return v, u
+    # Costo del camino más corto a cada extremo (sobre el grafo G, misma
+    # fuente que la matriz Dijkstra que consume el evaluador).
+    _, costo_u = path_edges_and_cost(G, shortest_path_nodes(G, nodo_actual, u, usar_gpu=usar_gpu))
+    _, costo_v = path_edges_and_cost(G, shortest_path_nodes(G, nodo_actual, v, usar_gpu=usar_gpu))
+    if costo_u <= costo_v:
+        return u, v
+    return v, u
+
+
 # ============================================================
 # FUNCIÓN PRINCIPAL: reporte_solucion
 # ============================================================
@@ -71,6 +110,7 @@ def reporte_solucion(
     nombre_archivo: str | None = None,            # Nombre del archivo de salida (opcional)
     nombre_instancia: str = "instancia",          # Nombre de la instancia para el archivo
     usar_gpu: bool = False,                       # Flag de backend GPU (hoy: fallback a CPU)
+    orientacion_greedy: bool = False,             # Si True, elige la orientación de cada arco que minimiza el deadheading (consistente con el evaluador greedy)
 ) -> ReporteSolucionResult:
     """
     Genera un reporte textual detallado para una solución con formato por etiquetas:
@@ -143,35 +183,49 @@ def reporte_solucion(
             dem_serv = float(tarea.get("demanda", 0) or 0)  # Demanda de este arco
             etiqueta_str = str(tarea.get("tarea", etiqueta)) # Etiqueta canónica para el reporte
 
+            # ---- Orientación de entrada al arco ----
+            # En modo canónico el vehículo SIEMPRE entra por u y sale por v
+            # (orientación fija nodos[0] -> nodos[1]). En modo greedy elige el
+            # extremo más cercano al nodo actual, idéntico criterio que el
+            # evaluador costo_rapido_ids_greedy, porque un arco no dirigido se
+            # puede recorrer en cualquier sentido. 'entrada' es el extremo por
+            # el que comienza el servicio; 'salida' es donde queda el vehículo.
+            if orientacion_greedy:
+                entrada, salida = _orientacion_min_deadheading(
+                    G, nodo_actual, u, v, usar_gpu=usar_gpu
+                )
+            else:
+                entrada, salida = u, v
+
             # ---- DEADHEADING: traslado vacío hasta el inicio del arco a servir ----
-            # Si el vehículo no está ya en el nodo u (inicio del arco a servir),
+            # Si el vehículo no está ya en el nodo de entrada del arco a servir,
             # debe viajar hasta allí SIN prestar servicio. Esto se llama "deadheading".
             # nodo_grafo() convierte el ID entero al formato de nodo del grafo GEXF.
-            if nodo_grafo(nodo_actual) != nodo_grafo(u):
-                # Calcula el camino más corto desde nodo_actual hasta u
-                path = shortest_path_nodes(G, nodo_actual, u, usar_gpu=usar_gpu)
+            if nodo_grafo(nodo_actual) != nodo_grafo(entrada):
+                # Calcula el camino más corto desde nodo_actual hasta la entrada
+                path = shortest_path_nodes(G, nodo_actual, entrada, usar_gpu=usar_gpu)
                 # Desglosa el camino en arcos individuales y calcula el costo total del tramo
                 edges, costo_dh = path_edges_and_cost(G, path)
                 lineas.append(
-                    f"  [DEADHEADING] {nodo_actual} -> {u} (para servir {etiqueta_str} {u}->{v}) "
+                    f"  [DEADHEADING] {nodo_actual} -> {entrada} (para servir {etiqueta_str} {entrada}->{salida}) "
                     f"Caminos: {path} (Costo: {costo_dh})"
                 )
                 # Imprime cada arco del tramo de traslado con su costo individual
                 for a, b, c in edges:
                     lineas.append(f"    - Arco {a} -> {b} | Costo: {c}")
                 costo_veh += costo_dh   # Suma el costo del traslado al total del vehículo
-                nodo_actual = u         # El vehículo ahora está en u
+                nodo_actual = entrada   # El vehículo ahora está en el nodo de entrada
 
-            # ---- SERVICIO: el vehículo atiende el arco (u, v) ----
+            # ---- SERVICIO: el vehículo atiende el arco en la orientación elegida ----
             demanda_acum += dem_serv   # Acumula la demanda de esta tarea
             costo_veh += costo_serv    # Suma el costo de servicio
             # Verifica si la capacidad ya fue excedida
             estado_cap = "OK" if demanda_acum <= capacidad_max else "EXCEDIDA"
             lineas.append(
-                f"  [SERVICIO] {etiqueta_str} ({u},{v}) | Costo: {costo_serv} | "
+                f"  [SERVICIO] {etiqueta_str} ({entrada},{salida}) | Costo: {costo_serv} | "
                 f"Demanda +{dem_serv} = {demanda_acum} / {capacidad_max} [{estado_cap}]"
             )
-            nodo_actual = v   # Después de servir, el vehículo está en el nodo v
+            nodo_actual = salida   # Después de servir, el vehículo está en el nodo de salida
 
         # ---- RETORNO AL DEPÓSITO ----
         # Al terminar todas las tareas, el vehículo vuelve al depósito.
