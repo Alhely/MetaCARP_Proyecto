@@ -1,15 +1,19 @@
 """
 Re-corrida bajo evaluador greedy (R-experimentos 20260529).
 
-Re-ejecuta cada uno de los baselines previos del proyecto, AHORA bajo el
-evaluador greedy (``metacarp.evaluador_greedy_20260529``). El resto de los
-componentes (selector, kick, PR, budget, λ, warmstart) es idéntico al
-experimento original.
+Re-ejecuta cada uno de los baselines previos del proyecto con el evaluador
+greedy nativo de ``metacarp.evaluador_costo``. El resto de los componentes
+(selector, kick, PR, budget, lambda, warmstart) es identico al experimento
+original.
 
-Razon: el evaluador canonico forzaba orientacion fija u->v por tarea, lo
-cual inflaba artificialmente los gaps. Para tener una comparativa
-metodologicamente correcta entre baselines, hay que re-medir cada uno con
-el evaluador greedy.
+El evaluador greedy es ahora el comportamiento NATIVO del evaluador base:
+no se requieren patches de runtime. Cada tarea se recorre por el extremo mas
+cercano al nodo previo (orientacion dinamica). El evaluador canonico que
+forzaba orientacion fija u->v ha sido eliminado.
+
+Razon metodologica: el evaluador canonico inflaba artificialmente los gaps.
+Para una comparativa correcta entre baselines hay que medir cada uno con
+la orientacion greedy (unica lógica disponible ahora).
 
 Variantes implementadas:
   R1 strict_greedy     <-> strict_intra_inter_20260524
@@ -111,30 +115,21 @@ class TareaExp:
 # Aplicacion de patches por variante
 # ============================================================
 
-def _aplicar_greedy() -> None:
-    """Aplica el evaluador greedy. Llamarse al final de toda secuencia."""
-    from metacarp.evaluador_greedy_20260529 import aplicar_patch_evaluador_greedy
-    aplicar_patch_evaluador_greedy()
-
-
 def aplicar_patches_variante(variante: str, modulo_mh: str) -> None:
-    """Aplica los patches del baseline + el evaluador greedy al final.
+    """Aplica los patches del baseline por variante.
 
-    R1 strict_greedy   : solo evaluador greedy.
-                          La MH usa OPERADORES_STRICT_5 + kick reactivo, sin
-                          monkey-patch de selector (el selector default
-                          binario-blend de la MH ya hace alpha_inter+p_inter).
-                          R1 estricto = mismos kwargs que strict_intra_inter
-                          original (operadores reducidos + kicks).
-    R2 aos_pm_greedy   : aos patch + greedy.
-    R3 pr_greedy       : pr patch + greedy. PR ya instala strict selector
-                          internamente.
-    R4 p_inter_pr      : pr + p_inter (sobreescribe strict) + greedy.
-    R5 budget_greedy   : pr + p_inter + greedy. El budget extra se controla
-                          via kwargs (no via patch).
+    El evaluador greedy es nativo de ``metacarp.evaluador_costo``; no requiere
+    patch adicional. Esta funcion instala solo los patches especificos de cada
+    variante (selector, PR, lambda), que son ortogonales a la evaluacion.
+
+    R1 strict_greedy   : selector binario estricto (OPERADORES_STRICT_5 + kicks).
+    R2 aos_pm_greedy   : patch AOS probability matching.
+    R3 pr_greedy       : patch Path Relinking.
+    R4 p_inter_pr      : PR + selector p_inter probabilistico.
+    R5 budget_greedy   : PR + p_inter + lambda x10. Budget via kwargs.
     """
     if variante == "R1":
-        # Strict: kick reactivo + operadores reducidos, evaluacion greedy.
+        # Strict: kick reactivo + operadores reducidos.
         # No requiere patch de selector porque strict_intra_inter es la
         # MISMA semantica que tener p_inter=0.0 y alpha_inter=1.0 (siempre
         # inter si viola, siempre intra si no). Para garantizar el binario
@@ -170,10 +165,6 @@ def aplicar_patches_variante(variante: str, modulo_mh: str) -> None:
         aplicar_patch_p_inter(modulo_mh)
     else:
         raise ValueError(f"Variante desconocida: {variante!r}")
-
-    # SIEMPRE aplicar greedy al final (sobreescribe los simbolos del evaluador
-    # en todos los modulos consumidores ya cargados).
-    _aplicar_greedy()
 
 
 # ============================================================

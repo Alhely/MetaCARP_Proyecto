@@ -1,24 +1,21 @@
 """
 Utilidades compartidas por los 5 scripts ``run_<mh>_warmstart_greedy_20260529.py``.
 
-Experimento ``warmstart_greedy_20260529`` — apila TRES nuevas capas sobre
+Experimento ``warmstart_greedy_20260529`` — apila DOS nuevas capas sobre
 el baseline ``budget_20260528`` para cerrar el gap residual de ~30%:
 
-  1. PRESUPUESTO Y LAMBDA  : heredados de ``budget_20260528`` (iters x25,
-                              lambda x10, kick proporcional, max_resets=None).
-  2. SELECTOR Y PR         : heredados de ``p_inter_pr_20260528``
-                              (p_inter=0.20, alpha_inter=0.80, p_pr=0.5).
-  3. PATH-SCANNING WARMSTART (NUEVO): la solucion inicial se construye
-     dinamicamente con ``path_scanning`` (Golden, DeArmon, Baker 1983) en
-     lugar de leer el pickle aleatorio precomputado.
-  4. EVALUADOR GREEDY (NUEVO): los evaluadores ``costo_rapido_ids``,
-     ``costo_lote_ids`` y ``costo_lote_penalizado_ids`` se sobreescriben
-     por versiones que eligen GREEDY la orientacion de cada tarea
-     (entrar por el extremo mas cercano al nodo previo). Esto elimina el
-     artefacto del evaluador canonico que inflaba el gap al forzar
-     orientacion fija u->v.
+  1. PATH-SCANNING WARMSTART: la solucion inicial se construye dinamicamente
+     con ``path_scanning`` (Golden, DeArmon, Baker 1983) en lugar de leer el
+     pickle aleatorio precomputado.
+  2. PRESUPUESTO Y LAMBDA + SELECTOR Y PR: heredados de ``budget_20260528``
+     y ``p_inter_pr_20260528`` (iters x25, lambda x10, kick proporcional,
+     max_resets=None, p_inter=0.20, alpha_inter=0.80, p_pr=0.5).
 
-Resultado del smoke test (TS Simple, 5 instancias):
+El evaluador greedy (orientacion dinamica por tarea) es ahora el comportamiento
+NATIVO de ``metacarp.evaluador_costo``; no requiere patch de runtime. La capa
+de evaluador greedy se ha eliminado de la secuencia de patches.
+
+Resultado del smoke test original (TS Simple, 5 instancias):
   gdb19: 14.55% -> 0.00%  (encuentra BKS)
   gdb3 : 49.36% -> 0.00%  (encuentra BKS)
   kshs1: 15.26% -> 0.00%  (encuentra BKS)
@@ -83,43 +80,35 @@ def aplicar_patches_warmstart_greedy(
     lambda_factor: float = LAMBDA_FACTOR,
     root_warmstart: str | None = None,
 ) -> None:
-    """Instala los 5 patches del experimento en orden.
+    """Instala los patches del experimento warmstart_greedy en orden.
 
     Orden CRITICO (cada paso depende del anterior):
 
-      1. ``aplicar_patch_warmstart_ps``: reemplaza
-         ``cargar_solucion_inicial`` por Path-Scanning. DEBE ir antes
-         del resto para que los modulos MH que se importen despues vean
-         la version parcheada al resolver el simbolo.
+      1. ``aplicar_patch_warmstart_ps``: reemplaza ``cargar_solucion_inicial``
+         por Path-Scanning. DEBE ir antes del resto para que los modulos MH
+         que se importen despues vean la version parcheada al resolver el
+         simbolo.
 
-      2. ``aplicar_patch_evaluador_greedy``: reemplaza los 3 evaluadores
-         rapidos por versiones con orientacion greedy por tarea.
+      2. ``aplicar_patches_budget``: instala el stack heredado (lambda x10,
+         PR + p_inter probabilistico). Internamente carga la MH, asi que debe
+         ir DESPUES de (1) para que las MH carguen el warmstart ya parcheado.
+         Al terminar, re-aplica el warmstart PS por si ``aplicar_patches_budget``
+         cargo modulos adicionales que necesitan ver el simbolo ya parcheado.
 
-      3. ``aplicar_patches_budget``: instala el stack heredado (lambda x10,
-         PR + p_inter probabilistico). Internamente carga la MH, asi que
-         debe ir DESPUES de (1) y (2) para que las MH carguen los simbolos
-         ya parcheados.
-
-      4. Re-aplicar (1) y (2) por si ``aplicar_patches_budget`` cargo
-         modulos que necesitan ver los simbolos parcheados despues del
-         load.
+    El evaluador greedy es nativo de ``metacarp.evaluador_costo`` y no
+    requiere ninguna accion aqui.
     """
     # 1) Path-Scanning warmstart.
     from metacarp.warmstart_20260529 import aplicar_patch_warmstart_ps
     aplicar_patch_warmstart_ps(root=root_warmstart)
 
-    # 2) Evaluador greedy.
-    from metacarp.evaluador_greedy_20260529 import aplicar_patch_evaluador_greedy
-    aplicar_patch_evaluador_greedy()
-
-    # 3) Patches heredados: lambda x10 + PR + selector p_inter.
+    # 2) Patches heredados: lambda x10 + PR + selector p_inter.
+    #    Internamente importa el modulo MH; re-aplicamos warmstart PS al final
+    #    para garantizar que cualquier modulo recien cargado vea el simbolo ya
+    #    parcheado.
     from _budget_20260528_common import aplicar_patches_budget
     aplicar_patches_budget(nombre_modulo_mh, p_pr=p_pr, lambda_factor=lambda_factor)
-
-    # 4) Re-aplicar los patches NUEVOS por si los anteriores cargaron
-    #    modulos que necesitan ver los simbolos ya sobreescritos.
     aplicar_patch_warmstart_ps(root=root_warmstart)
-    aplicar_patch_evaluador_greedy()
 
 
 # ============================================================

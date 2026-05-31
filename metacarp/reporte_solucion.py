@@ -110,7 +110,6 @@ def reporte_solucion(
     nombre_archivo: str | None = None,            # Nombre del archivo de salida (opcional)
     nombre_instancia: str = "instancia",          # Nombre de la instancia para el archivo
     usar_gpu: bool = False,                       # Flag de backend GPU (hoy: fallback a CPU)
-    orientacion_greedy: bool = False,             # Si True, elige la orientación de cada arco que minimiza el deadheading (consistente con el evaluador greedy)
 ) -> ReporteSolucionResult:
     """
     Genera un reporte textual detallado para una solución con formato por etiquetas:
@@ -120,6 +119,13 @@ def reporte_solucion(
     - Muestra tramos [DEADHEADING] con el camino y **cada arco recorrido** (con costo).
     - Muestra [SERVICIO] para cada tarea (arco servido) con costo y demanda acumulada.
     - Muestra [RETORNO] al depósito y totales por vehículo y total de la solución.
+
+    La orientación de cada arco se elige siempre con la regla GREEDY: el vehículo
+    entra por el extremo más cercano al nodo actual (``_orientacion_min_deadheading``).
+    Esto garantiza que el costo del reporte coincida con el ``mejor_costo`` calculado
+    por el evaluador greedy, porque ambos usan exactamente la misma regla de decisión.
+    Un arco no dirigido (u, v) puede recorrerse en cualquier sentido; la orientación
+    greedy es la correcta para CARP.
 
     Si ``guardar=True``, escribe el reporte en disco.
     ``usar_gpu`` deja la API preparada para backend acelerado; hoy usa fallback CPU.
@@ -183,19 +189,17 @@ def reporte_solucion(
             dem_serv = float(tarea.get("demanda", 0) or 0)  # Demanda de este arco
             etiqueta_str = str(tarea.get("tarea", etiqueta)) # Etiqueta canónica para el reporte
 
-            # ---- Orientación de entrada al arco ----
-            # En modo canónico el vehículo SIEMPRE entra por u y sale por v
-            # (orientación fija nodos[0] -> nodos[1]). En modo greedy elige el
-            # extremo más cercano al nodo actual, idéntico criterio que el
-            # evaluador costo_rapido_ids_greedy, porque un arco no dirigido se
-            # puede recorrer en cualquier sentido. 'entrada' es el extremo por
-            # el que comienza el servicio; 'salida' es donde queda el vehículo.
-            if orientacion_greedy:
-                entrada, salida = _orientacion_min_deadheading(
-                    G, nodo_actual, u, v, usar_gpu=usar_gpu
-                )
-            else:
-                entrada, salida = u, v
+            # ---- Orientación de entrada al arco (siempre greedy) ----
+            # Un arco no dirigido (u, v) puede recorrerse en cualquier sentido.
+            # Siempre elegimos el extremo más cercano al nodo actual como entrada
+            # y el opuesto como salida. Esta es la misma regla que usa el evaluador
+            # ``costo_rapido_ids`` (greedy), por lo que el costo del reporte
+            # coincide exactamente con el ``mejor_costo`` registrado en el CSV.
+            # 'entrada' es el extremo por el que comienza el servicio;
+            # 'salida' es donde queda el vehículo al terminar el servicio.
+            entrada, salida = _orientacion_min_deadheading(
+                G, nodo_actual, u, v, usar_gpu=usar_gpu
+            )
 
             # ---- DEADHEADING: traslado vacío hasta el inicio del arco a servir ----
             # Si el vehículo no está ya en el nodo de entrada del arco a servir,

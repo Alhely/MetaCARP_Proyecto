@@ -1,5 +1,5 @@
 """
-Evaluador rápido de costo para metaheurísticas CARP.
+Evaluador rápido de costo para metaheurísticas CARP con orientación GREEDY.
 
 Diseño
 ======
@@ -13,6 +13,19 @@ matriz Dijkstra precomputada y de la codificación entera de tareas, y expone
 funciones de evaluación O(longitud_de_ruta) por solución (por etiquetas o IDs).
 La fórmula de costo se preserva: por cada tarea se suma el deadheading
 (camino mínimo) + costo de servicio, y al final el regreso al depósito.
+
+Orientación greedy
+------------------
+Para cada tarea con extremos u, v y nodo previo ``prev``, la orientación se
+elige dinámicamente para minimizar el dead-heading de entrada:
+
+    Si dist[prev, u] <= dist[prev, v]: entrar por u, salir por v.
+    Si no: entrar por v, salir por u.
+
+Esta es la semántica correcta para CARP: un arco no dirigido puede recorrerse
+en cualquier sentido. La orientación greedy elimina el artefacto del evaluador
+canónico antiguo (que forzaba siempre u→v), el cual inflaba artificialmente
+los gaps de las soluciones.
 
 Backends
 --------
@@ -676,20 +689,27 @@ def costo_rapido_ids(
     ctx: ContextoEvaluacion,
 ) -> float:
     """
-    Calcula el costo total de una solución dada por listas de IDs enteros.
+    Calcula el costo total de una solución dada por listas de IDs enteros con
+    selección GREEDY de orientación por tarea.
 
     Es el evaluador principal de las metaheurísticas. Produce el mismo resultado
     que ``costo_solucion`` pero sin llamar a Dijkstra: usa la matriz dist pre-
     computada para acceder a distancias en O(1).
 
-    Fórmula por ruta:
-        costo = dist(depot, u_tarea_0) + costo_serv_tarea_0
-              + sum_{k=1}^{n-1} [ dist(v_{k-1}, u_k) + costo_serv_k ]
-              + dist(v_{n-1}, depot)
+    Regla greedy de orientación (para cada tarea con extremos u, v y nodo
+    previo ``prev``):
+        Si dist[prev, u] <= dist[prev, v]: entrar por u, salir por v.
+        Si no: entrar por v, salir por u.
+    El empate (``<=``) favorece a u. El primer ``prev`` de cada ruta es el
+    depósito; al terminar la ruta se suma dist[prev, depot].
 
-    Implementación vectorizada con NumPy: por cada ruta construye arrays de
-    orígenes y destinos, luego extrae todas las distancias con fancy indexing
-    (``dist[origen_prev, us]``) en una sola operación de array.
+    Esta orientación dinámica es la correcta para CARP: un arco no dirigido
+    (u, v) puede recorrerse en cualquier dirección, así que el vehículo entra
+    por el extremo más cercano para minimizar el dead-heading de entrada.
+
+    Nota de implementación: la orientación de la tarea k depende del nodo donde
+    terminó la tarea k-1 (dependencia secuencial), por lo que el bucle Python
+    es necesario y la vectorización NumPy por-ruta no es aplicable aquí.
 
     Args:
         solucion_ids: Lista de rutas, cada una es una lista de IDs de tareas.
@@ -699,11 +719,11 @@ def costo_rapido_ids(
         Costo total de la solución como float.
     """
     # Acceso a los componentes del contexto (locales para evitar lookups repetidos).
-    dist = ctx.dist          # Matriz densa de distancias mínimas
-    u_arr = ctx.u_arr        # Nodos de inicio de cada tarea
-    v_arr = ctx.v_arr        # Nodos de fin de cada tarea
-    cs_arr = ctx.costo_serv_arr  # Costos de servicio de cada tarea
-    depot = ctx.depot        # Nodo depósito
+    dist   = ctx.dist              # Matriz densa de distancias mínimas
+    u_arr  = ctx.u_arr             # Nodos de inicio (extremo u) de cada tarea
+    v_arr  = ctx.v_arr             # Nodos de fin (extremo v) de cada tarea
+    cs_arr = ctx.costo_serv_arr    # Costos de servicio de cada tarea
+    depot  = ctx.depot             # Nodo depósito
 
     total = 0.0  # Acumulador del costo total de la solución
 
@@ -711,40 +731,34 @@ def costo_rapido_ids(
         if not ruta:
             continue  # Las rutas vacías no tienen costo
 
-        # np.asarray convierte la lista de IDs a un array NumPy int64.
-        # Esto habilita el "fancy indexing": u_arr[ids] extrae un subarray de una vez.
-        ids = np.asarray(ruta, dtype=np.int64)
+        # prev: nodo donde se encuentra el vehículo antes de servir la próxima tarea.
+        # Al inicio de cada ruta, el vehículo parte del depósito.
+        prev = depot
 
-        # us[k] = nodo de inicio de la k-ésima tarea en esta ruta.
-        # vs[k] = nodo de fin de la k-ésima tarea en esta ruta.
-        # Ambas operaciones son O(n_tareas) con NumPy (sin bucle Python).
-        us = u_arr[ids]
-        vs = v_arr[ids]
+        for tid in ruta:
+            tid_i = int(tid)
+            u = int(u_arr[tid_i])  # Extremo u del arco a servir
+            v = int(v_arr[tid_i])  # Extremo v del arco a servir
 
-        # Construimos el array de "nodo previo" para calcular el deadheading:
-        # - Para la primera tarea (k=0): el nodo previo es el depósito.
-        # - Para las demás (k>0): el nodo previo es v de la tarea anterior (vs[k-1]).
-        origen_prev = np.empty_like(us)  # Array vacío del mismo tamaño y tipo que us
-        origen_prev[0] = depot           # Primera tarea siempre parte del depósito
+            # Calculamos el costo de dead-heading a cada extremo del arco.
+            d_u = float(dist[prev, u])  # Costo de llegar al extremo u
+            d_v = float(dist[prev, v])  # Costo de llegar al extremo v
 
-        if us.shape[0] > 1:
-            # vs[:-1] = todos los nodos v excepto el último (son los orígenes previos
-            # para las tareas 1, 2, …, n-1).
-            origen_prev[1:] = vs[:-1]
+            # Decisión greedy: elegimos la orientación que minimiza el DH de entrada.
+            # Si d_u <= d_v entramos por u y salimos por v (orientación canónica u->v).
+            # Si d_v < d_u entramos por v y salimos por u (orientación invertida v->u).
+            # El empate (d_u == d_v) se resuelve a favor de u (criterio <=).
+            if d_u <= d_v:
+                # Orientación u->v: el DH es d_u; al terminar el servicio estamos en v.
+                total += d_u + float(cs_arr[tid_i])
+                prev = v
+            else:
+                # Orientación v->u: el DH es d_v; al terminar el servicio estamos en u.
+                total += d_v + float(cs_arr[tid_i])
+                prev = u
 
-        # dist[origen_prev, us] es "fancy indexing" 2D de NumPy:
-        # Extrae dist[origen_prev[0], us[0]], dist[origen_prev[1], us[1]], …
-        # en un solo acceso vectorizado al array 2D (sin bucle Python).
-        # dh[k] = costo de deadheading antes de servir la k-ésima tarea.
-        dh = dist[origen_prev, us]
-
-        # Sumamos DH de todas las tareas + costos de servicio de todas las tareas.
-        # .sum() suma todos los elementos del array en una operación NumPy (O(n) C).
-        total += float(dh.sum()) + float(cs_arr[ids].sum())
-
-        # Añadimos el costo de regreso al depósito desde el nodo final de la última tarea.
-        # vs[-1] = nodo v de la última tarea; dist[vs[-1], depot] = costo del retorno.
-        total += float(dist[vs[-1], depot])
+        # Regreso al depósito desde el nodo donde quedó el vehículo al terminar la ruta.
+        total += float(dist[prev, depot])
 
     return total
 
@@ -797,29 +811,39 @@ def _empaquetar_lote_ids(
     ctx: ContextoEvaluacion,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Empaqueta un lote heterogéneo de soluciones en arrays planos para evaluación vectorizada.
+    Empaqueta un lote heterogéneo de soluciones en arrays planos con orientación
+    GREEDY ya decidida para cada tarea.
 
     Las soluciones pueden tener diferente número de rutas y de tareas por ruta.
     Esta función las "aplana" en arrays 1D paralelos, añadiendo un índice de
     solución para poder sumar los costos por solución al final.
 
+    A diferencia del empaquetado canónico (que siempre usaba u como destino y v
+    como nodo de salida), aquí se decide la orientación de cada tarea ANTES de
+    poblar ``origs`` y ``dests``: se compara dist[prev, u] contra dist[prev, v]
+    y se elige el extremo más cercano como entrada. Los arrays resultantes son
+    consumibles directamente por la reducción vectorizada de ``costo_lote_ids``
+    (CPU/GPU), porque la decisión de orientación ya está materializada en los
+    enteros almacenados.
+
     Returns:
         Tupla de 4 arrays NumPy de igual longitud (n_pasos_totales,):
-        - ``orig``: nodo origen de cada paso (depósito o v de la tarea anterior).
-        - ``dest``: nodo destino de cada paso (u de la tarea actual o depósito).
+        - ``orig``: nodo origen de cada paso (depósito o nodo de salida de la tarea anterior).
+        - ``dest``: nodo destino de cada paso (extremo de entrada elegido greedy, o depósito).
         - ``cs``: costo de servicio de cada paso (0 para el regreso al depósito).
         - ``sol_idx``: índice de la solución a la que pertenece cada paso.
     """
-    u_arr = ctx.u_arr
-    v_arr = ctx.v_arr
-    cs_arr = ctx.costo_serv_arr
-    depot = ctx.depot
+    dist   = ctx.dist              # Matriz de distancias mínimas (para decisión greedy)
+    u_arr  = ctx.u_arr             # Nodos de inicio (extremo u) de cada tarea
+    v_arr  = ctx.v_arr             # Nodos de fin (extremo v) de cada tarea
+    cs_arr = ctx.costo_serv_arr    # Costos de servicio de cada tarea
+    depot  = ctx.depot             # Nodo depósito
 
     # Listas Python para acumular antes de convertir a NumPy.
-    origs: list[int] = []    # Nodos origen de cada paso
-    dests: list[int] = []    # Nodos destino de cada paso
-    cs_l: list[float] = []   # Costos de servicio de cada paso
-    sol_idx: list[int] = []  # Índice de la solución dueña de cada paso
+    origs:   list[int]   = []  # Nodos origen de cada paso
+    dests:   list[int]   = []  # Nodos destino de cada paso (con orientación greedy)
+    cs_l:    list[float] = []  # Costos de servicio de cada paso
+    sol_idx: list[int]   = []  # Índice de la solución dueña de cada paso
 
     for s_idx, sol in enumerate(soluciones_ids):
         # s_idx es el índice de esta solución en el lote (0, 1, 2, …).
@@ -827,35 +851,44 @@ def _empaquetar_lote_ids(
             if not ruta:
                 continue  # Rutas vacías no aportan pasos
 
-            ids = np.asarray(ruta, dtype=np.int64)
-            us = u_arr[ids]  # Nodos de inicio de las tareas de esta ruta
-            vs = v_arr[ids]  # Nodos de fin de las tareas de esta ruta
-            n = us.shape[0]  # Número de tareas en esta ruta
+            # prev: nodo donde se encuentra el vehículo antes de servir la próxima tarea.
+            # Al inicio de cada ruta, el vehículo parte del depósito.
+            prev = depot
 
-            # ---- Pasos de servicio (depot → u_0, v_0 → u_1, …, v_{n-2} → u_{n-1}) ----
-            # Primer paso: del depósito al nodo inicio de la primera tarea.
-            origs.append(depot)
-            # Pasos intermedios: del nodo fin de la tarea anterior al nodo inicio de la siguiente.
-            # vs[:-1].tolist() = [v_0, v_1, …, v_{n-2}] (todos los v excepto el último).
-            origs.extend(vs[:-1].tolist() if n > 1 else [])
-            # Los destinos son los nodos de inicio de todas las tareas: [u_0, u_1, …, u_{n-1}].
-            dests.extend(us.tolist())
-            # Los costos de servicio se asocian al destino (tarea que se va a servir).
-            cs_l.extend(cs_arr[ids].tolist())
-            # Todos estos pasos pertenecen a la solución s_idx.
-            sol_idx.extend([s_idx] * n)
+            for tid in ruta:
+                tid_i = int(tid)
+                u = int(u_arr[tid_i])  # Extremo u del arco
+                v = int(v_arr[tid_i])  # Extremo v del arco
 
-            # ---- Paso de regreso al depósito (v_{n-1} → depot) ----
-            origs.append(int(vs[-1]))   # Nodo fin de la última tarea
-            dests.append(depot)          # Destino: el depósito
-            cs_l.append(0.0)             # El regreso no tiene costo de servicio
+                # Decisión greedy de orientación: entramos por el extremo más cercano.
+                # Si dist[prev, u] <= dist[prev, v]: entrada=u, salida=v.
+                # Si no: entrada=v, salida=u.
+                if float(dist[prev, u]) <= float(dist[prev, v]):
+                    entrada, salida = u, v
+                else:
+                    entrada, salida = v, u
+
+                # Registramos el paso: origen=prev (DH hasta la entrada), destino=entrada.
+                origs.append(prev)
+                dests.append(entrada)
+                cs_l.append(float(cs_arr[tid_i]))
+                sol_idx.append(s_idx)
+
+                # El vehículo queda en 'salida' al terminar el servicio de esta tarea.
+                prev = salida
+
+            # ---- Paso de regreso al depósito (salida_última_tarea → depot) ----
+            # El costo de regreso al depósito desde el nodo donde terminó la ruta.
+            origs.append(prev)
+            dests.append(depot)
+            cs_l.append(0.0)   # El regreso no tiene costo de servicio
             sol_idx.append(s_idx)
 
-    # Convertimos las listas a arrays NumPy para la evaluación vectorizada.
+    # Convertimos las listas a arrays NumPy para la evaluación vectorizada posterior.
     return (
-        np.asarray(origs, dtype=np.int64),
-        np.asarray(dests, dtype=np.int64),
-        np.asarray(cs_l, dtype=np.float64),
+        np.asarray(origs,   dtype=np.int64),
+        np.asarray(dests,   dtype=np.int64),
+        np.asarray(cs_l,    dtype=np.float64),
         np.asarray(sol_idx, dtype=np.int64),
     )
 

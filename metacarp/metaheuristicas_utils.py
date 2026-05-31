@@ -585,7 +585,6 @@ def generar_reporte_detallado(
     nombre_instancia: str = "instancia",
     marcador_depot_etiqueta: str | None,
     usar_gpu: bool,
-    orientacion_greedy: bool = False,
 ) -> tuple[str, float]:
     """
     Genera un detalle textual con deadheading (DH) y costo total.
@@ -599,10 +598,10 @@ def generar_reporte_detallado(
 
     Retorna una tupla: (texto_reporte, costo_total).
 
-    Si ``orientacion_greedy=True``, el reporte elige la orientación de cada
-    arco que minimiza el deadheading (misma regla que el evaluador greedy),
-    de modo que ``costo_total`` coincide con el ``mejor_costo`` reportado por
-    la metaheurística cuando esta corrió bajo el evaluador greedy.
+    La orientación de cada arco se elige siempre con la regla GREEDY (entrar
+    por el extremo más cercano al nodo actual), idéntica a la que usa el
+    evaluador ``costo_rapido_ids``. Esto garantiza que ``costo_total`` coincida
+    con el ``mejor_costo`` registrado en el CSV por la metaheurística.
     """
     rep = reporte_solucion(
         solucion,
@@ -612,7 +611,6 @@ def generar_reporte_detallado(
         marcador_depot_etiqueta=marcador_depot_etiqueta,
         usar_gpu=usar_gpu,
         guardar=False,  # no guarda a disco, solo retorna el texto
-        orientacion_greedy=orientacion_greedy,
     )
     return rep.texto, rep.costo_total
 
