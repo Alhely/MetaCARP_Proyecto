@@ -93,3 +93,6 @@ analisis_operadores_20260520/biblioteca_soluciones/
 # Temporary files
 *.tmp
 *.temp
+
+# LibreOffice lock files
+.~lock.*#
