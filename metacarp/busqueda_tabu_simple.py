@@ -89,8 +89,8 @@ import time
 from collections.abc import Iterable, Mapping
 # @dataclass y field: para definir clases de datos sin escribir __init__ manualmente.
 from dataclasses import dataclass, field
-# Any = cualquier tipo; Literal = un conjunto fijo de valores permitidos.
-from typing import Any, Literal
+# Any = cualquier tipo; Callable = tipo para funciones/callables; Literal = un conjunto fijo de valores permitidos.
+from typing import Any, Callable, Literal
 
 # NetworkX: biblioteca para manipular grafos (nodos y aristas).
 import networkx as nx
@@ -273,6 +273,12 @@ def busqueda_tabu_simple(
     # Cota dura del numero de kicks consecutivos. Cuando se alcanza, la corrida
     # termina. None = sin tope (los kicks se permiten indefinidamente).
     max_resets: int | None = None,
+    # Hook de intensificacion OPCIONAL (p.ej. Path Relinking limpio). Si se
+    # provee, en el punto de estancamiento (mismo disparador que el kick) se
+    # ejecuta PR HACIA la mejor solucion global EN LUGAR del kick aleatorio.
+    # None = comportamiento clasico (kick aleatorio). API limpia que reemplaza
+    # los frame-hacks del PR del primer ciclo.
+    intensificador: Callable | None = None,
     # Penalización por capacidad (lambda_grid_20260525). None = default instance-aware.
     lambda_capacidad: float | None = None,
     **_ignorado_kwargs: object,        # absorbe kwargs heredados (p.ej. id_corrida, config_id)
@@ -693,11 +699,18 @@ def busqueda_tabu_simple(
             # criterio de parada por estancamiento al inicio de la iteración).
             if (max_iter_sin_mejora_kick is not None
                     and iter_sin_mejora >= max_iter_sin_mejora_kick):
-                # Import diferido: solo se carga si la corrida activa el kick.
-                from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
-                sol_actual = aplicar_kick_labels(
-                    sol_actual, rng, md_op, encoding=encoding
-                )
+                if intensificador is not None:
+                    # Respuesta de intensificacion (p.ej. Path Relinking limpio)
+                    # hacia la mejor solucion global, en lugar del kick aleatorio.
+                    sol_actual = intensificador(
+                        sol_actual, mejor_sol, ctx, lam_eff, rng, encoding, md_op
+                    )
+                else:
+                    # Import diferido: solo se carga si la corrida activa el kick.
+                    from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
+                    sol_actual = aplicar_kick_labels(
+                        sol_actual, rng, md_op, encoding=encoding
+                    )
                 # Recalculamos costo, violación y objetivo penalizado tras el kick.
                 viol_actual = float(exceso_capacidad_rapido(sol_actual, ctx))
                 costo_actual = float(costo_rapido(sol_actual, ctx))
@@ -849,6 +862,8 @@ def busqueda_tabu_simple_desde_instancia(
     # Kick reactivo (variante experimental strict_intra_inter_20260524).
     max_iter_sin_mejora_kick: int | None = None,
     max_resets: int | None = None,
+    # Hook de intensificacion opcional (p.ej. Path Relinking limpio).
+    intensificador: Callable | None = None,
     # Penalización por capacidad (lambda_grid_20260525). None = default instance-aware.
     lambda_capacidad: float | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
@@ -892,6 +907,8 @@ def busqueda_tabu_simple_desde_instancia(
         # Propagamos el mecanismo de kick (variante experimental).
         max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
         max_resets=max_resets,
+        # Propagamos el hook de intensificacion (p.ej. Path Relinking limpio).
+        intensificador=intensificador,
         # Propagamos la penalización de capacidad (lambda_grid_20260525).
         lambda_capacidad=lambda_capacidad,
     )

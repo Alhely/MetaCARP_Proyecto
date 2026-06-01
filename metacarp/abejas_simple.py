@@ -78,7 +78,8 @@ from collections.abc import Iterable, Mapping
 # @dataclass crea el boilerplate de clases de datos; field() configura defaults complejos.
 from dataclasses import dataclass, field
 # Any para tipados muy genéricos (resultado del unpickle de soluciones iniciales).
-from typing import Any
+# Callable para anotar el hook de intensificacion opcional (p.ej. Path Relinking).
+from typing import Any, Callable
 
 # NetworkX: librería para manipular el grafo CARP.
 import networkx as nx
@@ -403,6 +404,12 @@ def busqueda_abejas_simple(
     # Cota dura del numero de kicks consecutivos. Cuando se alcanza, la corrida
     # termina. None = sin tope (los kicks se permiten indefinidamente).
     max_resets: int | None = None,
+    # Hook de intensificacion OPCIONAL (p.ej. Path Relinking limpio). Si se
+    # provee, en el punto de estancamiento (mismo disparador que el kick) se
+    # ejecuta PR HACIA la mejor solucion global EN LUGAR del kick aleatorio.
+    # None = comportamiento clasico (kick aleatorio). API limpia que reemplaza
+    # los frame-hacks del PR del primer ciclo.
+    intensificador: Callable | None = None,
     extra_csv: dict[str, object] | None = None,  # columnas extra para el CSV (no se usan aquí)
     **_ignorado_kwargs: object,              # absorbe kwargs heredados (id_corrida, config_id, ...)
 ) -> AbejasSimpleResult:
@@ -934,10 +941,20 @@ def busqueda_abejas_simple(
             # scouts antes de poder explotar su nueva posicion.
             if (max_iter_sin_mejora_kick is not None
                     and iter_sin_mejora >= max_iter_sin_mejora_kick):
-                # Import diferido: solo se carga si la corrida activa el kick.
-                from metacarp.strict_intra_inter_20260524 import aplicar_kick_ids
+                # Import diferido del kick clasico: solo se carga si la corrida
+                # activa el kick Y no se provee un intensificador externo.
+                if intensificador is None:
+                    from metacarp.strict_intra_inter_20260524 import aplicar_kick_ids
                 for i in range(num_fuentes_eff):
-                    fuentes_ids[i] = aplicar_kick_ids(fuentes_ids[i], rng, encoding=encoding)
+                    if intensificador is not None:
+                        # Respuesta de intensificacion (p.ej. Path Relinking limpio)
+                        # hacia la mejor solucion global, en lugar del kick aleatorio.
+                        fuentes_ids[i] = intensificador(
+                            fuentes_ids[i], mejor_sol_ids, ctx, lam_eff, rng, encoding, None
+                        )
+                    else:
+                        fuentes_ids[i] = aplicar_kick_ids(fuentes_ids[i], rng, encoding=encoding)
+                    # Recalculamos costo y violacion para ambas ramas (comun).
                     fuentes_pure[i] = float(costo_rapido_ids(fuentes_ids[i], ctx))
                     fuentes_viol[i] = float(exceso_capacidad_sol_ids(fuentes_ids[i], ctx))
                     # Reseteamos el contador de abandono de esta fuente: la
@@ -1149,6 +1166,8 @@ def busqueda_abejas_simple_desde_instancia(
     # Kick reactivo (variante experimental strict_intra_inter_20260524).
     max_iter_sin_mejora_kick: int | None = None,
     max_resets: int | None = None,
+    # Hook de intensificacion opcional (p.ej. Path Relinking limpio).
+    intensificador: Callable | None = None,
     extra_csv: dict[str, object] | None = None,
     **_ignorado_kwargs: object,
 ) -> AbejasSimpleResult:
@@ -1195,5 +1214,7 @@ def busqueda_abejas_simple_desde_instancia(
         # Propagamos el mecanismo de kick (variante experimental).
         max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
         max_resets=max_resets,
+        # Propagamos el hook de intensificacion (p.ej. Path Relinking limpio).
+        intensificador=intensificador,
         extra_csv=extra_csv,
     )

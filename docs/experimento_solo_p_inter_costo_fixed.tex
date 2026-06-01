@@ -1,0 +1,542 @@
+% =====================================================================
+% experimento_solo_p_inter_costo_fixed.tex
+% ---------------------------------------------------------------------
+% Sección autocontenida: Experimento "solo_p_inter_20260531".
+% Se integra en Capitulo_Experimentos.tex via \input{}.
+% Sin preámbulo ni \begin{document}. Compilable con pdflatex >= 2 pases.
+% =====================================================================
+
+% Macro auxiliar de andamiaje: si ya existe en el documento padre se
+% omite silenciosamente. Aquí se define de forma segura.
+\providecommand{\TODO}[1]{\textcolor{rojomalo}{\textbf{[TODO: #1]}}}
+
+% =====================================================================
+\section{Experimento 8: solo\_p\_inter\_20260531 (primer ciclo con costo corregido)}
+\label{sec:exp-solo-p-inter}
+% =====================================================================
+
+% =====================================================================
+\subsection{Hipótesis y motivación}
+% =====================================================================
+
+El hallazgo documentado en la Sección~\ref{sec:evaluador-canonico}
+reformuló el problema experimental. Los experimentos 1--6 operaron
+sobre una función de costo que forzaba la orientación fija $u \to v$
+para cada tarea, inflando sistemáticamente los gaps en $\approx 33$\,pp
+y produciendo mínimos locales artificiales que resultaban idénticos
+para las cinco metaheurísticas. La corrección consistió en integrar la
+orientación \emph{greedy} (entrar a cada tarea por el extremo más
+cercano al nodo previo) como la única lógica nativa de
+\texttt{metacarp/evaluador\_costo.py}, con reporte de deadheading
+consistente: \texttt{mejor\_costo} $\equiv$ \texttt{costo\_total\_desde\_reporte}.
+
+Sobre esa base limpia, el nuevo programa experimental adopta el
+principio metodológico \textbf{de lo más simple a lo más complejo}:
+si el approach más básico ya produce gaps competitivos con el costo
+corregido, los componentes avanzados (Path Relinking, kick reactivo,
+AOS, presupuesto extendido) quedarán justificados únicamente como
+reductores de tiempo de ejecución, no como mejoras de calidad
+intrínseca. El presente experimento es el primero de ese nuevo ciclo.
+
+La hipótesis central es la siguiente:
+
+\begin{quote}
+\textit{El selector probabilístico nativo
+\texttt{seleccionar\_grupo\_operadores\_inter\_intra} ---sin
+monkey-patches, sin Path Relinking, sin kick reactivo--- ya es
+suficiente para obtener gaps bajos cuando el evaluador es correcto.
+Calibrar únicamente $p_{\text{inter}}$ y el parámetro libre de cada
+metaheurística debería rendir al menos tan bien como los approaches
+más complejos del primer ciclo.}
+\end{quote}
+
+% =====================================================================
+\subsection{Diseño del approach}
+% =====================================================================
+
+El approach \texttt{solo\_p\_inter} utiliza exclusivamente el
+mecanismo de selección que ya posee el núcleo del proyecto. En cada
+iteración, la función
+\texttt{seleccionar\_grupo\_operadores\_inter\_intra} (módulo
+\texttt{metacarp/metaheuristicas\_utils.py}) decide el grupo de
+operadores según el estado de la solución actual:
+
+\begin{itemize}
+\item Si la solución \textbf{viola capacidad} ($\text{viol} > 10^{-12}$),
+  la probabilidad de proponer el grupo INTER-ruta es
+  $\alpha_{\text{inter}} = 0.80$ (reparación agresiva, fija, no
+  calibrada). El propósito es redistribuir carga entre vehículos y
+  recuperar la factibilidad.
+\item Si la solución es \textbf{factible}, la probabilidad de proponer
+  el grupo INTER-ruta es $p_{\text{inter}}$ (knob calibrado; exploración
+  moderada para escapar de mínimos locales intra-ruta).
+\end{itemize}
+
+\textbf{Dentro del grupo elegido}, la función \texttt{generar\_vecino}
+selecciona el operador de forma \textbf{uniforme}
+(\texttt{pesos\_operadores=None}): no hay AOS ni pesos adaptativos.
+
+El diseño NO instala ningún monkey-patch: el selector base es
+exactamente el que comparten las cinco metaheurísticas (SA, TS simple,
+RTS, ABC simple, Cuckoo). Esto elimina toda la capa de infraestructura
+de monkey-patching del primer ciclo, con dos consecuencias
+metodológicas importantes:
+
+\begin{enumerate}
+\item La comparación entre MHs es completamente limpia: todas corren
+  el mismo mecanismo de selección sin interferencia externa.
+\item El approach es reproducible con una única llamada a la función
+  \texttt{*\_desde\_instancia} de cada MH con los kwargs apropiados;
+  no requiere importar ni ordenar parches.
+\end{enumerate}
+
+Los demás parámetros de cada metaheurística se dejan
+\textbf{instance-aware} (valor \texttt{None}): temperatura inicial y
+mínima en SA, tenure bounds e iteraciones en TS/RTS, límite de
+abandono en ABC, número de nidos y pasos de Lévy en Cuckoo. La
+penalización de capacidad usa el $\lambda$ por defecto del módulo
+(\texttt{lambda\_penal\_capacidad\_por\_defecto}, $\approx 10\times$
+la mediana del costo de arco de la instancia, con mínimo absoluto
+de 10), pasando \texttt{lambda\_capacidad=None}.
+
+\medskip
+\noindent\textbf{Conjunto de operadores.} Se activan los 9 operadores
+del conjunto \texttt{OPERADORES\_POPULARES}:
+
+\begin{itemize}
+\item Intra-ruta (3): \texttt{relocate\_intra}, \texttt{swap\_intra},
+  \texttt{2opt\_intra}.
+\item Inter-ruta (6): \texttt{relocate\_inter}, \texttt{swap\_inter},
+  \texttt{2opt\_star}, \texttt{cross\_exchange}, \texttt{or\_opt\_2},
+  \texttt{or\_opt\_3}.
+\end{itemize}
+
+El uso del conjunto completo contrasta deliberadamente con los
+experimentos 1--7, que empleaban el subconjunto reducido de 5
+operadores (\texttt{OPERADORES\_STRICT\_5}). Dado que el objetivo del
+experimento es medir la línea de base más simple posible, se prefiere
+no sesgar la elección de operadores; el análisis de operadores del
+primer ciclo (Tabla~\ref{tab:poda-ranking}) está disponible para
+interpretar los resultados a posteriori.
+
+\medskip
+\noindent\textbf{Nota sobre \texttt{alpha\_inter}.} SA, TS simple y
+RTS exponen el parámetro \texttt{alpha\_inter} en su firma y lo usan
+directamente; se fija en $0.80$ en todos los casos. ABC simple y
+Cuckoo no exponen ese kwarg: internamente calculan la probabilidad
+en estado infactible como $\max(p_{\text{inter}},\,0.80)$, lo que
+equivale a $0.80$ para todos los valores de $p_{\text{inter}}$
+explorados en la malla ($\le 0.50$).
+
+% =====================================================================
+\subsection{Selector \texorpdfstring{$p_{\text{inter}}$}{p\_inter}: pseudocódigo}
+% =====================================================================
+
+El Algoritmo~\ref{alg:selector-solo-p-inter} formaliza el mecanismo.
+Es idéntico al del Experimento 5 (Algoritmo~\ref{alg:selector-pip}),
+pero aquí \textbf{no se instala como monkey-patch}: es la lógica
+nativa del módulo, invocada por las cinco metaheurísticas en cada
+iteración sin modificación.
+
+\begin{algorithm}[h]
+\caption{Selector $p_{\text{inter}}$ probabilístico nativo
+         (\texttt{seleccionar\_grupo\_operadores\_inter\_intra}).}
+\label{alg:selector-solo-p-inter}
+\begin{algorithmic}[1]
+\Require $\viol \in \mathbb{R}_{\ge 0}$ violación de capacidad actual;
+  $p_{\text{inter}},\,\alpha_{\text{inter}} \in [0,1]$;
+  generador $rng$;
+  conjuntos $\mathcal{O}_{\text{intra}},\,\mathcal{O}_{\text{inter}},\,\mathcal{O}_{\text{fb}}$.
+\Ensure Grupo de operadores $\mathcal{O}$ a usar en esta iteración.
+\If{$\viol > 10^{-12}$}
+  \State $p_{\text{ef}} \gets \alpha_{\text{inter}}$ \Comment{Estado infactible: reparación agresiva}
+\Else
+  \State $p_{\text{ef}} \gets p_{\text{inter}}$ \Comment{Estado factible: exploración moderada}
+\EndIf
+\If{$rng.\text{random}() < p_{\text{ef}}$ \textbf{y} $\mathcal{O}_{\text{inter}} \neq \emptyset$}
+  \State \Return $\mathcal{O}_{\text{inter}}$
+\ElsIf{$\mathcal{O}_{\text{intra}} \neq \emptyset$}
+  \State \Return $\mathcal{O}_{\text{intra}}$
+\Else
+  \State \Return $\mathcal{O}_{\text{fb}}$ \Comment{Caso degenerado: grupos vacíos}
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+Un dato relevante para la reproducibilidad: la función realiza
+exactamente \textbf{un único} \texttt{rng.random()} por iteración.
+Esto preserva la reproducibilidad bit a bit con la implementación
+original del Recocido Simulado, de la que fue extraída.
+
+% =====================================================================
+\subsection{Grid search en dos fases}
+% =====================================================================
+
+El grid search sigue la misma lógica de las dos fases empleada en el
+programa anterior, adaptada al nuevo approach.
+
+\paragraph{Knob compartido.}
+El único parámetro compartido entre las cinco metaheurísticas es
+$p_{\text{inter}}$, que se calibra en la malla:
+\[ p_{\text{inter}} \in \{0.1,\,0.2,\,0.3,\,0.4,\,0.5\}. \]
+
+\paragraph{Parámetro libre por MH.}
+Además del knob compartido, cada metaheurística expone un único
+parámetro libre con tres valores posibles (el resto es instance-aware
+o valor de literatura clásica):
+
+\begin{table}[h]
+\centering
+\caption{Parámetros del grid por metaheurística. El resto de
+         parámetros se dejan instance-aware (\texttt{None}).}
+\label{tab:grid-solo-p-inter}
+\small
+\begin{tabular}{llll}
+\toprule
+MH & Parámetro libre & Valores & Resto notable \\
+\midrule
+SA           & \texttt{alpha} (enfriamiento)   & $\{0.90,\,0.95,\,0.99\}$  &
+  $T_{\text{init}}, T_{\min}, L = n^2$: instance-aware \\
+TS simple    & \texttt{tabu\_tenure}            & $\{7,\,15,\,25\}$         &
+  tamaño vecindario: 25 \\
+RTS          & \texttt{factor\_aumento}         & $\{1.1,\,1.2,\,1.3\}$    &
+  factor\_reduccion: $0.9$ \\
+ABC simple   & \texttt{num\_fuentes}            & $\{10,\,20,\,30\}$        &
+  límite abandono: instance-aware \\
+Cuckoo       & \texttt{pa\_abandono}            & $\{0.15,\,0.25,\,0.35\}$ &
+  beta\_levy: $1.5$; nidos: instance-aware \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Esto produce $5 \times 3 = 15$ configuraciones por MH, para
+un total de 75 configuraciones en el grid completo.
+
+\paragraph{Fase 1 (calibración).}
+Se ejecutan 3 repeticiones por (configuración, instancia) sobre las
+23 instancias del corpus. No se fija semilla: la variabilidad es
+puramente estocástica. Para cada MH se elige la configuración con el
+\textbf{menor gap medio} sobre las 23 instancias. El resultado de esta
+fase se escribe en \texttt{grid\_resumen.csv} (gap medio y desviación
+estándar por configuración) y en \texttt{mejor\_config.json}
+(configuración ganadora con su gap medio).
+
+\paragraph{Fase 2 (corrida final).}
+La configuración ganadora de la fase 1 se corre con \textbf{5
+repeticiones} $\times$ 23 instancias. Los CSVs completos (con todas
+las columnas de operadores y deadheading) se generan en el
+subdirectorio \texttt{final/}.
+
+\paragraph{Corridas totales.}
+\begin{itemize}
+\item Fase 1: $15\,\text{configs} \times 23\,\text{inst} \times
+  3\,\text{reps} = 1{,}035$ corridas por MH
+  $= 5{,}175$ corridas totales.
+\item Fase 2: $23\,\text{inst} \times 5\,\text{reps} = 115$ corridas
+  por MH $= 575$ corridas totales.
+\item \textbf{Total}: 5{,}750 corridas entre ambas fases.
+\end{itemize}
+
+% =====================================================================
+\subsection{Configuración y parámetros instance-aware}
+% =====================================================================
+
+La Tabla~\ref{tab:config-solo-p-inter} resume la configuración
+completa del approach en comparación con los experimentos del primer
+ciclo (evaluador canónico). Las diferencias clave se destacan con
+negrita.
+
+\begin{table}[h]
+\centering
+\caption{Comparativa de configuración entre el primer ciclo y
+         \texttt{solo\_p\_inter\_20260531}.}
+\label{tab:config-solo-p-inter}
+\small
+\begin{tabular}{lll}
+\toprule
+Componente & Primer ciclo (R1--R7) & \texttt{solo\_p\_inter} \\
+\midrule
+Evaluador de costo    & Canónico (artefacto)       & \textbf{Greedy nativo} \\
+Selector inter/intra  & Monkey-patch (strict o PR) & \textbf{Selector nativo} \\
+Path Relinking        & Sí (R3--R7)                & \textbf{No} \\
+Kick reactivo         & Sí (R1--R7)                & \textbf{No} \\
+AOS-PM                & Sí (R2)                    & \textbf{No} \\
+Presupuesto extra     & $\times 25$ en R5--R7      & \textbf{Instance-aware} \\
+$\lambda$             & Default / $\times 10$      & \textbf{Default (None)} \\
+Conjunto operadores   & 5 (\texttt{STRICT\_5})     & \textbf{9 (\texttt{POPULARES})} \\
+$\alpha_{\text{inter}}$ & $0.80$ (R4--R7)          & $0.80$ (fijo) \\
+$p_{\text{inter}}$    & $0.20$ fijo (R4--R7)       & \textbf{calibrado en {[}0.1, 0.5{]}} \\
+Reheat SA             & Default (sin tope)         & \textbf{Acotado} (\texttt{patience=10}, \texttt{max\_reheats=5}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\medskip
+\noindent\textbf{Parámetros instance-aware.} Para cada metaheurística
+los parámetros principales quedan determinados automáticamente por el
+wrapper \texttt{*\_desde\_instancia} a partir del tamaño de la
+instancia (número de tareas $n_\tau$, número de aristas, capacidad $Q$
+y estadísticas del grafo):
+
+\begin{itemize}
+\item \textbf{SA}: $T_{\text{init}}$ derivada de la varianza del costo
+  de vecinos muestreados; $T_{\min}$ como fracción de $T_{\text{init}}$;
+  longitud de cadena $L = n_\tau^2$. Reheat acotado (véase nota
+  abajo).
+\item \textbf{TS simple / RTS}: número máximo de iteraciones y
+  ventanas de tenure bounds derivados de $n_\tau$.
+\item \textbf{ABC simple}: límite de abandono de fuentes proporcional
+  al número de fuentes y a $n_\tau$.
+\item \textbf{Cuckoo}: número de nidos y pasos de vuelo de Lévy
+  derivados de $n_\tau$.
+\end{itemize}
+
+% ---------------------------------------------------------------------
+\subsubsection*{Nota técnica: reheat acotado en SA}
+\label{nota:reheat-acotado-solo-p-inter}
+% ---------------------------------------------------------------------
+
+El Recocido Simulado utiliza un mecanismo de \emph{reheat} para
+escapar de mínimos locales: cuando la temperatura cae demasiado sin
+mejora del mejor global, se recalienta parcialmente. El comportamiento
+por defecto del módulo SA fija \texttt{max\_reheats\_sin\_mejora=0}
+(sin tope de reheats), lo que hace que corridas con \texttt{alpha}
+alto ($\alpha = 0.99$, enfriamiento muy lento) no converjan en tiempo
+razonable.
+
+El approach \texttt{solo\_p\_inter} fija el reheat \textbf{acotado},
+consistente con la configuración validada del proyecto:
+
+\begin{itemize}
+  \item \texttt{patience=10}: iteraciones de nivel sin mejora antes
+    de activar el reheat.
+  \item \texttt{reheat\_factor=0.5}: la temperatura de reheat es la
+    mitad de la temperatura inicial efectiva.
+  \item \texttt{max\_reheats\_sin\_mejora=5}: máximo de reheats
+    consecutivos sin mejorar el mejor global antes de parar.
+\end{itemize}
+
+Con este acotamiento, una corrida SA con $\alpha = 0.99$ tarda
+$\sim$5\,s en instancias pequeñas, el mismo orden de magnitud que
+$\alpha = 0.90$ ó $0.95$. Sin él, la misma corrida no termina en
+150\,s (verificado experimentalmente). Los parámetros de reheat \emph{no
+se calibran}: se fijan iguales para los tres valores de $\alpha$ del
+grid, de modo que la única variable del grid SA sea efectivamente
+$\alpha$.
+
+El mismo reheat acotado se aplica en el Experimento~\ref{sec:exp-binario-capacidad}
+(\texttt{binario\_capacidad\_20260531}), garantizando comparabilidad
+directa entre ambos approaches.
+
+% =====================================================================
+\subsection{Reproducibilidad: scripts e infraestructura}
+% =====================================================================
+
+El experimento se organiza en tres niveles de scripts:
+
+\begin{itemize}
+\item \textbf{Orquestador común}:
+  \texttt{scripts/\_solo\_p\_inter\_20260531\_common.py} --- implementa
+  el grid search en dos fases, la construcción de kwargs por MH, la
+  consolidación de CSV parciales y la CLI (\texttt{--smoke},
+  \texttt{--solo-fase}, \texttt{--workers}).
+\item \textbf{Runners por MH}:
+  \texttt{scripts/run\_sa\_solo\_p\_inter\_20260531.py},
+  \texttt{run\_tabu\_simple\_solo\_p\_inter\_20260531.py},
+  \texttt{run\_tabu\_reactiva\_solo\_p\_inter\_20260531.py},
+  \texttt{run\_abc\_simple\_solo\_p\_inter\_20260531.py},
+  \texttt{run\_cuckoo\_solo\_p\_inter\_20260531.py} ---
+  cada uno fija su MH y llama al orquestador.
+\item \textbf{Lanzador master}:
+  \texttt{scripts/run\_all\_solo\_p\_inter\_20260531.sh} --- lanza
+  los cinco runners en paralelo (uno por proceso), con redirección de
+  logs.
+\end{itemize}
+
+La salida se escribe en:
+\begin{center}
+\texttt{experimentos\_costo\_fixed/<mh>\_solo\_p\_inter\_<YYYYMMDD-HHMM>/}
+\end{center}
+
+Con la siguiente estructura de carpetas:
+
+\begin{itemize}
+\item \texttt{grid\_parciales/} --- CSVs parciales de la fase 1, un
+  archivo por corrida (columnas completas con contadores de operadores
+  y reporte de deadheading).
+\item \texttt{calibracion\_todas.csv} --- consolidado de la fase 1
+  (unión de columnas de todos los parciales).
+\item \texttt{grid\_resumen.csv} --- gap medio y desviación estándar
+  por configuración, ordenados de mejor a peor.
+\item \texttt{mejor\_config.json} --- configuración ganadora con sus
+  campos: \texttt{mh}, \texttt{p\_inter}, \texttt{libre\_nombre},
+  \texttt{libre\_valor}, \texttt{gap\_medio}, \texttt{gap\_std}.
+\item \texttt{final/} --- CSVs de la fase 2 (5 repeticiones, columnas
+  completas), uno por instancia con el patrón
+  \texttt{<mh>\_solo\_p\_inter\_<instancia>.csv}.
+\end{itemize}
+
+\medskip
+\noindent\textbf{Columnas del CSV.} Las columnas son idénticas a las
+del núcleo del proyecto. Entre las más relevantes para el análisis:
+\texttt{gap\_bks\_porcentaje}, \texttt{mejor\_costo},
+\texttt{costo\_total\_desde\_reporte},
+\texttt{reporte\_detalle\_deadheading}, y los 36 contadores de
+operadores ($9\text{ operadores} \times 4\text{ categorías}$:
+propuesto, aceptado, mejoró, trayectoria\_mejor).
+
+% =====================================================================
+\subsection{Resultados}
+% =====================================================================
+
+\begin{observacion}[Corrida completada]
+El experimento \texttt{solo\_p\_inter\_20260531} se ejecutó el
+31 de mayo de 2026 sobre las 23 instancias, con grid search en dos
+fases (3 repeticiones en la fase~1 de calibración y 5~repeticiones en
+la fase~2 de confirmación). Los valores reportados a continuación
+corresponden a la fase~2 con la configuración ganadora de cada MH.
+\end{observacion}
+
+\paragraph{Fuentes de datos.}
+Cada número de la Tabla~\ref{tab:solo-p-inter-resultados} se extrae
+de los siguientes archivos generados por el orquestador:
+
+\begin{itemize}
+\item \textbf{$p_{\text{inter}}^*$ y parámetro libre*}: columnas
+  \texttt{p\_inter} y \texttt{<libre\_nombre>} de la primera fila
+  de \texttt{grid\_resumen.csv} (o equivalentemente del campo
+  correspondiente en \texttt{mejor\_config.json}).
+\item \textbf{Gap medio (fase 2)}: promedio de la columna
+  \texttt{gap\_bks\_porcentaje} en los CSV de
+  \texttt{final/<mh>\_solo\_p\_inter\_<instancia>.csv} sobre las
+  23 instancias $\times$ 5 repeticiones.
+\item \textbf{$N$ instancias en BKS}: número de instancias para las
+  que \texttt{gap\_bks\_porcentaje} $< 0.01$\,\% en al menos una de
+  las 5 repeticiones de la fase 2.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Resultados del experimento \texttt{solo\_p\_inter\_20260531}
+         (fase 2: 5 reps $\times$ 23 instancias por MH). El gap se mide
+         respecto al BKS de cada instancia con el evaluador greedy nativo.}
+\label{tab:solo-p-inter-resultados}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+MH & $p_{\text{inter}}^*$ & Parámetro libre* & Valor* &
+  Gap medio (\%) & Mediana (\%) & $N$ inst.\ en BKS \\
+\midrule
+SA           & 0.5 & \texttt{alpha}          & 0.90 &
+  3.32  & 2.22  & 14/23 \\
+TS simple    & 0.4 & \texttt{tabu\_tenure}   & 25   &
+  8.70  & 7.27  & 6/23 \\
+RTS          & 0.5 & \texttt{factor\_aumento}& 1.2  &
+  4.67  & 3.36  & 13/23 \\
+ABC simple   & 0.5 & \texttt{num\_fuentes}   & 30   &
+  15.11 & 15.17 & 1/23 \\
+Cuckoo       & 0.1 & \texttt{pa\_abandono}   & 0.15 &
+  20.06 & 20.00 & 0/23 \\
+\midrule
+\textbf{Media} & --- & --- & --- & \textbf{10.37} & --- & 34/115 \\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\footnotesize
+* Configuración ganadora de la fase 1; leída de \texttt{mejor\_config.json}.
+La última columna de la fila \textbf{Media} agrega los aciertos de BKS
+como pares (MH, instancia) sobre el total $5 \times 23$ por MH.
+\end{table}
+
+\paragraph{Comparativa con R3 y R5 (referencia).}
+La Tabla~\ref{tab:solo-p-inter-comparativa} sitúa los resultados de
+este experimento respecto a los mejores approaches del primer ciclo
+bajo el evaluador greedy (R3 Path Relinking y R5 Budget), extraídos
+de la Tabla~\ref{tab:re-greedy-gap}.
+
+\begin{table}[h]
+\centering
+\caption{Gap medio (\%) por MH: \texttt{solo\_p\_inter} (evaluador greedy nativo)
+         frente a R3 y R5 (evaluador greedy por monkey-patch).
+         $\Delta$ positivo indica que \texttt{solo\_p\_inter} es peor que R3.}
+\label{tab:solo-p-inter-comparativa}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+MH & R3 PR & R5 Budget & \texttt{solo\_p\_inter} & $\Delta$ vs R3 \\
+\midrule
+SA        & 0.90  & 0.57 & 3.32  & $+2.42$  \\
+TS simple & 4.48  & 1.08 & 8.70  & $+4.22$  \\
+RTS       & 3.04  & 1.18 & 4.67  & $+1.63$  \\
+ABC       & 9.75  & 8.30 & 15.11 & $+5.36$  \\
+Cuckoo    & 8.20  & 4.25 & 20.06 & $+11.86$ \\
+\midrule
+\textbf{Media} & 5.27 & 3.08 & \textbf{10.37} & $+5.10$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretación de los resultados.}
+La hipótesis preveía que \texttt{solo\_p\_inter} alcanzaría un gap
+\emph{comparable o inferior} a R3. Los datos la \textbf{refutan}: el
+approach simple es peor que R3 en las cinco MH ($\Delta$ medio
+$+5.10$ puntos) y muy por detrás de R5. Tres lecturas se desprenden:
+
+\begin{enumerate}
+\item \textbf{La complejidad sí aporta valor, no solo compensaba el
+  evaluador roto.} Bajo el evaluador corregido de forma nativa, los
+  mecanismos del primer ciclo (Path Relinking, kick reactivo,
+  presupuesto ampliado) siguen mejorando claramente sobre el selector
+  desnudo. La corrección del evaluador es necesaria para una
+  \emph{medición} fiable, pero no sustituye a la intensificación.
+\item \textbf{El óptimo de $p_{\text{inter}}$ es alto.} La calibración
+  selecciona $p_{\text{inter}} = 0.5$ en SA, RTS y ABC (y $0.4$ en TS),
+  muy por encima del $0.20$ fijado en R4. Con el costo correcto, una
+  mayor proporción de movimientos inter-ruta resulta beneficiosa, lo
+  que sugiere que el valor moderado heredado del primer ciclo estaba
+  sesgado por el artefacto de orientación. Cuckoo es la excepción
+  ($p_{\text{inter}} = 0.1$).
+\item \textbf{Jerarquía de MH como línea de base.} Con el approach más
+  simple, SA (3.32\,\%) y RTS (4.67\,\%) son claramente superiores a las
+  metaheurísticas poblacionales (ABC 15.11\,\%, Cuckoo 20.06\,\%), que
+  necesitan los componentes adicionales para ser competitivas.
+\end{enumerate}
+
+En consecuencia, el resultado fija una \textbf{línea de base limpia}:
+todo mecanismo añadido en los siguientes approaches debe justificarse
+por la mejora de gap que produzca \emph{sobre} estos valores, ya
+medidos con el evaluador nativo. El siguiente experimento de control
+(Experimento~\ref{sec:exp-binario-capacidad}) sustituye el selector
+probabilístico por uno binario determinista para aislar el efecto del
+mecanismo de selección antes de reintroducir la intensificación.
+
+% =====================================================================
+\subsection{Conclusión provisional del experimento 8}
+% =====================================================================
+
+Este experimento cierra el primer ciclo experimental y abre el segundo,
+fundamentado en el evaluador greedy integrado de forma nativa. Sus
+contribuciones metodológicas son las siguientes, independientemente
+del resultado numérico:
+
+\begin{enumerate}
+\item \textbf{Línea de base limpia bajo el evaluador corregido.}
+  Los resultados de \texttt{solo\_p\_inter} constituyen el primer
+  punto de referencia genuino del programa experimental: sin artefactos
+  de evaluación y sin componentes de complejidad artificial.
+\item \textbf{Calibración del knob $p_{\text{inter}}$ por MH.}
+  El grid search en dos fases cuantifica el valor óptimo de
+  $p_{\text{inter}}$ para cada metaheurística bajo el evaluador
+  correcto. Este dato es independiente y complementario al obtenido en
+  los experimentos R4 y R5 del primer ciclo (donde el evaluador greedy
+  se aplicó como monkey-patch sobre una búsqueda ya diseñada con el
+  evaluador canónico).
+\item \textbf{Separación de responsabilidades.}
+  Al no instalar monkey-patches, el experimento permite atribuir
+  directamente la calidad del resultado a la metaheurística base y al
+  evaluador, sin interferencia de la infraestructura de patching.
+\end{enumerate}
+
+Los resultados completos se incorporarán a la
+Tabla~\ref{tab:solo-p-inter-resultados} una vez finalizada la corrida
+en \texttt{experimentos\_costo\_fixed/}.

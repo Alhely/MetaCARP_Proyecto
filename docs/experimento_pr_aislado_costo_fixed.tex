@@ -1,0 +1,312 @@
+% =====================================================================
+% experimento_pr_aislado_costo_fixed.tex
+% ---------------------------------------------------------------------
+% Sección autocontenida: Experimento "pr_aislado_20260531".
+% Se integra en Capitulo_Experimentos.tex via \input{}.
+% =====================================================================
+\providecommand{\TODO}[1]{\textcolor{rojomalo}{\textbf{[TODO: #1]}}}
+
+% =====================================================================
+\section{Experimento 10: pr\_aislado\_20260531 (aislamiento de Path Relinking)}
+\label{sec:exp-pr-aislado}
+% =====================================================================
+
+\subsection{Hipótesis y motivación}
+
+Tras aislar el selector probabilístico (Experimento~\ref{sec:exp-solo-p-inter})
+y el selector binario (Experimento~\ref{sec:exp-binario-capacidad}), el tercer
+approach del programa con evaluador greedy nativo aísla el efecto del
+\emph{Path Relinking} (PR) como mecanismo de \textbf{intensificación} guiada
+hacia la mejor solución global. La pregunta empírica es:
+
+\begin{quote}
+\textit{Bajo el costo corregido, ¿cuánto gap adicional cierra el Path
+Relinking cuando se añade, como única novedad, sobre un selector ya
+calibrado?}
+\end{quote}
+
+El obstáculo de partida era de \textbf{ingeniería}. El Path Relinking del
+primer ciclo (\texttt{path\_relinking\_20260528}) no era aislable: estaba
+implementado como un \emph{kick aumentado} que (i) solo se disparaba cuando se
+disparaba el kick, (ii) usaba \texttt{sys.\_getframe} para extraer
+\texttt{ctx}, $\lambda$ y la mejor solución del \emph{stack} de la
+metaheurística, y (iii) parcheaba \texttt{copiar\_solucion\_labels} y
+\texttt{ContadorOperadores.registrar\_mejora}. Imposible compararlo de forma
+limpia contra los approaches anteriores.
+
+\subsection{Diseño: Path Relinking limpio e independiente}
+
+Se reescribió el Path Relinking como un módulo de \textbf{funciones puras}
+(\texttt{metacarp/path\_relinking\_limpio\_20260531.py}) sin
+\texttt{\_getframe} ni monkey-patches, y se expuso a las metaheurísticas
+mediante un \textbf{hook explícito}: un parámetro opcional
+\texttt{intensificador} (con \emph{default} \texttt{None}, por lo que el
+comportamiento por defecto de las cinco MH no cambia) que se añadió a las
+funciones núcleo. En el punto de estancamiento ---el mismo disparador que el
+kick, controlado por \texttt{max\_iter\_sin\_mejora\_kick}--- la
+metaheurística, si recibe un \texttt{intensificador}, ejecuta
+
+\[
+\texttt{sol} \leftarrow \texttt{intensificador}(\texttt{sol\_actual},\ \texttt{mejor\_global},\ \texttt{ctx},\ \lambda,\ \texttt{rng},\ \texttt{encoding},\ \texttt{md})
+\]
+
+\emph{en lugar} del kick aleatorio. Toda la información (\texttt{ctx},
+$\lambda$, mejor solución) viaja por argumentos explícitos.
+
+\begin{table}[h]
+\centering
+\caption{Path Relinking del primer ciclo frente al PR limpio de este experimento.}
+\label{tab:pr-limpio-vs-sucio}
+\small
+\begin{tabular}{lll}
+\toprule
+Aspecto & PR primer ciclo (\texttt{20260528}) & PR limpio (\texttt{20260531}) \\
+\midrule
+Disparo            & Acoplado al kick            & \textbf{Hook explícito en estancamiento} \\
+Acceso a \texttt{ctx}/$\lambda$ & \texttt{sys.\_getframe} (stack) & \textbf{Argumentos explícitos} \\
+Mejor solución     & Patch de \texttt{copiar\_solucion} & \textbf{Argumento explícito} \\
+Monkey-patches     & 3 (copia, contador, kick)   & \textbf{0} \\
+Aislable           & No                          & \textbf{Sí} \\
+Selector base      & Fijo (binario strict)       & \textbf{Parametrizable (p\_inter / binario)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{\texorpdfstring{Path Relinking truncado: pseudocódigo}{Path Relinking truncado: pseudocodigo}}
+
+El Algoritmo~\ref{alg:pr-aislado} formaliza el relinking truncado. Camina
+\emph{greedy} desde la solución actual hacia la guía (la mejor global)
+reasignando, en cada paso, la tarea cuyo movimiento minimiza el objetivo
+penalizado, y devuelve el \textbf{mejor intermedio} observado (no la solución
+final). Como el mejor intermedio se inicializa con la propia
+\texttt{sol\_inicio}, el resultado nunca empeora el objetivo de partida.
+
+\begin{algorithm}[h]
+\caption{Path Relinking truncado (hacia la mejor solución global).}
+\label{alg:pr-aislado}
+\begin{algorithmic}[1]
+\Require \texttt{sol\_inicio}, \texttt{sol\_guia}; contexto \texttt{ctx};
+  penalización $\lambda$.
+\Ensure La mejor solución intermedia del camino \texttt{sol\_inicio}$\to$\texttt{sol\_guia}.
+\State $\Delta \gets$ tareas con asignación (ruta, posición) distinta entre inicio y guía
+\If{$\Delta = \varnothing$} \Return copia de \texttt{sol\_inicio} \EndIf
+\State $s \gets$ \texttt{sol\_inicio}; \ $s^\star \gets s$; \
+  $f^\star \gets \text{costo}(s) + \lambda\,\viol(s)$
+\For{$\min(|\Delta|, 50)$ pasos}
+  \State elegir $t \in \Delta$ cuyo movimiento a su posición-guía minimiza
+    $\text{costo} + \lambda\,\viol$
+  \State aplicar el movimiento: $s \gets s'$; \ $\Delta \gets \Delta \setminus \{t\}$
+  \If{$\text{costo}(s) + \lambda\,\viol(s) < f^\star$}
+    \State $s^\star \gets s$; \ $f^\star \gets \text{costo}(s) + \lambda\,\viol(s)$
+  \EndIf
+\EndFor
+\State \Return $s^\star$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Selector parametrizable y estrategia de aislamiento}
+
+El approach permite elegir el selector base con el parámetro
+\texttt{--selector}, y lo trata como una \textbf{dimensión del grid} (se corren
+ambos):
+
+\begin{itemize}
+\item \texttt{p\_inter}: selector probabilístico nativo
+  (Experimento~\ref{sec:exp-solo-p-inter}), con el $p_{\text{inter}}$ ya
+  calibrado por MH (SA $0.5$; TS $0.4$; RTS $0.5$; ABC $0.5$; Cuckoo $0.1$).
+\item \texttt{binario}: selector binario determinista
+  (Experimento~\ref{sec:exp-binario-capacidad}), instalado por monkey-patch del
+  selector en el \emph{worker}.
+\end{itemize}
+
+\noindent\textbf{Aislamiento.} El efecto del Path Relinking se mide como el
+$\Delta$ entre el gap de \texttt{[selector + PR]} (este experimento) y el de
+\texttt{[selector]} sin PR (Experimento~\ref{sec:exp-solo-p-inter} para
+\texttt{p\_inter}; Experimento~\ref{sec:exp-binario-capacidad} para
+\texttt{binario}), con todos los demás componentes idénticos.
+
+\paragraph{Nota sobre la reutilización de \emph{workers}.}
+Como el selector binario se instala con un monkey-patch persistente en el
+proceso, y \texttt{ProcessPoolExecutor} reutiliza los \emph{workers} entre
+tareas, cada tarea fija \textbf{explícitamente} su selector al iniciar
+(restaurando el selector nativo para las tareas \texttt{p\_inter}); de lo
+contrario una tarea \texttt{p\_inter} podría heredar el selector binario de una
+tarea previa en el mismo proceso.
+
+\subsection{Grid search en dos fases}
+
+\begin{table}[h]
+\centering
+\caption{Grid del approach \texttt{pr\_aislado\_20260531}: 2 selectores
+         $\times$ 3 valores del parámetro libre = 6 configuraciones por MH.}
+\label{tab:grid-pr-aislado}
+\small
+\begin{tabular}{lll}
+\toprule
+MH & Parámetro libre & Valores \\
+\midrule
+SA            & \texttt{alpha}          & $\{0.90,\ 0.95,\ 0.99\}$ \\
+TS simple     & \texttt{tabu\_tenure}   & $\{7,\ 15,\ 25\}$ \\
+RTS           & \texttt{factor\_aumento}& $\{1.1,\ 1.2,\ 1.3\}$ \\
+ABC simple    & \texttt{num\_fuentes}   & $\{10,\ 20,\ 30\}$ \\
+Cuckoo        & \texttt{pa\_abandono}   & $\{0.15,\ 0.25,\ 0.35\}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{itemize}
+\item \textbf{Fase 1 (calibración, 3 reps)}: barre las 6 configuraciones y elige
+  el mejor parámetro libre \emph{por cada selector} según el gap medio sobre las
+  23 instancias.
+\item \textbf{Fase 2 (confirmación, 5 reps)}: corre la mejor configuración de
+  cada selector (2 finales por MH).
+\item Umbral de disparo de PR fijo en $30$ (niveles para SA, iteraciones para el
+  resto); no se calibra, para no confundir el efecto de PR con su cadencia.
+\end{itemize}
+
+\subsection{Configuración y parámetros instance-aware}
+
+Idéntica a los Experimentos~\ref{sec:exp-solo-p-inter}
+y~\ref{sec:exp-binario-capacidad} salvo por la activación del Path Relinking:
+operadores completos (\texttt{OPERADORES\_POPULARES}, 9), $\lambda$ por defecto
+instance-aware (\texttt{lambda\_capacidad=None}), parámetros principales
+instance-aware (\texttt{None}), 5 repeticiones en la fase final, sin semilla
+fija, y reheat de SA acotado (\texttt{patience=10}, \texttt{reheat\_factor=0.5},
+\texttt{max\_reheats\_sin\_mejora=5}). El kick aleatorio queda \emph{sustituido}
+por el Path Relinking en el punto de estancamiento.
+
+\subsection{Reproducibilidad: scripts e infraestructura}
+
+\begin{itemize}
+\item \textbf{PR limpio}: \texttt{metacarp/path\_relinking\_limpio\_20260531.py}
+  (funciones puras \texttt{path\_relinking\_labels} / \texttt{path\_relinking\_ids}
+  y los \emph{hooks} \texttt{hook\_pr\_labels} / \texttt{hook\_pr\_ids}).
+\item \textbf{Hook} \texttt{intensificador}: parámetro opcional añadido a las 5
+  metaheurísticas núcleo y a sus envoltorios \texttt{*\_desde\_instancia}
+  (aditivo, \emph{default} \texttt{None}).
+\item \textbf{Orquestador}: \texttt{scripts/\_pr\_aislado\_20260531\_common.py}
+  (grid en dos fases, dimensión \texttt{--selector}, consolidación).
+\item \textbf{Runners}: \texttt{scripts/run\_<mh>\_pr\_aislado\_20260531.py};
+  \textbf{lanzador}: \texttt{scripts/run\_all\_pr\_aislado\_20260531.sh}.
+\end{itemize}
+
+La salida se escribe en
+\texttt{experimentos\_costo\_fixed/<mh>\_pr\_aislado\_<YYYYMMDD-HHMM>/} con
+\texttt{grid\_resumen.csv}, \texttt{mejor\_config.json} (mejor config por
+selector) y \texttt{final/<mh>\_pr\_<selector>\_<instancia>.csv}.
+
+\subsection{Resultados}
+
+\begin{observacion}[Corrida completada]
+El experimento \texttt{pr\_aislado\_20260531} se ejecutó el 31 de mayo de 2026
+sobre las 23 instancias, con grid en dos fases (3 reps de calibración y 5 de
+confirmación) para cada uno de los dos selectores. Los valores corresponden a
+la fase~2 con la configuración ganadora de cada (MH, selector).
+\end{observacion}
+
+\begin{table}[h]
+\centering
+\caption{Resultados de \texttt{pr\_aislado\_20260531} (fase 2: 5 reps $\times$
+         23 instancias por MH y selector). Gap respecto al BKS con evaluador
+         greedy nativo.}
+\label{tab:pr-aislado-resultados}
+\small
+\begin{tabular}{llcccc}
+\toprule
+MH & Selector & Param.\ libre* & Valor* & Gap medio (\%) & $N$ inst.\ en BKS \\
+\midrule
+SA           & p\_inter & \texttt{alpha}           & 0.90 & \textbf{3.19}  & 14/23 \\
+SA           & binario  & \texttt{alpha}           & 0.95 & 20.29 & 0/23 \\
+TS simple    & p\_inter & \texttt{tabu\_tenure}    & 15   & \textbf{4.99}  & 12/23 \\
+TS simple    & binario  & \texttt{tabu\_tenure}    & 15   & 18.53 & 0/23 \\
+RTS          & p\_inter & \texttt{factor\_aumento} & 1.1  & \textbf{3.36}  & 15/23 \\
+RTS          & binario  & \texttt{factor\_aumento} & 1.3  & 12.02 & 4/23 \\
+ABC simple   & p\_inter & \texttt{num\_fuentes}    & 30   & \textbf{4.09}  & 10/23 \\
+ABC simple   & binario  & \texttt{num\_fuentes}    & 30   & 6.24  & 6/23 \\
+Cuckoo       & p\_inter & \texttt{pa\_abandono}    & 0.25 & \textbf{12.02} & 3/23 \\
+Cuckoo       & binario  & \texttt{pa\_abandono}    & 0.35 & 19.49 & 1/23 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Aislamiento del Path Relinking: gap medio (\%) SIN PR (Exp.~8/9)
+         frente a CON PR (Exp.~10), por MH y selector. $\Delta$ negativo = PR
+         mejora.}
+\label{tab:pr-aislado-delta}
+\small
+\begin{tabular}{llrrr}
+\toprule
+MH & Selector & Sin PR & Con PR & $\Delta$ (pp) \\
+\midrule
+SA        & p\_inter & 3.32  & 3.19  & $-0.13$ \\
+SA        & binario  & 20.99 & 20.29 & $-0.70$ \\
+TS simple & p\_inter & 8.70  & 4.99  & $-3.71$ \\
+TS simple & binario  & 18.77 & 18.53 & $-0.24$ \\
+RTS       & p\_inter & 4.67  & 3.36  & $-1.31$ \\
+RTS       & binario  & 14.57 & 12.02 & $-2.55$ \\
+ABC       & p\_inter & 15.11 & 4.09  & $\mathbf{-11.02}$ \\
+ABC       & binario  & 15.56 & 6.24  & $\mathbf{-9.32}$ \\
+Cuckoo    & p\_inter & 20.06 & 12.02 & $\mathbf{-8.04}$ \\
+Cuckoo    & binario  & 20.41 & 19.49 & $-0.92$ \\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\footnotesize
+Columna ``Sin PR'': gap medio del Exp.~8 (\texttt{p\_inter}) y del Exp.~9
+(\texttt{binario}). Columna ``Con PR'': este experimento (\texttt{final/}).
+\end{table}
+
+\paragraph{Interpretación de los resultados.}
+El Path Relinking \textbf{mejora el gap en las diez combinaciones}
+(MH $\times$ selector): todos los $\Delta$ son negativos. El efecto, sin
+embargo, es muy heterogéneo y depende de cuánto margen tenía cada base:
+
+\begin{enumerate}
+\item \textbf{Ganancia enorme en las poblacionales y en TS.} Sobre la base
+  \texttt{p\_inter}, ABC cae de $15.11$ a $4.09$\,\% ($-11.02$\,pp), Cuckoo de
+  $20.06$ a $12.02$\,\% ($-8.04$\,pp) y TS de $8.70$ a $4.99$\,\% ($-3.71$\,pp).
+  La intensificación guiada hacia el mejor global compensa la dispersión propia
+  de los métodos poblacionales y la falta de memoria de intensificación de TS.
+\item \textbf{Ganancia moderada donde ya había poco margen.} SA sobre
+  \texttt{p\_inter} apenas cambia ($3.32 \to 3.19$\,\%, $-0.13$\,pp): ya estaba
+  cerca del óptimo en el Experimento~8, así que PR tiene poco que cerrar. RTS
+  mejora de forma consistente ($-1.31$ en \texttt{p\_inter}, $-2.55$ en
+  \texttt{binario}).
+\item \textbf{PR no rescata al selector binario.} Sobre la base \texttt{binario},
+  PR reduce algo el gap (p.ej.\ RTS $-2.55$, Cuckoo $-0.92$) pero SA y TS siguen
+  estancados en $\sim$$20$ y $\sim$$18$\,\%: el confinamiento intra-ruta del
+  selector binario (Experimento~\ref{sec:exp-binario-capacidad}) es un techo
+  que la intensificación por PR no puede superar por sí sola.
+\end{enumerate}
+
+\noindent\textbf{Síntesis.} La mejor base sigue siendo \texttt{p\_inter}, y
+añadirle Path Relinking produce los mejores resultados del programa hasta este
+punto: SA $3.19$\,\%, RTS $3.36$\,\%, ABC $4.09$\,\% y TS $4.99$\,\%
+(media \texttt{p\_inter+PR} $\approx 5.5$\,\% frente a $10.37$\,\% del
+Experimento~8: el Path Relinking aproximadamente \emph{reduce a la mitad} el gap
+medio). El beneficio de PR es real y robusto, pero se \textbf{potencia con un
+buen selector}: PR sobre \texttt{p\_inter} mejora mucho más que sobre
+\texttt{binario} en ABC, Cuckoo y TS. Esto confirma la jerarquía del programa:
+la corrección del evaluador habilita la medición, el selector
+\texttt{p\_inter} fija una base competitiva, y el Path Relinking es el primer
+mecanismo de intensificación que aporta una mejora sustancial sobre esa base.
+
+% =====================================================================
+\subsection{Conclusión provisional del experimento 10}
+% =====================================================================
+
+Independientemente del resultado numérico, este experimento aporta:
+\begin{enumerate}
+\item \textbf{Un Path Relinking limpio y reutilizable.} El módulo
+  \texttt{path\_relinking\_limpio\_20260531} y el hook \texttt{intensificador}
+  sustituyen los \texttt{sys.\_getframe} y los tres monkey-patches del primer
+  ciclo por una API explícita, aplicable a las cinco metaheurísticas.
+\item \textbf{Aislamiento real del mecanismo.} Al añadir PR como única novedad
+  sobre un selector ya calibrado, el $\Delta$ de gap es atribuible
+  exclusivamente a la intensificación por Path Relinking.
+\item \textbf{Factorización selector\,$\times$\,intensificación.} El parámetro
+  \texttt{--selector} permite cuantificar si el beneficio del PR es robusto al
+  selector base o si interactúa con él.
+\end{enumerate}

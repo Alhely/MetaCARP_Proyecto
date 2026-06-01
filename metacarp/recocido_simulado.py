@@ -146,7 +146,7 @@ from collections.abc import Iterable, Mapping
 # Soporte de dataclasses.
 from dataclasses import dataclass, field
 # Tipos de anotación.
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 # Biblioteca de grafos.
 import networkx as nx
@@ -305,6 +305,13 @@ def recocido_simulado(
     # Cota dura del numero de kicks consecutivos. Cuando se alcanza, la corrida
     # termina. None = sin tope (los kicks se permiten indefinidamente).
     max_resets: int | None = None,
+    # Hook de intensificacion OPCIONAL (p.ej. Path Relinking limpio). Si se
+    # provee, en el punto de estancamiento (mismo disparador que el kick) se
+    # ejecuta ``intensificador(sol_actual, mejor_global, ctx, lam, rng,
+    # encoding, md)`` HACIA la mejor solucion global EN LUGAR del kick
+    # aleatorio. None = comportamiento clasico (kick aleatorio). Es la API
+    # limpia que reemplaza los frame-hacks del PR del primer ciclo.
+    intensificador: Callable | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
@@ -754,11 +761,20 @@ def recocido_simulado(
         # anterior garantiza esto).
         if (max_iter_sin_mejora_kick is not None
                 and niveles_sin_mejora_kick >= max_iter_sin_mejora_kick):
-            # Import diferido: solo se carga si la corrida activa el kick.
-            from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
-            sol_actual = aplicar_kick_labels(
-                sol_actual, rng, md_op, encoding=encoding
-            )
+            if intensificador is not None:
+                # Respuesta de intensificacion (p.ej. Path Relinking limpio)
+                # hacia la mejor solucion global, en lugar del kick aleatorio.
+                # La guia es la mejor factible si existe; si no, la mejor any.
+                guia = mejor_fact_s if mejor_fact_s is not None else mejor_any_s
+                sol_actual = intensificador(
+                    sol_actual, guia, ctx, lam_eff, rng, encoding, md_op
+                )
+            else:
+                # Import diferido: solo se carga si la corrida activa el kick.
+                from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
+                sol_actual = aplicar_kick_labels(
+                    sol_actual, rng, md_op, encoding=encoding
+                )
             # Tras el kick recalculamos costo y violacion para que las
             # proximas iteraciones del bucle interno (siguiente nivel de T)
             # arranquen con datos coherentes.
@@ -905,6 +921,8 @@ def recocido_simulado_desde_instancia(
     # Kick reactivo (variante experimental strict_intra_inter_20260524).
     max_iter_sin_mejora_kick: int | None = None,
     max_resets: int | None = None,
+    # Hook de intensificacion opcional (p.ej. Path Relinking limpio).
+    intensificador: Callable | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
@@ -949,4 +967,6 @@ def recocido_simulado_desde_instancia(
         # Propagamos el mecanismo de kick (variante experimental).
         max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
         max_resets=max_resets,
+        # Propagamos el hook de intensificacion (p.ej. Path Relinking limpio).
+        intensificador=intensificador,
     )

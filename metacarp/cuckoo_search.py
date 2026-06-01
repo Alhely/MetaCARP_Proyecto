@@ -91,8 +91,8 @@ import time
 from collections.abc import Iterable, Mapping
 # Soporte de dataclasses con atributos de valor por defecto complejos.
 from dataclasses import dataclass, field
-# Any: cualquier tipo; Literal: conjunto fijo de valores.
-from typing import Any, Literal
+# Any: cualquier tipo; Callable: tipo para funciones/callables; Literal: conjunto fijo de valores.
+from typing import Any, Callable, Literal
 
 # Biblioteca de grafos.
 import networkx as nx
@@ -383,6 +383,12 @@ def cuckoo_search(
     # Cota dura del numero de kicks consecutivos. Cuando se alcanza, la corrida
     # termina. None = sin tope (los kicks se permiten indefinidamente).
     max_resets: int | None = None,
+    # Hook de intensificacion OPCIONAL (p.ej. Path Relinking limpio). Si se
+    # provee, en el punto de estancamiento (mismo disparador que el kick) se
+    # ejecuta PR HACIA la mejor solucion global EN LUGAR del kick aleatorio.
+    # None = comportamiento clasico (kick aleatorio). API limpia que reemplaza
+    # los frame-hacks del PR del primer ciclo.
+    intensificador: Callable | None = None,
     extra_csv: dict[str, object] | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> CuckooSearchResult:
@@ -926,15 +932,28 @@ def cuckoo_search(
             # mejorar el mejor, igual que un scout en ABC).
             if (max_iter_sin_mejora_kick is not None
                     and iter_sin_mejora >= max_iter_sin_mejora_kick):
-                # Import diferido: solo se carga si la corrida activa el kick.
-                from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
+                # Import diferido del kick clasico: solo se carga si la corrida
+                # activa el kick Y no se provee un intensificador externo.
+                if intensificador is None:
+                    from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
+                # La guia del intensificador es la mejor factible si existe;
+                # si no, la mejor sin restriccion de factibilidad.
+                guia = mejor_fact_s if mejor_fact_s is not None else mejor_any_s
                 for k in rango_nidos:
-                    nidos_sol[k] = aplicar_kick_labels(
-                        nidos_sol[k], rng, md_op, encoding=encoding
-                    )
+                    if intensificador is not None:
+                        # Respuesta de intensificacion (p.ej. Path Relinking limpio)
+                        # hacia la mejor solucion global, en lugar del kick aleatorio.
+                        nidos_sol[k] = intensificador(
+                            nidos_sol[k], guia, ctx, lam_eff, rng, encoding, md_op
+                        )
+                    else:
+                        nidos_sol[k] = aplicar_kick_labels(
+                            nidos_sol[k], rng, md_op, encoding=encoding
+                        )
+                    # Recalculamos costo y violacion para ambas ramas (comun).
                     nidos_pure[k] = float(costo_rapido(nidos_sol[k], ctx))
                     nidos_viol[k] = float(exceso_capacidad_rapido(nidos_sol[k], ctx))
-                # Re-fusionamos para capturar mejoras introducidas por el kick.
+                # Re-fusionamos para capturar mejoras introducidas por el kick o PR.
                 fusionar_desde_nidos()
                 iter_sin_mejora = 0
                 n_resets_kick += 1
@@ -1122,6 +1141,8 @@ def cuckoo_search_desde_instancia(
     # Kick reactivo (variante experimental strict_intra_inter_20260524).
     max_iter_sin_mejora_kick: int | None = None,
     max_resets: int | None = None,
+    # Hook de intensificacion opcional (p.ej. Path Relinking limpio).
+    intensificador: Callable | None = None,
     extra_csv: dict[str, object] | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> CuckooSearchResult:
@@ -1169,5 +1190,7 @@ def cuckoo_search_desde_instancia(
         # Propagamos el mecanismo de kick (variante experimental).
         max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
         max_resets=max_resets,
+        # Propagamos el hook de intensificacion (p.ej. Path Relinking limpio).
+        intensificador=intensificador,
         extra_csv=extra_csv,
     )
