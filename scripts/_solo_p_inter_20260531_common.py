@@ -37,40 +37,32 @@ Diseno del experimento
   instance-aware). Se pasa ``lambda_capacidad=None`` -> sin patch.
 - Parametros INSTANCE-AWARE: se conservan automaticos pasando ``None``
   (T_init/T_min/L en SA; iteraciones/num_nidos/limites en el resto).
-- Repeticiones: 5 por instancia en la fase final.
+- Repeticiones: 5 por instancia (default).
 
-Grid search en DOS FASES
-------------------------
-  Fase 1 (calibracion, pocas reps): se barre la malla
-        p_inter  x  un parametro libre por MH
-  y se elige, por MH, la config con MENOR gap medio sobre las 23 instancias.
-  Fase 2 (final, 5 reps): se corre solo la mejor config x 23 instancias.
-
-  Malla:
-    p_inter (comun)         : {0.1, 0.2, 0.3, 0.4, 0.5}
-    SA            -> alpha          : {0.90, 0.95, 0.99}
-    TS simple     -> tabu_tenure    : {7, 15, 25}
-    RTS           -> factor_aumento : {1.1, 1.2, 1.3}
-    ABC           -> num_fuentes    : {10, 20, 30}
-    Cuckoo        -> pa_abandono    : {0.15, 0.25, 0.35}
-
-  -> 5 x 3 = 15 configs por MH.
+Config canonica (sin grid, sin calibracion)
+-------------------------------------------
+  El approach corre UNA SOLA configuracion fija por MH:
+    p_inter por MH:  sa=0.5, tabu_simple=0.4, tabu_reactiva=0.5,
+                     abc_simple=0.5, cuckoo=0.1
+    Knob libre fijo: sa->alpha=0.90, tabu_simple->tabu_tenure=25,
+                     tabu_reactiva->factor_aumento=1.2,
+                     abc_simple->num_fuentes=30, cuckoo->pa_abandono=0.15
+  Estos valores son la config canonica derivada del analisis previo del proyecto.
+  Se registran en ``config_fija.json`` (trazabilidad) junto al directorio de
+  salida con timestamp.
 
 Salida
 ------
   experimentos_costo_fixed/<mh>_solo_p_inter_<YYYYMMDD-HHMM>/
-    grid_parciales/        CSVs parciales de la fase 1 (uno por corrida)
-    calibracion_todas.csv  consolidado de la fase 1 (columnas completas)
-    grid_resumen.csv       gap medio por config (criterio de seleccion)
-    mejor_config.json      config ganadora + su gap medio
-    final/                 CSVs de la fase 2 (5 reps, columnas completas)
+    final/                 CSVs de la corrida (reps repeticiones, columnas completas)
       _partials/           parciales antes de consolidar
+    config_fija.json       config usada (para trazabilidad y reproducibilidad)
 
 NOTA sobre ``extra_csv``: solo Cuckoo lo escribe al CSV; las otras 4 MH lo
 aceptan en su firma pero lo descartan. Por eso NO dependemos de ``extra_csv``
 para identificar la config: cada MH ya graba sus parametros de forma nativa
 (``p_inter`` + el knob libre) y nosotros guardamos la config en el dataclass
-``Tarea``. La fase queda codificada por la carpeta (grid_parciales vs final).
+``Tarea``. La carpeta de salida tiene timestamp unico por corrida.
 """
 from __future__ import annotations
 
@@ -116,9 +108,8 @@ from metacarp.vecindarios import OPERADORES_POPULARES
 # calibra p_inter (estado factible), no alpha_inter (estado infactible).
 ALPHA_INTER_FIJO: float = 0.80
 
-# Repeticiones por defecto de cada fase.
-REPS_CALIBRACION_DEF: int = 3
-REPS_FINAL_DEF: int = 5
+# Repeticiones por defecto de la corrida final.
+REPS_DEF: int = 5
 
 # 23 instancias pequenas del corpus actual (identicas a correct_cost_20260529).
 INSTANCIAS = [
@@ -137,17 +128,24 @@ MH_MODULOS: dict[str, str] = {
     "cuckoo":         "metacarp.cuckoo_search",
 }
 
-# Knob compartido: probabilidad de proponer INTER en estado factible.
-GRID_P_INTER: tuple[float, ...] = (0.1, 0.2, 0.3, 0.4, 0.5)
+# Config canonica: p_inter fijo por MH (selector probabilistico nativo).
+# Estos valores son los calibrados en el analisis previo del proyecto.
+P_INTER_FIJO: dict[str, float] = {
+    "sa":            0.5,
+    "tabu_simple":   0.4,
+    "tabu_reactiva": 0.5,
+    "abc_simple":    0.5,
+    "cuckoo":        0.1,
+}
 
-# Un parametro libre por MH: (nombre_kwarg, valores). El resto de parametros se
-# dejan instance-aware (None) o en su default de literatura clasica.
-GRID_LIBRE: dict[str, tuple[str, tuple[float, ...]]] = {
-    "sa":            ("alpha",          (0.90, 0.95, 0.99)),
-    "tabu_simple":   ("tabu_tenure",    (7, 15, 25)),
-    "tabu_reactiva": ("factor_aumento", (1.1, 1.2, 1.3)),
-    "abc_simple":    ("num_fuentes",    (10, 20, 30)),
-    "cuckoo":        ("pa_abandono",    (0.15, 0.25, 0.35)),
+# Config canonica: knob libre fijo por MH (nombre_kwarg, valor).
+# Valores derivados del analisis previo; se usan directamente sin grid.
+CONFIG_FIJA: dict[str, tuple[str, float]] = {
+    "sa":            ("alpha",          0.90),
+    "tabu_simple":   ("tabu_tenure",    25),
+    "tabu_reactiva": ("factor_aumento", 1.2),
+    "abc_simple":    ("num_fuentes",    30),
+    "cuckoo":        ("pa_abandono",    0.15),
 }
 
 
@@ -157,14 +155,13 @@ GRID_LIBRE: dict[str, tuple[str, tuple[float, ...]]] = {
 
 @dataclass(frozen=True)
 class Tarea:
-    """Una corrida del grid (sin semilla fija: la variabilidad es estocastica)."""
+    """Una corrida de la config fija (sin semilla fija: la variabilidad es estocastica)."""
     mh: str             # clave de MH_MODULOS
     instancia: str
     repeticion: int
-    p_inter: float      # knob compartido
-    libre_nombre: str   # nombre del parametro libre de esta MH
-    libre_valor: float  # valor del parametro libre en esta corrida
-    fase: str           # "calibracion" | "final"
+    p_inter: float      # knob compartido (de P_INTER_FIJO[mh])
+    libre_nombre: str   # nombre del parametro libre (de CONFIG_FIJA[mh])
+    libre_valor: float  # valor del parametro libre (de CONFIG_FIJA[mh])
     root: str | None
     ruta_csv_parcial: str
 
@@ -179,12 +176,13 @@ def construir_kwargs(tarea: Tarea) -> dict:
     Comun a todas las MH:
       - ``operadores=OPERADORES_POPULARES`` (9 completos, seleccion uniforme).
       - ``lambda_capacidad=None`` -> usa el lambda default instance-aware.
-      - ``p_inter`` = knob calibrado; kick DESACTIVADO (sin variantes).
+      - ``p_inter`` = P_INTER_FIJO[mh]; kick DESACTIVADO (sin variantes).
       - ``guardar_csv=True`` para que cada corrida escriba su parcial con TODAS
         las columnas (operadores, gap, detalle de deadheading).
 
-    Por MH se fija el parametro libre del grid y, en SA/TS/RTS, ``alpha_inter``
-    (ABC y Cuckoo no exponen ese kwarg: internamente usan max(p_inter, 0.8)).
+    Por MH se fija el parametro libre de CONFIG_FIJA y, en SA/TS/RTS,
+    ``alpha_inter`` (ABC y Cuckoo no exponen ese kwarg: internamente usan
+    max(p_inter, 0.8)).
     """
     base = dict(
         root=tarea.root,
@@ -203,7 +201,6 @@ def construir_kwargs(tarea: Tarea) -> dict:
         extra_csv={
             "experimento": "solo_p_inter_20260531",
             "approach":    "solo_p_inter",
-            "fase":        tarea.fase,
             "lambda":      "default_instance_aware",
         },
     )
@@ -335,6 +332,22 @@ def _consolidar(parciales: list[Path], ruta_final: Path) -> int:
     return len(filas)
 
 
+def _instancia_de_parcial(stem: str, mh: str) -> str | None:
+    """Extrae el nombre de instancia de un stem ``{mh}_{instancia}_{pid}_{idx}``.
+
+    Robusto frente a claves de MH con guion bajo (p.ej. ``tabu_simple``): se
+    quita el prefijo ``{mh}_`` y se descartan los dos ultimos tokens (pid, idx),
+    reuniendo lo intermedio (la instancia, que podria tambien tener guion bajo).
+    """
+    prefix = f"{mh}_"
+    if not stem.startswith(prefix):
+        return None
+    partes = stem[len(prefix):].split("_")
+    if len(partes) < 3:
+        return None
+    return "_".join(partes[:-2])
+
+
 # ============================================================
 # Ejecucion paralela de una lista de tareas
 # ============================================================
@@ -377,135 +390,36 @@ def _reportar(tarea, estado, info, err, ok, fail, resultados) -> tuple[int, int]
 
 
 # ============================================================
-# Fase 1: calibracion (grid search)
+# Orquestacion de una MH (config fija, una sola corrida)
 # ============================================================
 
-def fase1_calibracion(
+def ejecutar_experimento_mh(
     mh: str,
-    carpeta: Path,
     *,
+    salida_base: str,
     instancias: list[str],
     reps: int,
     workers: int,
     root: str | None,
-    grid_p_inter: tuple[float, ...],
-    grid_libre: tuple[float, ...],
-) -> dict:
-    """Barre la malla (p_inter x parametro_libre) y elige la mejor config.
+) -> Path:
+    """Crea la carpeta con timestamp, corre la config fija y consolida en final/.
 
-    Escribe grid_parciales/, calibracion_todas.csv y grid_resumen.csv. Devuelve
-    un dict con la mejor config: {p_inter, libre_nombre, libre_valor, gap_medio}.
+    No hay grid ni calibracion: se usa directamente P_INTER_FIJO[mh] y
+    CONFIG_FIJA[mh]. La trazabilidad queda en ``config_fija.json``.
     """
-    libre_nombre = GRID_LIBRE[mh][0]
-    dir_parciales = carpeta / "grid_parciales"
-    dir_parciales.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d-%H%M")
+    carpeta = Path(salida_base).expanduser().resolve() / f"{mh}_solo_p_inter_{ts}"
+    carpeta.mkdir(parents=True, exist_ok=True)
+    print(f"\n### Experimento solo_p_inter | MH={mh} | salida={carpeta}\n")
 
-    # Generamos la lista de tareas: cada (config x instancia x rep).
-    tareas: list[Tarea] = []
-    for p_inter in grid_p_inter:
-        for libre_valor in grid_libre:
-            for instancia in instancias:
-                for rep in range(1, reps + 1):
-                    idx = len(tareas)
-                    parcial = dir_parciales / (
-                        f"{mh}_{instancia}_{os.getpid()}_{idx}.csv"
-                    )
-                    tareas.append(Tarea(
-                        mh=mh, instancia=instancia, repeticion=rep,
-                        p_inter=p_inter, libre_nombre=libre_nombre,
-                        libre_valor=libre_valor, fase="calibracion",
-                        root=root, ruta_csv_parcial=str(parcial),
-                    ))
+    libre_nombre, libre_valor = CONFIG_FIJA[mh]
+    p_inter = P_INTER_FIJO[mh]
 
-    print("=" * 80)
-    print(f"FASE 1 — CALIBRACION  MH={mh}  approach=solo_p_inter")
-    print(f"  configs={len(grid_p_inter) * len(grid_libre)} "
-          f"(p_inter x {libre_nombre})  instancias={len(instancias)}  reps={reps}")
-    print(f"  corridas totales={len(tareas)}  workers={workers}")
-    print("=" * 80)
-
-    resultados = _correr_tareas(tareas, workers)
-
-    # --- Consolidamos los parciales de la fase 1 (columnas completas) ---
-    _consolidar(
-        sorted(dir_parciales.glob(f"{mh}_*.csv")),
-        carpeta / "calibracion_todas.csv",
-    )
-
-    # --- Agregamos el gap medio por config ---
-    # clave: (p_inter, libre_valor) -> lista de gaps validos.
-    acum: dict[tuple[float, float], list[float]] = {}
-    for tarea, info in resultados:
-        gap = info.get("gap", math.nan)
-        if gap is None or math.isnan(gap):
-            continue
-        acum.setdefault((tarea.p_inter, tarea.libre_valor), []).append(gap)
-
-    filas_resumen: list[dict] = []
-    for (p_inter, libre_valor), gaps in acum.items():
-        media = sum(gaps) / len(gaps)
-        var = sum((g - media) ** 2 for g in gaps) / len(gaps)
-        filas_resumen.append({
-            "mh": mh,
-            "p_inter": p_inter,
-            libre_nombre: libre_valor,
-            "gap_medio": round(media, 4),
-            "gap_std": round(math.sqrt(var), 4),
-            "n_corridas": len(gaps),
-        })
-    # Orden: menor gap medio primero (mejor config arriba).
-    filas_resumen.sort(key=lambda r: (r["gap_medio"], r["gap_std"], r["p_inter"]))
-
-    ruta_resumen = carpeta / "grid_resumen.csv"
-    with ruta_resumen.open("w", encoding="utf-8", newline="") as f:
-        campos = ["mh", "p_inter", libre_nombre, "gap_medio", "gap_std", "n_corridas"]
-        writer = csv.DictWriter(f, fieldnames=campos)
-        writer.writeheader()
-        writer.writerows(filas_resumen)
-
-    if not filas_resumen:
-        raise RuntimeError(
-            f"FASE 1 sin gaps validos para MH={mh}: no se puede elegir config."
-        )
-
-    mejor = filas_resumen[0]
-    mejor_config = {
-        "mh": mh,
-        "p_inter": mejor["p_inter"],
-        "libre_nombre": libre_nombre,
-        "libre_valor": mejor[libre_nombre],
-        "gap_medio": mejor["gap_medio"],
-        "gap_std": mejor["gap_std"],
-    }
-    print(f"  -> MEJOR CONFIG {mh}: p_inter={mejor_config['p_inter']} "
-          f"{libre_nombre}={mejor_config['libre_valor']} "
-          f"| gap_medio={mejor_config['gap_medio']}%")
-    return mejor_config
-
-
-# ============================================================
-# Fase 2: corrida final con la mejor config
-# ============================================================
-
-def fase2_final(
-    mh: str,
-    carpeta: Path,
-    mejor_config: dict,
-    *,
-    instancias: list[str],
-    reps: int,
-    workers: int,
-    root: str | None,
-) -> None:
-    """Corre la mejor config con ``reps`` repeticiones y consolida en final/."""
     dir_final = carpeta / "final"
     dir_partials = dir_final / "_partials"
     dir_partials.mkdir(parents=True, exist_ok=True)
 
-    libre_nombre = mejor_config["libre_nombre"]
-    libre_valor = mejor_config["libre_valor"]
-    p_inter = mejor_config["p_inter"]
-
+    # Generamos tareas: config fija x instancias x repeticiones.
     tareas: list[Tarea] = []
     for instancia in instancias:
         for rep in range(1, reps + 1):
@@ -514,37 +428,26 @@ def fase2_final(
             tareas.append(Tarea(
                 mh=mh, instancia=instancia, repeticion=rep,
                 p_inter=p_inter, libre_nombre=libre_nombre,
-                libre_valor=libre_valor, fase="final",
+                libre_valor=libre_valor,
                 root=root, ruta_csv_parcial=str(parcial),
             ))
 
     print("=" * 80)
-    print(f"FASE 2 — FINAL  MH={mh}  config: p_inter={p_inter} "
-          f"{libre_nombre}={libre_valor}  instancias={len(instancias)}  reps={reps}")
-    print(f"  corridas totales={len(tareas)}  workers={workers}")
+    print(f"CONFIG FIJA  MH={mh}  approach=solo_p_inter")
+    print(f"  p_inter={p_inter}  {libre_nombre}={libre_valor}")
+    print(f"  instancias={len(instancias)}  reps={reps}  corridas={len(tareas)}")
+    print(f"  workers={workers}")
     print("=" * 80)
 
     _correr_tareas(tareas, workers)
 
     # Consolidamos por instancia (un CSV final por instancia, columnas completas).
-    # El stem tiene el patron ``{mh}_{instancia}_{pid}_{idx}``. Derivamos la
-    # instancia quitando el prefijo conocido ``{mh}_`` y luego descartando los
-    # dos ultimos tokens (pid e idx), separados por ``_``. Esto es robusto aunque
-    # el nombre de MH contenga guiones bajos (p.ej. "tabu_simple", "abc_simple").
-    prefix = f"{mh}_"
+    # El stem tiene el patron ``{mh}_{instancia}_{pid}_{idx}``.
     grupos: dict[str, list[Path]] = {}
     for parcial in sorted(dir_partials.glob(f"{mh}_*.csv")):
-        stem = parcial.stem
-        if not stem.startswith(prefix):
+        instancia = _instancia_de_parcial(parcial.stem, mh)
+        if instancia is None:
             continue
-        # Tras quitar el prefijo queda ``{instancia}_{pid}_{idx}``;
-        # eliminamos los dos ultimos campos (_pid y _idx).
-        sin_prefix = stem[len(prefix):]
-        partes = sin_prefix.split("_")
-        if len(partes) < 3:
-            # Patron inesperado; lo omitimos para no producir agrupaciones erroneas.
-            continue
-        instancia = "_".join(partes[:-2])
         grupos.setdefault(instancia, []).append(parcial)
     n = 0
     for instancia, archivos in grupos.items():
@@ -552,55 +455,20 @@ def fase2_final(
         n += 1 if _consolidar(archivos, ruta) else 0
     print(f"  -> {n} CSV finales por instancia en {dir_final}")
 
-
-# ============================================================
-# Orquestacion de una MH (las dos fases)
-# ============================================================
-
-def ejecutar_experimento_mh(
-    mh: str,
-    *,
-    salida_base: str,
-    instancias: list[str],
-    reps_calibracion: int,
-    reps_final: int,
-    workers: int,
-    root: str | None,
-    grid_p_inter: tuple[float, ...],
-    grid_libre: tuple[float, ...],
-    solo_fase: str,
-) -> Path:
-    """Crea la carpeta con timestamp y corre las fases pedidas para una MH."""
-    ts = datetime.now().strftime("%Y%m%d-%H%M")
-    carpeta = Path(salida_base).expanduser().resolve() / f"{mh}_solo_p_inter_{ts}"
-    carpeta.mkdir(parents=True, exist_ok=True)
-    print(f"\n### Experimento solo_p_inter | MH={mh} | salida={carpeta}\n")
-
-    mejor_config: dict | None = None
-    if solo_fase in ("ambas", "1"):
-        mejor_config = fase1_calibracion(
-            mh, carpeta, instancias=instancias, reps=reps_calibracion,
-            workers=workers, root=root, grid_p_inter=grid_p_inter,
-            grid_libre=grid_libre,
-        )
-        (carpeta / "mejor_config.json").write_text(
-            json.dumps(mejor_config, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-
-    if solo_fase in ("ambas", "2"):
-        if mejor_config is None:
-            # Permite re-correr solo la fase 2 leyendo una mejor_config previa.
-            ruta_cfg = carpeta / "mejor_config.json"
-            if not ruta_cfg.exists():
-                raise RuntimeError(
-                    "Fase 2 sin mejor_config.json; corre antes la fase 1."
-                )
-            mejor_config = json.loads(ruta_cfg.read_text(encoding="utf-8"))
-        fase2_final(
-            mh, carpeta, mejor_config, instancias=instancias,
-            reps=reps_final, workers=workers, root=root,
-        )
+    # Escribimos la config usada para trazabilidad y reproducibilidad.
+    config_fija_doc = {
+        "mh": mh,
+        "approach": "solo_p_inter",
+        "p_inter": p_inter,
+        "libre_nombre": libre_nombre,
+        "libre_valor": libre_valor,
+        "instancias": instancias,
+        "reps": reps,
+    }
+    (carpeta / "config_fija.json").write_text(
+        json.dumps(config_fija_doc, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
 
     return carpeta
 
@@ -630,50 +498,37 @@ def _parse_instancias(items: list[str] | None) -> list[str]:
 def main(argv: list[str] | None = None, *, mh_fijo: str | None = None) -> None:
     """Punto de entrada. ``mh_fijo`` lo usan los runners por-MH."""
     parser = argparse.ArgumentParser(
-        description="Approach solo_p_inter con grid search en dos fases."
+        description="Approach solo_p_inter con config canonica fija (sin grid)."
     )
     if mh_fijo is None:
         parser.add_argument("--mh", type=str, required=True,
                             choices=list(MH_MODULOS.keys()))
     parser.add_argument("--salida-base", type=str, default="experimentos_costo_fixed")
-    parser.add_argument("--reps-calibracion", type=int, default=REPS_CALIBRACION_DEF)
-    parser.add_argument("--reps-final", type=int, default=REPS_FINAL_DEF)
+    parser.add_argument("--reps", type=int, default=REPS_DEF)
     parser.add_argument("--workers", type=int, default=os.cpu_count() or 1)
     parser.add_argument("--root", type=str, default=None)
     parser.add_argument("--instancias", type=str, default=None, nargs="*")
-    parser.add_argument("--solo-fase", type=str, default="ambas",
-                        choices=["ambas", "1", "2"])
     parser.add_argument("--smoke", action="store_true",
-                        help="Malla minima + 1 rep + 2 instancias (prueba rapida).")
+                        help="2 instancias + reps=1 (prueba rapida).")
     args = parser.parse_args(argv)
 
     mh = mh_fijo if mh_fijo is not None else args.mh
     instancias = _parse_instancias(args.instancias)
-    grid_p_inter = GRID_P_INTER
-    grid_libre = GRID_LIBRE[mh][1]
-    reps_cal = args.reps_calibracion
-    reps_fin = args.reps_final
+    reps = args.reps
 
     if args.smoke:
-        # Prueba rapida: 2 instancias, malla 2x2, 1 rep por fase.
+        # Prueba rapida: 2 instancias, 1 rep.
         if not args.instancias:
             instancias = ["gdb19", "kshs1"]
-        grid_p_inter = grid_p_inter[:2]
-        grid_libre = grid_libre[:2]
-        reps_cal = 1
-        reps_fin = 1
+        reps = 1
 
     ejecutar_experimento_mh(
         mh,
         salida_base=args.salida_base,
         instancias=instancias,
-        reps_calibracion=reps_cal,
-        reps_final=reps_fin,
+        reps=reps,
         workers=args.workers,
         root=args.root,
-        grid_p_inter=grid_p_inter,
-        grid_libre=grid_libre,
-        solo_fase=args.solo_fase,
     )
 
 

@@ -28,16 +28,14 @@ forma nativa. Su selector es \emph{probabilístico}: en cada iteración,
 el parámetro $p_{\text{inter}}$ determina con qué frecuencia se propone
 el grupo INTER-ruta cuando la solución es factible; el parámetro
 $\alpha_{\text{inter}} = 0.80$ hace lo propio en estado infactible.
-Calibrar $p_{\text{inter}}$ supone, por tanto, una dimensión adicional
-en el grid search: $5 \times 3 = 15$ configuraciones por MH.
 
 El presente experimento sustituye el selector probabilístico por un
 \textbf{selector binario determinista} basado en la violación de
 capacidad: si la solución viola la restricción, se propone siempre el
 grupo INTER-ruta (reparación); si es factible, siempre el grupo
 INTRA-ruta (refinamiento). La consecuencia metodológica directa es que
-$p_{\text{inter}}$ deja de ser un parámetro: el grid se reduce a
-exactamente \textbf{3 configuraciones por MH} (solo el parámetro libre).
+$p_{\text{inter}}$ deja de ser un parámetro: el selector es determinista
+y la única diferencia frente al Experimento~8 es la regla de selección.
 
 La hipótesis central del experimento es la siguiente:
 
@@ -212,46 +210,41 @@ sean directamente comparables corrida a corrida, pero sí agregadamente
 (gap medio sobre múltiples repeticiones sin semilla fija).
 
 % =====================================================================
-\subsection{Grid search en dos fases}
+\subsection{Configuración fija canónica}
+\label{subsec:config-fija-binario-capacidad}
 % =====================================================================
 
-El grid search sigue la misma estructura de dos fases del Experimento~8,
-pero con una dimensión menos: al desaparecer $p_{\text{inter}}$ como
-parámetro calibrable, el grid se reduce a un único eje.
-
-\paragraph{Diferencia metodológica clave.}
-En el Experimento~8, el grid barre $p_{\text{inter}} \in
-\{0.1, 0.2, 0.3, 0.4, 0.5\}$ y el parámetro libre de cada MH (3
-valores), para un total de $5 \times 3 = 15$ configuraciones por MH.
-En el Experimento~9, el selector binario es determinista y \emph{no
-tiene el parámetro $p_{\text{inter}}$}; por eso el grid barre
-\textbf{únicamente el parámetro libre de cada MH con 3 valores}: 3
-configuraciones por MH, frente a las 15 del Experimento~8.
-
-\paragraph{Parámetro libre por MH.}
-Cada metaheurística expone un único parámetro libre; el resto es
-instance-aware o valor de literatura clásica:
+Este approach NO calibra: usa la \textbf{configuración canónica fija} por
+MH ---la misma que el Experimento~8--- y cambia \emph{únicamente} el
+selector. El selector binario es determinista y \emph{no tiene el
+parámetro $p_{\text{inter}}$}, así que la única diferencia operativa frente
+al Experimento~8 es la regla de selección de grupo. Se ejecuta una sola
+configuración por MH con \textbf{5 repeticiones} $\times$ 23 instancias
+(sin semilla; la variabilidad es estocástica), y los CSVs completos (con
+todas las columnas de operadores y deadheading) se generan en
+\texttt{final/}. La config usada se registra en \texttt{config\_fija.json}.
 
 \begin{table}[h]
 \centering
-\caption{Parámetros del grid por metaheurística en el approach
-         \texttt{binario\_capacidad}. El resto de parámetros se dejan
-         instance-aware (\texttt{None}).}
+\caption{Configuración canónica fija por metaheurística en el approach
+         \texttt{binario\_capacidad} (idéntica a la del Experimento~8; el
+         selector binario ignora $p_{\text{inter}}$). El resto de
+         parámetros se dejan instance-aware (\texttt{None}).}
 \label{tab:grid-binario-capacidad}
 \small
 \begin{tabular}{llll}
 \toprule
-MH & Parámetro libre & Valores & Resto notable \\
+MH & Parámetro libre & Valor fijo & Resto notable \\
 \midrule
-SA           & \texttt{alpha} (enfriamiento)   & $\{0.90,\,0.95,\,0.99\}$  &
+SA           & \texttt{alpha} (enfriamiento)   & $0.90$  &
   $T_{\text{init}}, T_{\min}$: instance-aware; reheat acotado\textsuperscript{†} \\
-TS simple    & \texttt{tabu\_tenure}            & $\{7,\,15,\,25\}$         &
+TS simple    & \texttt{tabu\_tenure}            & $25$    &
   tamaño vecindario: 25 \\
-RTS          & \texttt{factor\_aumento}         & $\{1.1,\,1.2,\,1.3\}$    &
+RTS          & \texttt{factor\_aumento}         & $1.2$   &
   \texttt{factor\_reduccion}: $0.9$ \\
-ABC simple   & \texttt{num\_fuentes}            & $\{10,\,20,\,30\}$        &
+ABC simple   & \texttt{num\_fuentes}            & $30$    &
   límite abandono: instance-aware \\
-Cuckoo       & \texttt{pa\_abandono}            & $\{0.15,\,0.25,\,0.35\}$ &
+Cuckoo       & \texttt{pa\_abandono}            & $0.15$  &
   \texttt{beta\_levy}: $1.5$; nidos: instance-aware \\
 \bottomrule
 \end{tabular}
@@ -261,22 +254,6 @@ Cuckoo       & \texttt{pa\_abandono}            & $\{0.15,\,0.25,\,0.35\}$ &
 \texttt{reheat\_factor=0.5}, \texttt{max\_reheats\_sin\_mejora=5}.
 Véase la Nota~\ref{nota:reheat-acotado-binario-capacidad}.
 \end{table}
-
-\noindent Esto produce \textbf{3 configuraciones por MH}, para un total
-de 15 configuraciones en el grid completo (5 MH).
-
-\paragraph{Fase 1 (calibración).}
-Se ejecutan 3 repeticiones por (configuración, instancia) sobre las
-23 instancias del corpus. No se fija semilla. Para cada MH se elige la
-configuración con el \textbf{menor gap medio} sobre las 23 instancias.
-El resultado de esta fase se escribe en \texttt{grid\_resumen.csv} y
-en \texttt{mejor\_config.json}.
-
-\paragraph{Fase 2 (corrida final).}
-La configuración ganadora de la fase~1 se ejecuta con \textbf{5
-repeticiones} $\times$ 23 instancias. Los CSVs completos (con todas
-las columnas de operadores y deadheading) se generan en el
-subdirectorio \texttt{final/}.
 
 \paragraph{Corridas totales.}
 \begin{itemize}
@@ -375,10 +352,10 @@ la estructura del Experimento~8:
 \begin{itemize}
 \item \textbf{Orquestador común}:
   \texttt{scripts/\_binario\_capacidad\_20260531\_common.py} ---
-  implementa el grid search en dos fases, la construcción de kwargs
-  por MH (incluyendo la instalación del selector binario vía
+  corre la configuración canónica fija (sin grid), la construcción de
+  kwargs por MH (incluyendo la instalación del selector binario vía
   \texttt{aplicar\_patch\_selector}), la consolidación de CSV parciales
-  y la CLI (\texttt{--smoke}, \texttt{--solo-fase}, \texttt{--workers}).
+  y la CLI (\texttt{--smoke}, \texttt{--reps}, \texttt{--workers}).
 \item \textbf{Runners por MH}:
   \texttt{scripts/run\_sa\_binario\_capacidad\_20260531.py},
   \texttt{run\_tabu\_simple\_binario\_capacidad\_20260531.py},
@@ -401,20 +378,9 @@ La salida se escribe en:
 Con la siguiente estructura de carpetas:
 
 \begin{itemize}
-\item \texttt{grid\_parciales/} --- CSVs parciales de la fase~1, un
-  archivo por corrida (patrón
-  \texttt{<mh>\_<instancia>\_<pid>\_<idx>.csv}).
-\item \texttt{calibracion\_todas.csv} --- consolidado de la fase~1
-  (unión de columnas de todos los parciales).
-\item \texttt{grid\_resumen.csv} --- gap medio y desviación estándar
-  por valor del parámetro libre, ordenados de mejor a peor.
-  Campos: \texttt{mh}, \texttt{<libre\_nombre>}, \texttt{gap\_medio},
-  \texttt{gap\_std}, \texttt{n\_corridas}.
-\item \texttt{mejor\_config.json} --- configuración ganadora con sus
-  campos: \texttt{mh}, \texttt{selector} (siempre
-  \texttt{"binario\_estricto\_capacidad"}), \texttt{libre\_nombre},
-  \texttt{libre\_valor}, \texttt{gap\_medio}, \texttt{gap\_std}.
-\item \texttt{final/} --- CSVs de la fase~2 (5 repeticiones, columnas
+\item \texttt{config\_fija.json} --- la configuración canónica usada
+  (MH, knob libre y su valor), para trazabilidad.
+\item \texttt{final/} --- CSVs de la corrida (5 repeticiones, columnas
   completas), uno por instancia con el patrón
   \texttt{<mh>\_binario\_capacidad\_<instancia>.csv}.
   El subdirectorio \texttt{final/\_partials/} contiene los parciales
@@ -449,22 +415,21 @@ Cada número de la Tabla~\ref{tab:binario-capacidad-resultados} se
 extrae de los siguientes archivos generados por el orquestador:
 
 \begin{itemize}
-\item \textbf{Parámetro libre* y valor*}: campo \texttt{libre\_nombre}
-  y \texttt{libre\_valor} de \texttt{mejor\_config.json}
-  (equivalentemente, primera fila de \texttt{grid\_resumen.csv}).
-\item \textbf{Gap medio (fase~2)}: promedio de la columna
+\item \textbf{Parámetro libre* y valor*}: la config canónica fija de
+  \texttt{config\_fija.json}.
+\item \textbf{Gap medio}: promedio de la columna
   \texttt{gap\_bks\_porcentaje} en los CSV de
   \texttt{final/<mh>\_binario\_capacidad\_<instancia>.csv} sobre las
   23 instancias $\times$ 5 repeticiones.
 \item \textbf{$N$ instancias en BKS}: número de instancias para las
   que \texttt{gap\_bks\_porcentaje} $< 0.01$\,\% en al menos una de
-  las 5 repeticiones de la fase~2.
+  las 5 repeticiones.
 \end{itemize}
 
 \begin{table}[h]
 \centering
 \caption{Resultados del experimento \texttt{binario\_capacidad\_20260531}
-         (fase~2: 5 reps $\times$ 23 instancias por MH). El gap se mide
+         (config fija, 5 reps $\times$ 23 instancias por MH). El gap se mide
          respecto al BKS con el evaluador greedy nativo.}
 \label{tab:binario-capacidad-resultados}
 \small
@@ -474,24 +439,24 @@ MH & Parámetro libre* & Valor* &
   Gap medio (\%) & Mediana (\%) & $N$ inst.\ en BKS \\
 \midrule
 SA           & \texttt{alpha}           & 0.90 &
-  20.99 & 20.90 & 0/23 \\
-TS simple    & \texttt{tabu\_tenure}    & 7    &
-  18.77 & 19.01 & 0/23 \\
-RTS          & \texttt{factor\_aumento} & 1.1  &
-  14.57 & 12.34 & 1/23 \\
+  21.04 & 19.93 & 0/23 \\
+TS simple    & \texttt{tabu\_tenure}    & 25   &
+  19.14 & 18.00 & 1/23 \\
+RTS          & \texttt{factor\_aumento} & 1.2  &
+  14.82 & 13.13 & 1/23 \\
 ABC simple   & \texttt{num\_fuentes}    & 30   &
-  15.56 & 16.32 & 1/23 \\
-Cuckoo       & \texttt{pa\_abandono}    & 0.35 &
-  20.41 & 19.59 & 0/23 \\
+  15.39 & 15.00 & 2/23 \\
+Cuckoo       & \texttt{pa\_abandono}    & 0.15 &
+  21.30 & 20.75 & 0/23 \\
 \midrule
-\textbf{Media} & --- & --- & \textbf{18.06} & --- & 2/115 \\
+\textbf{Media} & --- & --- & \textbf{18.34} & --- & 4/115 \\
 \bottomrule
 \end{tabular}
 \\[4pt]
 \footnotesize
-* Configuración ganadora de la fase~1; leída de \texttt{mejor\_config.json}.
-La fila \textbf{Media} agrega los aciertos de BKS como pares
-(MH, instancia) sobre el total $5 \times 23$ por MH.
+* Configuración canónica fija (el mismo valor por MH en los tres approaches;
+leída de \texttt{config\_fija.json}). La fila \textbf{Media} agrega los aciertos
+de BKS como pares (MH, instancia) sobre el total $5 \times 23$ por MH.
 \end{table}
 
 \paragraph{Comparativa Experimento 8 vs.\ Experimento 9.}
@@ -505,8 +470,7 @@ por el selector binario determinista, con todo lo demás idéntico.
 \caption{Gap medio (\%) por MH: Experimento~8 (\texttt{solo\_p\_inter},
          selector probabilístico con $p_{\text{inter}}$ calibrado)
          frente a Experimento~9 (\texttt{binario\_capacidad}, selector
-         binario determinista). Celdas de ambos experimentos pendientes
-         de las corridas. La columna $\Delta$ indica la diferencia
+         binario determinista). La columna $\Delta$ indica la diferencia
          Exp.~9 $-$ Exp.~8 en puntos porcentuales (negativo = Exp.~9
          mejor).}
 \label{tab:comparativa-exp8-exp9}
@@ -519,14 +483,14 @@ MH &
   $\Delta$ (pp) &
   Interpretación \\
 \midrule
-SA        & 3.32  & 20.99 & $+17.67$ & Exp.~8 mucho mejor \\
-TS simple & 8.70  & 18.77 & $+10.07$ & Exp.~8 mucho mejor \\
-RTS       & 4.67  & 14.57 & $+9.90$  & Exp.~8 mucho mejor \\
-ABC       & 15.11 & 15.56 & $+0.45$  & equivalentes \\
-Cuckoo    & 20.06 & 20.41 & $+0.35$  & equivalentes \\
+SA        & 3.21  & 21.04 & $+17.83$ & Exp.~8 mucho mejor \\
+TS simple & 8.40  & 19.14 & $+10.74$ & Exp.~8 mucho mejor \\
+RTS       & 4.89  & 14.82 & $+9.93$  & Exp.~8 mucho mejor \\
+ABC       & 14.66 & 15.39 & $+0.73$  & equivalentes \\
+Cuckoo    & 19.91 & 21.30 & $+1.39$  & equivalentes \\
 \midrule
 \textbf{Media} &
-  \textbf{10.37} & \textbf{18.06} & $+7.69$ & Exp.~8 mejor \\
+  \textbf{10.21} & \textbf{18.34} & $+8.13$ & Exp.~8 mejor \\
 \bottomrule
 \end{tabular}
 \\[4pt]
@@ -539,12 +503,12 @@ los del Exp.~9 de
 
 \paragraph{Interpretación de los resultados.}
 La comparativa es contundente: $\Delta > 0$ en las cinco MH (Exp.~8
-mejor en todas) con una diferencia media de $+7.69$\,pp. El selector
+mejor en todas) con una diferencia media de $+8.13$\,pp. El selector
 binario determinista es \textbf{claramente inferior} al probabilístico
 calibrado, y la brecha es dramática en las metaheurísticas de
-búsqueda local: SA pasa de 3.32\,\% a 20.99\,\% ($+17.67$\,pp), TS de
-8.70\,\% a 18.77\,\% y RTS de 4.67\,\% a 14.57\,\%. En las poblacionales
-(ABC, Cuckoo) la diferencia es marginal ($+0.45$ y $+0.35$\,pp), pero
+búsqueda local: SA pasa de 3.21\,\% a 21.04\,\% ($+17.83$\,pp), TS de
+8.40\,\% a 19.14\,\% y RTS de 4.89\,\% a 14.82\,\%. En las poblacionales
+(ABC, Cuckoo) la diferencia es marginal ($+0.73$ y $+1.39$\,pp), pero
 porque ya partían de gaps altos.
 
 La causa es estructural: el selector binario \textbf{nunca propone
@@ -571,22 +535,17 @@ movimientos inter-ruta de forma periódica.
 % =====================================================================
 
 Este experimento es el segundo approach del nuevo ciclo experimental
-bajo el evaluador greedy integrado de forma nativa. Sus contribuciones
-metodológicas son las siguientes, independientemente del resultado
-numérico:
+bajo el evaluador greedy integrado de forma nativa. Más allá de los gaps
+obtenidos, sus contribuciones metodológicas son:
 
 \begin{enumerate}
 \item \textbf{Aislamiento del selector como variable experimental.}
-  Al mantener todos los demás componentes idénticos al Experimento~8
-  (operadores, $\lambda$, parámetros instance-aware, sin PR/kick/AOS),
-  la comparativa Exp.~8 vs.\ Exp.~9 permite atribuir directamente la
-  diferencia de gaps al tipo de selector: probabilístico calibrado
-  frente a binario determinista.
-\item \textbf{Grid search mínimo.}
-  Con 3 configuraciones por MH (frente a 15 del Experimento~8), la
-  Fase~1 del grid es $5\times$ más barata en tiempo de cómputo. Si
-  los gaps son comparables, el selector binario ofrece la misma calidad
-  con un coste experimental mucho menor.
+  Al usar la MISMA configuración canónica por MH que el Experimento~8
+  (mismo \texttt{alpha}/\texttt{tabu\_tenure}/\dots, operadores, $\lambda$,
+  parámetros instance-aware, sin PR/kick/AOS) y cambiar \emph{solo} el
+  selector, la comparativa Exp.~8 vs.\ Exp.~9 atribuye directamente la
+  diferencia de gaps al tipo de selector: probabilístico
+  ($p_{\text{inter}}$) frente a binario determinista.
 \item \textbf{Separación estricta de las fases de búsqueda.}
   El selector binario implementa de forma explícita la intuición de
   que la reparación de la factibilidad y el refinamiento de la solución
@@ -596,7 +555,7 @@ numérico:
   metaheurísticas para CARP.
 \end{enumerate}
 
-Los resultados completos se incorporarán a las
-Tablas~\ref{tab:binario-capacidad-resultados}
-y~\ref{tab:comparativa-exp8-exp9} una vez finalizada la corrida en
-\texttt{experimentos\_costo\_fixed/}.
+Los resultados (Tablas~\ref{tab:binario-capacidad-resultados}
+y~\ref{tab:comparativa-exp8-exp9}) confirman que el selector binario
+\emph{puro} no es competitivo bajo el costo corregido; su valor reaparece
+solo combinado con intensificación (véase el Experimento~\ref{sec:exp-pr-aislado}).

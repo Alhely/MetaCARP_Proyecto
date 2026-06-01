@@ -20,34 +20,36 @@ SELECTOR PARAMETRIZABLE
 =======================
 El approach permite elegir el selector base con ``--selector``:
   - ``p_inter``: selector probabilístico nativo (como el approach 1), con el
-    ``p_inter`` ya calibrado por MH en ``solo_p_inter_20260531``.
+    ``p_inter`` canonico por MH definido en ``P_INTER_FIJO``.
   - ``binario``: selector binario determinista por capacidad (como el approach
     2), instalado con ``aplicar_patch_selector`` en el worker.
-El selector es una DIMENSIÓN del grid: se corren ambos para poder medir el
-efecto de PR sobre cada base. El aislamiento se obtiene comparando el gap de
-``[selector + PR]`` (este approach) contra ``[selector]`` (approach 1 / 2).
+El selector es una DIMENSIÓN del experimento: se corren ambos por defecto para
+poder medir el efecto de PR sobre cada base. El aislamiento se obtiene
+comparando el gap de ``[selector + PR]`` (este approach) contra ``[selector]``
+(approach 1 / 2).
 
-Diseño del grid (dos fases, sin semilla)
-----------------------------------------
-  selector (2) × parámetro libre por MH (3) = 6 configs por MH.
-  Umbral de disparo de PR fijo (estancamiento), no se calibra.
-  Fase 1 (3 reps): elige el mejor parámetro libre POR CADA selector.
-  Fase 2 (5 reps): confirma la mejor config de cada selector (2 finales/MH).
+Config canonica (sin grid, sin calibracion)
+-------------------------------------------
+  El approach corre UNA SOLA configuracion fija por MH × selector (2 configs/MH):
+    p_inter por MH (solo para selector p_inter):
+      sa=0.5, tabu_simple=0.4, tabu_reactiva=0.5, abc_simple=0.5, cuckoo=0.1
+    Knob libre fijo por MH:
+      sa->alpha=0.90, tabu_simple->tabu_tenure=25,
+      tabu_reactiva->factor_aumento=1.2, abc_simple->num_fuentes=30,
+      cuckoo->pa_abandono=0.15
+  Umbral de disparo de PR fijo (estancamiento), no se calibra: queremos aislar
+  PR, no su cadencia.
 
-  Parámetro libre por MH (idéntico a approaches 1/2):
-    SA -> alpha {0.90,0.95,0.99}; TS -> tabu_tenure {7,15,25};
-    RTS -> factor_aumento {1.1,1.2,1.3}; ABC -> num_fuentes {10,20,30};
-    Cuckoo -> pa_abandono {0.15,0.25,0.35}.
+  La instalación EXPLÍCITA del selector en cada tarea (``_instalar_selector``)
+  es CRÍTICA: ``ProcessPoolExecutor`` reutiliza workers entre tareas, y el patch
+  binario contaminaría las tareas p_inter del mismo worker si no se restaura.
 
 Salida
 ------
   experimentos_costo_fixed/<mh>_pr_aislado_<YYYYMMDD-HHMM>/
-    grid_parciales/        parciales fase 1
-    calibracion_todas.csv  consolidado fase 1
-    grid_resumen.csv        gap medio por (selector, parámetro libre)
-    mejor_config.json       mejor config por selector
-    final/                 CSVs fase 2 (5 reps) por (selector, instancia)
-      _partials/
+    final/                 CSVs por (selector, instancia)
+      _partials/           parciales antes de consolidar
+    config_fija.json       config usada (trazabilidad)
 """
 from __future__ import annotations
 
@@ -87,8 +89,7 @@ from metacarp.vecindarios import OPERADORES_POPULARES
 # ============================================================
 
 ALPHA_INTER_FIJO: float = 0.80
-REPS_CALIBRACION_DEF: int = 3
-REPS_FINAL_DEF: int = 5
+REPS_DEF: int = 5
 
 # Umbral de estancamiento que dispara el PR (en niveles para SA, en iteraciones
 # para el resto). Fijo, no se calibra: queremos aislar PR, no su cadencia.
@@ -110,23 +111,24 @@ MH_MODULOS: dict[str, str] = {
     "cuckoo":         "metacarp.cuckoo_search",
 }
 
-# Parámetro libre por MH (igual que approaches 1/2).
-GRID_LIBRE: dict[str, tuple[str, tuple[float, ...]]] = {
-    "sa":            ("alpha",          (0.90, 0.95, 0.99)),
-    "tabu_simple":   ("tabu_tenure",    (7, 15, 25)),
-    "tabu_reactiva": ("factor_aumento", (1.1, 1.2, 1.3)),
-    "abc_simple":    ("num_fuentes",    (10, 20, 30)),
-    "cuckoo":        ("pa_abandono",    (0.15, 0.25, 0.35)),
-}
-
-# p_inter calibrado por MH en el approach 1 (solo_p_inter_20260531). Se usa
-# cuando ``--selector p_inter``.
-P_INTER_CALIBRADO: dict[str, float] = {
+# Config canonica: p_inter fijo por MH (usado solo con selector p_inter).
+# Coincide con P_INTER_CALIBRADO del approach 1, ahora renombrado para claridad.
+P_INTER_FIJO: dict[str, float] = {
     "sa":            0.5,
     "tabu_simple":   0.4,
     "tabu_reactiva": 0.5,
     "abc_simple":    0.5,
     "cuckoo":        0.1,
+}
+
+# Config canonica: knob libre fijo por MH (nombre_kwarg, valor).
+# Identico al de los approaches 1/2; sin grid, se usa directamente.
+CONFIG_FIJA: dict[str, tuple[str, float]] = {
+    "sa":            ("alpha",          0.90),
+    "tabu_simple":   ("tabu_tenure",    25),
+    "tabu_reactiva": ("factor_aumento", 1.2),
+    "abc_simple":    ("num_fuentes",    30),
+    "cuckoo":        ("pa_abandono",    0.15),
 }
 
 SELECTORES = ("p_inter", "binario")
@@ -138,14 +140,13 @@ SELECTORES = ("p_inter", "binario")
 
 @dataclass(frozen=True)
 class Tarea:
-    """Una corrida del grid (sin semilla fija)."""
+    """Una corrida de la config fija (sin semilla fija)."""
     mh: str
     instancia: str
     repeticion: int
     selector: str       # "p_inter" | "binario"
-    libre_nombre: str
-    libre_valor: float
-    fase: str           # "calibracion" | "final"
+    libre_nombre: str   # nombre del parametro libre (de CONFIG_FIJA[mh])
+    libre_valor: float  # valor del parametro libre (de CONFIG_FIJA[mh])
     root: str | None
     ruta_csv_parcial: str
 
@@ -158,10 +159,10 @@ def construir_kwargs(tarea: Tarea) -> dict:
     """Arma los kwargs del runner para esta corrida (PR activo + selector).
 
     El PR se activa pasando el ``intensificador`` (hook limpio) y un umbral de
-    estancamiento (``max_iter_sin_mejora_kick=UMBRAL_PR``): en el estancamiento
-    la MH ejecuta PR hacia la mejor solución global en lugar del kick aleatorio.
-    El selector se configura según ``tarea.selector`` (el binario se instala en
-    el worker, ver ``ejecutar_una``).
+    estancamiento (``max_iter_sin_mejora_kick=UMBRAL_PR_DEF``): en el
+    estancamiento la MH ejecuta PR hacia la mejor solución global en lugar del
+    kick aleatorio. El selector se configura según ``tarea.selector`` (el binario
+    se instala en el worker via ``_instalar_selector``, ver ``ejecutar_una``).
     """
     # Importación diferida del hook (módulo PR limpio).
     from metacarp.path_relinking_limpio_20260531 import hook_pr_labels, hook_pr_ids
@@ -187,15 +188,14 @@ def construir_kwargs(tarea: Tarea) -> dict:
             "selector":    tarea.selector,
             "intensificador": "path_relinking_limpio",
             "umbral_pr":   str(UMBRAL_PR_DEF),
-            "fase":        tarea.fase,
             "lambda":      "default_instance_aware",
         },
     )
 
-    # Selector probabilístico nativo: pasar el p_inter calibrado (SA/TS/RTS
+    # Selector probabilístico nativo: pasar el p_inter canonico (SA/TS/RTS
     # aceptan alpha_inter; ABC/Cuckoo lo ignoran internamente).
     if tarea.selector == "p_inter":
-        base["p_inter"] = P_INTER_CALIBRADO[tarea.mh]
+        base["p_inter"] = P_INTER_FIJO[tarea.mh]
         if tarea.mh in ("sa", "tabu_simple", "tabu_reactiva"):
             base["alpha_inter"] = ALPHA_INTER_FIJO
     # Si selector == "binario": el patch del selector se aplica en el worker;
@@ -381,105 +381,39 @@ def _reportar(tarea, estado, info, err, ok, fail, resultados) -> tuple[int, int]
 
 
 # ============================================================
-# Fase 1: calibración (grid selector × parámetro libre)
+# Orquestación de una MH (config fija, ambos selectores)
 # ============================================================
 
-def fase1_calibracion(
-    mh: str, carpeta: Path, *, instancias, reps, workers, root,
-    selectores, grid_libre,
-) -> dict[str, dict]:
-    """Barre (selector × parámetro libre) y elige el mejor libre POR selector.
+def ejecutar_experimento_mh(
+    mh: str,
+    *,
+    salida_base: str,
+    instancias: list[str],
+    reps: int,
+    workers: int,
+    root: str | None,
+    selectores: tuple[str, ...],
+) -> Path:
+    """Crea la carpeta con timestamp, corre la config fija × selectores y consolida.
 
-    Devuelve {selector: mejor_config} y escribe grid_resumen.csv / parciales.
+    No hay grid ni calibracion: se usa directamente CONFIG_FIJA[mh] y
+    P_INTER_FIJO[mh]. Se generan tareas para cada selector en ``selectores``
+    (por defecto ambos). La trazabilidad queda en ``config_fija.json``.
     """
-    libre_nombre = GRID_LIBRE[mh][0]
-    dir_parciales = carpeta / "grid_parciales"
-    dir_parciales.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d-%H%M")
+    carpeta = Path(salida_base).expanduser().resolve() / f"{mh}_pr_aislado_{ts}"
+    carpeta.mkdir(parents=True, exist_ok=True)
+    print(f"\n### Experimento pr_aislado | MH={mh} | salida={carpeta}\n")
 
-    tareas: list[Tarea] = []
-    for selector in selectores:
-        for libre_valor in grid_libre:
-            for instancia in instancias:
-                for rep in range(1, reps + 1):
-                    idx = len(tareas)
-                    parcial = dir_parciales / (
-                        f"{mh}_{selector}_{instancia}_{os.getpid()}_{idx}.csv"
-                    )
-                    tareas.append(Tarea(
-                        mh=mh, instancia=instancia, repeticion=rep,
-                        selector=selector, libre_nombre=libre_nombre,
-                        libre_valor=libre_valor, fase="calibracion",
-                        root=root, ruta_csv_parcial=str(parcial),
-                    ))
+    libre_nombre, libre_valor = CONFIG_FIJA[mh]
 
-    print("=" * 80)
-    print(f"FASE 1 — CALIBRACION  MH={mh}  approach=pr_aislado")
-    print(f"  selectores={list(selectores)}  libre={libre_nombre}x{len(grid_libre)}  "
-          f"instancias={len(instancias)}  reps={reps}  corridas={len(tareas)}")
-    print("=" * 80)
-
-    resultados = _correr_tareas(tareas, workers)
-    _consolidar(sorted(dir_parciales.glob(f"{mh}_*.csv")),
-                carpeta / "calibracion_todas.csv")
-
-    # Gap medio por (selector, libre_valor).
-    acum: dict[tuple[str, float], list[float]] = {}
-    for tarea, info in resultados:
-        gap = info.get("gap", math.nan)
-        if gap is None or math.isnan(gap):
-            continue
-        acum.setdefault((tarea.selector, tarea.libre_valor), []).append(gap)
-
-    filas_resumen: list[dict] = []
-    for (selector, libre_valor), gaps in acum.items():
-        media = sum(gaps) / len(gaps)
-        var = sum((g - media) ** 2 for g in gaps) / len(gaps)
-        filas_resumen.append({
-            "mh": mh, "selector": selector, libre_nombre: libre_valor,
-            "gap_medio": round(media, 4), "gap_std": round(math.sqrt(var), 4),
-            "n_corridas": len(gaps),
-        })
-    filas_resumen.sort(key=lambda r: (r["selector"], r["gap_medio"], r["gap_std"]))
-
-    with (carpeta / "grid_resumen.csv").open("w", encoding="utf-8", newline="") as f:
-        campos = ["mh", "selector", libre_nombre, "gap_medio", "gap_std", "n_corridas"]
-        writer = csv.DictWriter(f, fieldnames=campos)
-        writer.writeheader()
-        writer.writerows(filas_resumen)
-
-    if not filas_resumen:
-        raise RuntimeError(f"FASE 1 sin gaps válidos para MH={mh}.")
-
-    # Mejor config por selector (menor gap medio).
-    mejor_por_sel: dict[str, dict] = {}
-    for fila in filas_resumen:
-        sel = fila["selector"]
-        if sel not in mejor_por_sel:  # ya viene ordenado por gap dentro del selector
-            mejor_por_sel[sel] = {
-                "mh": mh, "selector": sel, "libre_nombre": libre_nombre,
-                "libre_valor": fila[libre_nombre], "gap_medio": fila["gap_medio"],
-                "gap_std": fila["gap_std"],
-            }
-    for sel, cfg in mejor_por_sel.items():
-        print(f"  -> MEJOR {mh}/{sel}: {libre_nombre}={cfg['libre_valor']} "
-              f"| gap_medio={cfg['gap_medio']}%")
-    return mejor_por_sel
-
-
-# ============================================================
-# Fase 2: corrida final (mejor config por selector)
-# ============================================================
-
-def fase2_final(
-    mh: str, carpeta: Path, mejor_por_sel: dict[str, dict], *,
-    instancias, reps, workers, root,
-) -> None:
     dir_final = carpeta / "final"
     dir_partials = dir_final / "_partials"
     dir_partials.mkdir(parents=True, exist_ok=True)
 
+    # Generamos tareas: selectores × instancias × repeticiones (knob libre fijo).
     tareas: list[Tarea] = []
-    for selector, cfg in mejor_por_sel.items():
+    for selector in selectores:
         for instancia in instancias:
             for rep in range(1, reps + 1):
                 idx = len(tareas)
@@ -488,21 +422,22 @@ def fase2_final(
                 )
                 tareas.append(Tarea(
                     mh=mh, instancia=instancia, repeticion=rep,
-                    selector=selector, libre_nombre=cfg["libre_nombre"],
-                    libre_valor=cfg["libre_valor"], fase="final",
+                    selector=selector, libre_nombre=libre_nombre,
+                    libre_valor=libre_valor,
                     root=root, ruta_csv_parcial=str(parcial),
                 ))
 
     print("=" * 80)
-    print(f"FASE 2 — FINAL  MH={mh}  configs por selector: "
-          + "; ".join(f"{s}:{c['libre_nombre']}={c['libre_valor']}"
-                      for s, c in mejor_por_sel.items()))
+    print(f"CONFIG FIJA  MH={mh}  approach=pr_aislado")
+    print(f"  selectores={list(selectores)}  {libre_nombre}={libre_valor}")
+    print(f"  umbral_pr={UMBRAL_PR_DEF}  intensificador=path_relinking_limpio")
     print(f"  instancias={len(instancias)}  reps={reps}  corridas={len(tareas)}")
+    print(f"  workers={workers}")
     print("=" * 80)
 
     _correr_tareas(tareas, workers)
 
-    # Consolidar por (selector, instancia).
+    # Consolidar por (selector, instancia) -> final/<mh>_pr_<selector>_<inst>.csv
     grupos: dict[tuple[str, str], list[Path]] = {}
     for parcial in sorted(dir_partials.glob(f"{mh}_*.csv")):
         inst = _instancia_de_parcial(parcial.stem, mh)
@@ -516,37 +451,23 @@ def fase2_final(
         n += 1 if _consolidar(archivos, ruta) else 0
     print(f"  -> {n} CSV finales en {dir_final}")
 
+    # Escribimos la config usada para trazabilidad y reproducibilidad.
+    config_fija_doc = {
+        "mh": mh,
+        "approach": "pr_aislado",
+        "selectores": list(selectores),
+        "p_inter_fijo": {sel: P_INTER_FIJO[mh] for sel in selectores if sel == "p_inter"},
+        "libre_nombre": libre_nombre,
+        "libre_valor": libre_valor,
+        "umbral_pr": UMBRAL_PR_DEF,
+        "intensificador": "path_relinking_limpio",
+        "instancias": instancias,
+        "reps": reps,
+    }
+    (carpeta / "config_fija.json").write_text(
+        json.dumps(config_fija_doc, indent=2, ensure_ascii=False), encoding="utf-8",
+    )
 
-# ============================================================
-# Orquestación de una MH
-# ============================================================
-
-def ejecutar_experimento_mh(
-    mh: str, *, salida_base, instancias, reps_calibracion, reps_final,
-    workers, root, selectores, grid_libre, solo_fase,
-) -> Path:
-    ts = datetime.now().strftime("%Y%m%d-%H%M")
-    carpeta = Path(salida_base).expanduser().resolve() / f"{mh}_pr_aislado_{ts}"
-    carpeta.mkdir(parents=True, exist_ok=True)
-    print(f"\n### Experimento pr_aislado | MH={mh} | salida={carpeta}\n")
-
-    mejor_por_sel: dict[str, dict] | None = None
-    if solo_fase in ("ambas", "1"):
-        mejor_por_sel = fase1_calibracion(
-            mh, carpeta, instancias=instancias, reps=reps_calibracion,
-            workers=workers, root=root, selectores=selectores, grid_libre=grid_libre,
-        )
-        (carpeta / "mejor_config.json").write_text(
-            json.dumps(mejor_por_sel, indent=2, ensure_ascii=False), encoding="utf-8")
-
-    if solo_fase in ("ambas", "2"):
-        if mejor_por_sel is None:
-            ruta_cfg = carpeta / "mejor_config.json"
-            if not ruta_cfg.exists():
-                raise RuntimeError("Fase 2 sin mejor_config.json; corre antes la fase 1.")
-            mejor_por_sel = json.loads(ruta_cfg.read_text(encoding="utf-8"))
-        fase2_final(mh, carpeta, mejor_por_sel, instancias=instancias,
-                    reps=reps_final, workers=workers, root=root)
     return carpeta
 
 
@@ -572,40 +493,39 @@ def _parse_instancias(items: list[str] | None) -> list[str]:
 
 def main(argv: list[str] | None = None, *, mh_fijo: str | None = None) -> None:
     parser = argparse.ArgumentParser(
-        description="Approach pr_aislado: Path Relinking limpio sobre selector p_inter/binario."
+        description="Approach pr_aislado: Path Relinking limpio con config canonica fija."
     )
     if mh_fijo is None:
         parser.add_argument("--mh", type=str, required=True, choices=list(MH_MODULOS.keys()))
     parser.add_argument("--salida-base", type=str, default="experimentos_costo_fixed")
     parser.add_argument("--selector", type=str, default="ambos",
                         choices=["p_inter", "binario", "ambos"])
-    parser.add_argument("--reps-calibracion", type=int, default=REPS_CALIBRACION_DEF)
-    parser.add_argument("--reps-final", type=int, default=REPS_FINAL_DEF)
+    parser.add_argument("--reps", type=int, default=REPS_DEF)
     parser.add_argument("--workers", type=int, default=os.cpu_count() or 1)
     parser.add_argument("--root", type=str, default=None)
     parser.add_argument("--instancias", type=str, default=None, nargs="*")
-    parser.add_argument("--solo-fase", type=str, default="ambas", choices=["ambas", "1", "2"])
     parser.add_argument("--smoke", action="store_true",
-                        help="Malla mínima + 1 rep + 2 instancias (prueba rápida).")
+                        help="2 instancias + reps=1 (prueba rápida).")
     args = parser.parse_args(argv)
 
     mh = mh_fijo if mh_fijo is not None else args.mh
     instancias = _parse_instancias(args.instancias)
     selectores = SELECTORES if args.selector == "ambos" else (args.selector,)
-    grid_libre = GRID_LIBRE[mh][1]
-    reps_cal, reps_fin = args.reps_calibracion, args.reps_final
+    reps = args.reps
 
     if args.smoke:
         if not args.instancias:
             instancias = ["gdb19", "kshs1"]
-        grid_libre = grid_libre[:2]
-        reps_cal = reps_fin = 1
+        reps = 1
 
     ejecutar_experimento_mh(
-        mh, salida_base=args.salida_base, instancias=instancias,
-        reps_calibracion=reps_cal, reps_final=reps_fin, workers=args.workers,
-        root=args.root, selectores=selectores, grid_libre=grid_libre,
-        solo_fase=args.solo_fase,
+        mh,
+        salida_base=args.salida_base,
+        instancias=instancias,
+        reps=reps,
+        workers=args.workers,
+        root=args.root,
+        selectores=selectores,
     )
 
 

@@ -428,17 +428,17 @@ MH & $p_{\text{inter}}^*$ & Parámetro libre* & Valor* &
   Gap medio (\%) & Mediana (\%) & $N$ inst.\ en BKS \\
 \midrule
 SA           & 0.5 & \texttt{alpha}          & 0.90 &
-  3.32  & 2.22  & 14/23 \\
+  3.21  & 2.48  & 13/23 \\
 TS simple    & 0.4 & \texttt{tabu\_tenure}   & 25   &
-  8.70  & 7.27  & 6/23 \\
+  8.40  & 7.64  & 7/23 \\
 RTS          & 0.5 & \texttt{factor\_aumento}& 1.2  &
-  4.67  & 3.36  & 13/23 \\
+  4.89  & 3.57  & 11/23 \\
 ABC simple   & 0.5 & \texttt{num\_fuentes}   & 30   &
-  15.11 & 15.17 & 1/23 \\
+  14.66 & 14.88 & 1/23 \\
 Cuckoo       & 0.1 & \texttt{pa\_abandono}   & 0.15 &
-  20.06 & 20.00 & 0/23 \\
+  19.91 & 18.18 & 0/23 \\
 \midrule
-\textbf{Media} & --- & --- & --- & \textbf{10.37} & --- & 34/115 \\
+\textbf{Media} & --- & --- & --- & \textbf{10.21} & --- & 32/115 \\
 \bottomrule
 \end{tabular}
 \\[4pt]
@@ -465,13 +465,13 @@ de la Tabla~\ref{tab:re-greedy-gap}.
 \toprule
 MH & R3 PR & R5 Budget & \texttt{solo\_p\_inter} & $\Delta$ vs R3 \\
 \midrule
-SA        & 0.90  & 0.57 & 3.32  & $+2.42$  \\
-TS simple & 4.48  & 1.08 & 8.70  & $+4.22$  \\
-RTS       & 3.04  & 1.18 & 4.67  & $+1.63$  \\
-ABC       & 9.75  & 8.30 & 15.11 & $+5.36$  \\
-Cuckoo    & 8.20  & 4.25 & 20.06 & $+11.86$ \\
+SA        & 0.90  & 0.57 & 3.21  & $+2.31$  \\
+TS simple & 4.48  & 1.08 & 8.40  & $+3.92$  \\
+RTS       & 3.04  & 1.18 & 4.89  & $+1.85$  \\
+ABC       & 9.75  & 8.30 & 14.66 & $+4.91$  \\
+Cuckoo    & 8.20  & 4.25 & 19.91 & $+11.71$ \\
 \midrule
-\textbf{Media} & 5.27 & 3.08 & \textbf{10.37} & $+5.10$ \\
+\textbf{Media} & 5.27 & 3.08 & \textbf{10.21} & $+4.94$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -480,7 +480,7 @@ Cuckoo    & 8.20  & 4.25 & 20.06 & $+11.86$ \\
 La hipótesis preveía que \texttt{solo\_p\_inter} alcanzaría un gap
 \emph{comparable o inferior} a R3. Los datos la \textbf{refutan}: el
 approach simple es peor que R3 en las cinco MH ($\Delta$ medio
-$+5.10$ puntos) y muy por detrás de R5. Tres lecturas se desprenden:
+$+4.94$ puntos) y muy por detrás de R5. Tres lecturas se desprenden:
 
 \begin{enumerate}
 \item \textbf{La complejidad sí aporta valor, no solo compensaba el
@@ -497,8 +497,8 @@ $+5.10$ puntos) y muy por detrás de R5. Tres lecturas se desprenden:
   sesgado por el artefacto de orientación. Cuckoo es la excepción
   ($p_{\text{inter}} = 0.1$).
 \item \textbf{Jerarquía de MH como línea de base.} Con el approach más
-  simple, SA (3.32\,\%) y RTS (4.67\,\%) son claramente superiores a las
-  metaheurísticas poblacionales (ABC 15.11\,\%, Cuckoo 20.06\,\%), que
+  simple, SA (3.21\,\%) y RTS (4.89\,\%) son claramente superiores a las
+  metaheurísticas poblacionales (ABC 14.66\,\%, Cuckoo 19.91\,\%), que
   necesitan los componentes adicionales para ser competitivas.
 \end{enumerate}
 

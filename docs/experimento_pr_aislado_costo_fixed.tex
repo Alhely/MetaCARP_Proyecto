@@ -133,33 +133,38 @@ tareas, cada tarea fija \textbf{explícitamente} su selector al iniciar
 contrario una tarea \texttt{p\_inter} podría heredar el selector binario de una
 tarea previa en el mismo proceso.
 
-\subsection{Grid search en dos fases}
+\subsection{Configuración fija y dimensión del selector}
+
+Este approach NO calibra: usa la \textbf{configuración canónica fija} por MH
+(la misma que los Experimentos~8 y~9; Tabla~\ref{tab:grid-pr-aislado}) y
+mantiene el \textbf{selector} como única dimensión (p\_inter vs binario). Por
+tanto se corren \textbf{2 configuraciones por MH} (una por selector), cada una
+con 5 repeticiones $\times$ 23 instancias, sin semilla.
 
 \begin{table}[h]
 \centering
-\caption{Grid del approach \texttt{pr\_aislado\_20260531}: 2 selectores
-         $\times$ 3 valores del parámetro libre = 6 configuraciones por MH.}
+\caption{Configuración canónica fija por MH del approach
+         \texttt{pr\_aislado\_20260531} (idéntica a los Experimentos~8 y~9;
+         el resto de parámetros es instance-aware).}
 \label{tab:grid-pr-aislado}
 \small
 \begin{tabular}{lll}
 \toprule
-MH & Parámetro libre & Valores \\
+MH & Parámetro libre & Valor fijo \\
 \midrule
-SA            & \texttt{alpha}          & $\{0.90,\ 0.95,\ 0.99\}$ \\
-TS simple     & \texttt{tabu\_tenure}   & $\{7,\ 15,\ 25\}$ \\
-RTS           & \texttt{factor\_aumento}& $\{1.1,\ 1.2,\ 1.3\}$ \\
-ABC simple    & \texttt{num\_fuentes}   & $\{10,\ 20,\ 30\}$ \\
-Cuckoo        & \texttt{pa\_abandono}   & $\{0.15,\ 0.25,\ 0.35\}$ \\
+SA            & \texttt{alpha}          & $0.90$ \\
+TS simple     & \texttt{tabu\_tenure}   & $25$ \\
+RTS           & \texttt{factor\_aumento}& $1.2$ \\
+ABC simple    & \texttt{num\_fuentes}   & $30$ \\
+Cuckoo        & \texttt{pa\_abandono}   & $0.15$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{itemize}
-\item \textbf{Fase 1 (calibración, 3 reps)}: barre las 6 configuraciones y elige
-  el mejor parámetro libre \emph{por cada selector} según el gap medio sobre las
-  23 instancias.
-\item \textbf{Fase 2 (confirmación, 5 reps)}: corre la mejor configuración de
-  cada selector (2 finales por MH).
+\item Para el selector \texttt{p\_inter} se usa además el $p_{\text{inter}}$
+  canónico por MH (SA $0.5$; TS $0.4$; RTS $0.5$; ABC $0.5$; Cuckoo $0.1$);
+  el selector \texttt{binario} lo ignora.
 \item Umbral de disparo de PR fijo en $30$ (niveles para SA, iteraciones para el
   resto); no se calibra, para no confundir el efecto de PR con su cadencia.
 \end{itemize}
@@ -185,7 +190,7 @@ por el Path Relinking en el punto de estancamiento.
   metaheurísticas núcleo y a sus envoltorios \texttt{*\_desde\_instancia}
   (aditivo, \emph{default} \texttt{None}).
 \item \textbf{Orquestador}: \texttt{scripts/\_pr\_aislado\_20260531\_common.py}
-  (grid en dos fases, dimensión \texttt{--selector}, consolidación).
+  (config fija, dimensión \texttt{--selector}, consolidación).
 \item \textbf{Runners}: \texttt{scripts/run\_<mh>\_pr\_aislado\_20260531.py};
   \textbf{lanzador}: \texttt{scripts/run\_all\_pr\_aislado\_20260531.sh}.
 \end{itemize}
@@ -198,33 +203,34 @@ selector) y \texttt{final/<mh>\_pr\_<selector>\_<instancia>.csv}.
 \subsection{Resultados}
 
 \begin{observacion}[Corrida completada]
-El experimento \texttt{pr\_aislado\_20260531} se ejecutó el 31 de mayo de 2026
-sobre las 23 instancias, con grid en dos fases (3 reps de calibración y 5 de
-confirmación) para cada uno de los dos selectores. Los valores corresponden a
-la fase~2 con la configuración ganadora de cada (MH, selector).
+El experimento \texttt{pr\_aislado\_20260531} se ejecutó sobre las 23 instancias
+con la configuración canónica fija (la misma por MH que los Experimentos~8 y~9),
+5 repeticiones por instancia, para cada uno de los dos selectores. No hay fase
+de calibración: la única variable frente al Experimento~8/9 es la activación del
+Path Relinking.
 \end{observacion}
 
 \begin{table}[h]
 \centering
-\caption{Resultados de \texttt{pr\_aislado\_20260531} (fase 2: 5 reps $\times$
-         23 instancias por MH y selector). Gap respecto al BKS con evaluador
-         greedy nativo.}
+\caption{Resultados de \texttt{pr\_aislado\_20260531} (config fija, 5 reps
+         $\times$ 23 instancias por MH y selector). Gap respecto al BKS con
+         evaluador greedy nativo.}
 \label{tab:pr-aislado-resultados}
 \small
 \begin{tabular}{llcccc}
 \toprule
 MH & Selector & Param.\ libre* & Valor* & Gap medio (\%) & $N$ inst.\ en BKS \\
 \midrule
-SA           & p\_inter & \texttt{alpha}           & 0.90 & \textbf{3.19}  & 14/23 \\
-SA           & binario  & \texttt{alpha}           & 0.95 & 20.29 & 0/23 \\
-TS simple    & p\_inter & \texttt{tabu\_tenure}    & 15   & \textbf{4.99}  & 12/23 \\
-TS simple    & binario  & \texttt{tabu\_tenure}    & 15   & 18.53 & 0/23 \\
-RTS          & p\_inter & \texttt{factor\_aumento} & 1.1  & \textbf{3.36}  & 15/23 \\
-RTS          & binario  & \texttt{factor\_aumento} & 1.3  & 12.02 & 4/23 \\
-ABC simple   & p\_inter & \texttt{num\_fuentes}    & 30   & \textbf{4.09}  & 10/23 \\
-ABC simple   & binario  & \texttt{num\_fuentes}    & 30   & 6.24  & 6/23 \\
-Cuckoo       & p\_inter & \texttt{pa\_abandono}    & 0.25 & \textbf{12.02} & 3/23 \\
-Cuckoo       & binario  & \texttt{pa\_abandono}    & 0.35 & 19.49 & 1/23 \\
+SA           & p\_inter & \texttt{alpha}           & 0.90 & \textbf{3.01}  & 12/23 \\
+SA           & binario  & \texttt{alpha}           & 0.90 & 20.45 & 1/23 \\
+TS simple    & p\_inter & \texttt{tabu\_tenure}    & 25   & \textbf{4.56}  & 10/23 \\
+TS simple    & binario  & \texttt{tabu\_tenure}    & 25   & 18.28 & 0/23 \\
+RTS          & p\_inter & \texttt{factor\_aumento} & 1.2  & \textbf{3.18}  & 14/23 \\
+RTS          & binario  & \texttt{factor\_aumento} & 1.2  & 13.06 & 1/23 \\
+ABC simple   & p\_inter & \texttt{num\_fuentes}    & 30   & \textbf{4.18}  & 11/23 \\
+ABC simple   & binario  & \texttt{num\_fuentes}    & 30   & 6.13  & 6/23 \\
+Cuckoo       & p\_inter & \texttt{pa\_abandono}    & 0.15 & \textbf{12.90} & 0/23 \\
+Cuckoo       & binario  & \texttt{pa\_abandono}    & 0.15 & 17.93 & 1/23 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -240,16 +246,16 @@ Cuckoo       & binario  & \texttt{pa\_abandono}    & 0.35 & 19.49 & 1/23 \\
 \toprule
 MH & Selector & Sin PR & Con PR & $\Delta$ (pp) \\
 \midrule
-SA        & p\_inter & 3.32  & 3.19  & $-0.13$ \\
-SA        & binario  & 20.99 & 20.29 & $-0.70$ \\
-TS simple & p\_inter & 8.70  & 4.99  & $-3.71$ \\
-TS simple & binario  & 18.77 & 18.53 & $-0.24$ \\
-RTS       & p\_inter & 4.67  & 3.36  & $-1.31$ \\
-RTS       & binario  & 14.57 & 12.02 & $-2.55$ \\
-ABC       & p\_inter & 15.11 & 4.09  & $\mathbf{-11.02}$ \\
-ABC       & binario  & 15.56 & 6.24  & $\mathbf{-9.32}$ \\
-Cuckoo    & p\_inter & 20.06 & 12.02 & $\mathbf{-8.04}$ \\
-Cuckoo    & binario  & 20.41 & 19.49 & $-0.92$ \\
+SA        & p\_inter & 3.21  & 3.01  & $-0.20$ \\
+SA        & binario  & 21.04 & 20.45 & $-0.59$ \\
+TS simple & p\_inter & 8.40  & 4.56  & $-3.84$ \\
+TS simple & binario  & 19.14 & 18.28 & $-0.86$ \\
+RTS       & p\_inter & 4.89  & 3.18  & $-1.71$ \\
+RTS       & binario  & 14.82 & 13.06 & $-1.76$ \\
+ABC       & p\_inter & 14.66 & 4.18  & $\mathbf{-10.48}$ \\
+ABC       & binario  & 15.39 & 6.13  & $\mathbf{-9.26}$ \\
+Cuckoo    & p\_inter & 19.91 & 12.90 & $\mathbf{-7.01}$ \\
+Cuckoo    & binario  & 21.30 & 17.93 & $\mathbf{-3.37}$ \\
 \bottomrule
 \end{tabular}
 \\[4pt]
@@ -265,14 +271,14 @@ embargo, es muy heterogéneo y depende de cuánto margen tenía cada base:
 
 \begin{enumerate}
 \item \textbf{Ganancia enorme en las poblacionales y en TS.} Sobre la base
-  \texttt{p\_inter}, ABC cae de $15.11$ a $4.09$\,\% ($-11.02$\,pp), Cuckoo de
-  $20.06$ a $12.02$\,\% ($-8.04$\,pp) y TS de $8.70$ a $4.99$\,\% ($-3.71$\,pp).
+  \texttt{p\_inter}, ABC cae de $14.66$ a $4.18$\,\% ($-10.48$\,pp), Cuckoo de
+  $19.91$ a $12.90$\,\% ($-7.01$\,pp) y TS de $8.40$ a $4.56$\,\% ($-3.84$\,pp).
   La intensificación guiada hacia el mejor global compensa la dispersión propia
   de los métodos poblacionales y la falta de memoria de intensificación de TS.
 \item \textbf{Ganancia moderada donde ya había poco margen.} SA sobre
-  \texttt{p\_inter} apenas cambia ($3.32 \to 3.19$\,\%, $-0.13$\,pp): ya estaba
+  \texttt{p\_inter} apenas cambia ($3.21 \to 3.01$\,\%, $-0.20$\,pp): ya estaba
   cerca del óptimo en el Experimento~8, así que PR tiene poco que cerrar. RTS
-  mejora de forma consistente ($-1.31$ en \texttt{p\_inter}, $-2.55$ en
+  mejora de forma consistente ($-1.71$ en \texttt{p\_inter}, $-1.76$ en
   \texttt{binario}).
 \item \textbf{PR no rescata al selector binario.} Sobre la base \texttt{binario},
   PR reduce algo el gap (p.ej.\ RTS $-2.55$, Cuckoo $-0.92$) pero SA y TS siguen
@@ -283,8 +289,8 @@ embargo, es muy heterogéneo y depende de cuánto margen tenía cada base:
 
 \noindent\textbf{Síntesis.} La mejor base sigue siendo \texttt{p\_inter}, y
 añadirle Path Relinking produce los mejores resultados del programa hasta este
-punto: SA $3.19$\,\%, RTS $3.36$\,\%, ABC $4.09$\,\% y TS $4.99$\,\%
-(media \texttt{p\_inter+PR} $\approx 5.5$\,\% frente a $10.37$\,\% del
+punto: SA $3.01$\,\%, RTS $3.18$\,\%, ABC $4.18$\,\% y TS $4.56$\,\%
+(media \texttt{p\_inter+PR} $\approx 5.6$\,\% frente a $10.21$\,\% del
 Experimento~8: el Path Relinking aproximadamente \emph{reduce a la mitad} el gap
 medio). El beneficio de PR es real y robusto, pero se \textbf{potencia con un
 buen selector}: PR sobre \texttt{p\_inter} mejora mucho más que sobre
@@ -297,7 +303,7 @@ mecanismo de intensificación que aporta una mejora sustancial sobre esa base.
 \subsection{Conclusión provisional del experimento 10}
 % =====================================================================
 
-Independientemente del resultado numérico, este experimento aporta:
+Más allá de los gaps obtenidos, este experimento aporta:
 \begin{enumerate}
 \item \textbf{Un Path Relinking limpio y reutilizable.} El módulo
   \texttt{path\_relinking\_limpio\_20260531} y el hook \texttt{intensificador}

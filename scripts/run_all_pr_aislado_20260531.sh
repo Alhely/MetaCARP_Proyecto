@@ -5,7 +5,8 @@
 # path_relinking_limpio_20260531, sin frame-hacks ni kick aleatorio) sobre un
 # selector elegible (p_inter o binario, ambos por defecto). PR se dispara en el
 # estancamiento HACIA la mejor solución global, en lugar del kick aleatorio.
-# Grid en dos fases por MH (selector × parámetro libre).
+# Config canonica fija por MH (sin grid); el selector sigue siendo parametrico
+# (dimensión del experimento: p_inter vs binario).
 #
 # Corre las 5 MH EN SECUENCIA (cada una satura la CPU con su ProcessPoolExecutor).
 # Cada MH crea su carpeta con timestamp:
@@ -17,7 +18,7 @@
 # Variables opcionales (override desde el shell):
 #   MHS="sa tabu_simple tabu_reactiva abc_simple cuckoo"
 #   SELECTOR="ambos"          # p_inter | binario | ambos
-#   REPS_CAL=3 / REPS_FIN=5
+#   REPS=5                    # repeticiones por instancia
 #   WORKERS=<n>               # default: nproc
 #   SALIDA_BASE=experimentos_costo_fixed
 #   PYTHON_BIN="python"
@@ -30,8 +31,7 @@ cd "$ROOT_DIR"
 
 MHS="${MHS:-sa tabu_simple tabu_reactiva abc_simple cuckoo}"
 SELECTOR="${SELECTOR:-ambos}"
-REPS_CAL="${REPS_CAL:-3}"
-REPS_FIN="${REPS_FIN:-5}"
+REPS="${REPS:-5}"
 WORKERS="${WORKERS:-$(nproc 2>/dev/null || echo 1)}"
 SALIDA_BASE="${SALIDA_BASE:-experimentos_costo_fixed}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
@@ -39,11 +39,11 @@ PYTHON_BIN="${PYTHON_BIN:-python}"
 mkdir -p logs
 
 echo "============================================================================"
-echo "Approach pr_aislado_20260531 — Path Relinking limpio, grid en dos fases"
+echo "Approach pr_aislado_20260531 — Path Relinking limpio, config canonica fija"
 echo "============================================================================"
 echo "MHs          : $MHS"
 echo "Selector     : $SELECTOR"
-echo "Reps cal/fin : $REPS_CAL / $REPS_FIN"
+echo "Reps         : $REPS"
 echo "Workers      : $WORKERS"
 echo "Salida base  : $SALIDA_BASE"
 echo "============================================================================"
@@ -59,8 +59,7 @@ for mh in $MHS; do
   "$PYTHON_BIN" scripts/_pr_aislado_20260531_common.py \
     --mh "$mh" \
     --selector "$SELECTOR" \
-    --reps-calibracion "$REPS_CAL" \
-    --reps-final "$REPS_FIN" \
+    --reps "$REPS" \
     --workers "$WORKERS" \
     --salida-base "$SALIDA_BASE" \
     > "$LOG" 2>&1

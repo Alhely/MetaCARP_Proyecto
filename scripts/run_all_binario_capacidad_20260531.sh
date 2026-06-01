@@ -3,9 +3,8 @@
 # Master script del approach binario_capacidad_20260531 (segundo approach del
 # programa con costo corregido): selector BINARIO determinista basado en
 # capacidad (viola -> INTER, factible -> INTRA) + seleccion uniforme de
-# operador, sin PR/kick/AOS/budget. Grid search en dos fases por MH. A
-# diferencia del approach 1, NO se calibra p_inter (el selector es
-# determinista): solo se barre el unico parametro libre de cada MH.
+# operador, sin PR/kick/AOS/budget. Config canonica fija por MH (sin grid).
+# A diferencia del approach 1, NO hay p_inter (el selector es determinista).
 #
 # Corre las 5 MH EN SECUENCIA (cada una satura la CPU internamente con su
 # propio ProcessPoolExecutor). Cada MH crea su carpeta con timestamp:
@@ -16,8 +15,7 @@
 #
 # Variables opcionales (override desde el shell):
 #   MHS="sa tabu_simple tabu_reactiva abc_simple cuckoo"  # subset de MH
-#   REPS_CAL=3                # repeticiones de la fase de calibracion
-#   REPS_FIN=5                # repeticiones de la fase final
+#   REPS=5                    # repeticiones por instancia
 #   WORKERS=<n>               # procesos paralelos por MH (default: nproc)
 #   SALIDA_BASE=experimentos_costo_fixed
 #   PYTHON_BIN="python"       # binario de Python (puede ser path de conda env)
@@ -29,8 +27,7 @@ ROOT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 cd "$ROOT_DIR"
 
 MHS="${MHS:-sa tabu_simple tabu_reactiva abc_simple cuckoo}"
-REPS_CAL="${REPS_CAL:-3}"
-REPS_FIN="${REPS_FIN:-5}"
+REPS="${REPS:-5}"
 WORKERS="${WORKERS:-$(nproc 2>/dev/null || echo 1)}"
 SALIDA_BASE="${SALIDA_BASE:-experimentos_costo_fixed}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
@@ -38,10 +35,10 @@ PYTHON_BIN="${PYTHON_BIN:-python}"
 mkdir -p logs
 
 echo "============================================================================"
-echo "Approach binario_capacidad_20260531 — grid search en dos fases"
+echo "Approach binario_capacidad_20260531 — config canonica fija (sin grid)"
 echo "============================================================================"
 echo "MHs          : $MHS"
-echo "Reps cal/fin : $REPS_CAL / $REPS_FIN"
+echo "Reps         : $REPS"
 echo "Workers      : $WORKERS"
 echo "Salida base  : $SALIDA_BASE"
 echo "Python       : $PYTHON_BIN"
@@ -57,8 +54,7 @@ for mh in $MHS; do
   T0=$(date +%s)
   "$PYTHON_BIN" scripts/_binario_capacidad_20260531_common.py \
     --mh "$mh" \
-    --reps-calibracion "$REPS_CAL" \
-    --reps-final "$REPS_FIN" \
+    --reps "$REPS" \
     --workers "$WORKERS" \
     --salida-base "$SALIDA_BASE" \
     > "$LOG" 2>&1

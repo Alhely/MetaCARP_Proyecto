@@ -29,27 +29,25 @@ ser comparable con el primer approach.
 Diferencia metodologica clave respecto al approach 1
 ====================================================
 El selector binario es DETERMINISTA: no tiene el parametro ``p_inter``. Por eso
-el grid search de este approach NO barre ``p_inter`` (desaparece esa dimension);
-solo calibra el unico parametro libre de cada MH. El resto del diseno
-(instance-aware, lambda default, 5 reps finales, dos fases, sin semilla) es
-identico.
+NO se pasa ``p_inter`` en este approach; solo se usa el knob libre canonico de
+cada MH (CONFIG_FIJA).
 
-  Malla (solo el parametro libre por MH, 3 valores c/u):
-    SA            -> alpha          : {0.90, 0.95, 0.99}
-    TS simple     -> tabu_tenure    : {7, 15, 25}
-    RTS           -> factor_aumento : {1.1, 1.2, 1.3}
-    ABC           -> num_fuentes    : {10, 20, 30}
-    Cuckoo        -> pa_abandono    : {0.15, 0.25, 0.35}
+Config canonica (sin grid, sin calibracion)
+-------------------------------------------
+  El approach corre UNA SOLA configuracion fija por MH (el selector es el mismo
+  para todas: binario):
+    Knob libre fijo: sa->alpha=0.90, tabu_simple->tabu_tenure=25,
+                     tabu_reactiva->factor_aumento=1.2,
+                     abc_simple->num_fuentes=30, cuckoo->pa_abandono=0.15
+  Estos valores son la config canonica del proyecto. Se registran en
+  ``config_fija.json`` para trazabilidad.
 
 Salida
 ------
   experimentos_costo_fixed/<mh>_binario_capacidad_<YYYYMMDD-HHMM>/
-    grid_parciales/        CSVs parciales de la fase 1 (uno por corrida)
-    calibracion_todas.csv  consolidado de la fase 1 (columnas completas)
-    grid_resumen.csv       gap medio por config (criterio de seleccion)
-    mejor_config.json      config ganadora + su gap medio
-    final/                 CSVs de la fase 2 (5 reps, columnas completas)
+    final/                 CSVs de la corrida (reps repeticiones, columnas completas)
       _partials/           parciales antes de consolidar
+    config_fija.json       config usada (para trazabilidad y reproducibilidad)
 
 Las columnas del CSV son las que escribe el nucleo (sin cambios): gap vs BKS,
 mejor_costo, contadores de operadores (4 categorias x 9 operadores = 36
@@ -105,9 +103,8 @@ from metacarp.vecindarios import OPERADORES_POPULARES
 # Constantes del experimento
 # ============================================================
 
-# Repeticiones por defecto de cada fase.
-REPS_CALIBRACION_DEF: int = 3
-REPS_FINAL_DEF: int = 5
+# Repeticiones por defecto de la corrida final.
+REPS_DEF: int = 5
 
 # 23 instancias pequenas del corpus actual (identicas a solo_p_inter_20260531).
 INSTANCIAS = [
@@ -126,15 +123,15 @@ MH_MODULOS: dict[str, str] = {
     "cuckoo":         "metacarp.cuckoo_search",
 }
 
-# Un parametro libre por MH: (nombre_kwarg, valores). El resto de parametros se
-# dejan instance-aware (None) o en su default de literatura clasica. NO hay
-# dimension p_inter: el selector binario es determinista.
-GRID_LIBRE: dict[str, tuple[str, tuple[float, ...]]] = {
-    "sa":            ("alpha",          (0.90, 0.95, 0.99)),
-    "tabu_simple":   ("tabu_tenure",    (7, 15, 25)),
-    "tabu_reactiva": ("factor_aumento", (1.1, 1.2, 1.3)),
-    "abc_simple":    ("num_fuentes",    (10, 20, 30)),
-    "cuckoo":        ("pa_abandono",    (0.15, 0.25, 0.35)),
+# Config canonica: knob libre fijo por MH (nombre_kwarg, valor).
+# Valores derivados del analisis previo; se usan directamente sin grid.
+# NO hay dimension p_inter: el selector binario es determinista.
+CONFIG_FIJA: dict[str, tuple[str, float]] = {
+    "sa":            ("alpha",          0.90),
+    "tabu_simple":   ("tabu_tenure",    25),
+    "tabu_reactiva": ("factor_aumento", 1.2),
+    "abc_simple":    ("num_fuentes",    30),
+    "cuckoo":        ("pa_abandono",    0.15),
 }
 
 
@@ -144,7 +141,7 @@ GRID_LIBRE: dict[str, tuple[str, tuple[float, ...]]] = {
 
 @dataclass(frozen=True)
 class Tarea:
-    """Una corrida del grid (sin semilla fija: la variabilidad es estocastica).
+    """Una corrida de la config fija (sin semilla fija: la variabilidad es estocastica).
 
     A diferencia del approach 1 NO hay campo ``p_inter``: el selector binario
     es determinista y no depende de ningun knob probabilistico.
@@ -152,9 +149,8 @@ class Tarea:
     mh: str             # clave de MH_MODULOS
     instancia: str
     repeticion: int
-    libre_nombre: str   # nombre del parametro libre de esta MH
-    libre_valor: float  # valor del parametro libre en esta corrida
-    fase: str           # "calibracion" | "final"
+    libre_nombre: str   # nombre del parametro libre (de CONFIG_FIJA[mh])
+    libre_valor: float  # valor del parametro libre (de CONFIG_FIJA[mh])
     root: str | None
     ruta_csv_parcial: str
 
@@ -177,7 +173,7 @@ def construir_kwargs(tarea: Tarea) -> dict:
     el worker (``seleccionar_grupo_strict``) los ignora. Se deja que cada MH use
     sus defaults para esos kwargs irrelevantes.
 
-    Por MH se fija unicamente el parametro libre del grid.
+    Por MH se fija unicamente el parametro libre de CONFIG_FIJA.
     """
     base = dict(
         root=tarea.root,
@@ -196,7 +192,6 @@ def construir_kwargs(tarea: Tarea) -> dict:
             "experimento": "binario_capacidad_20260531",
             "approach":    "binario_capacidad",
             "selector":    "binario_estricto_capacidad",
-            "fase":        tarea.fase,
             "lambda":      "default_instance_aware",
         },
     )
@@ -391,126 +386,36 @@ def _reportar(tarea, estado, info, err, ok, fail, resultados) -> tuple[int, int]
 
 
 # ============================================================
-# Fase 1: calibracion (grid search del unico parametro libre)
+# Orquestacion de una MH (config fija, una sola corrida)
 # ============================================================
 
-def fase1_calibracion(
+def ejecutar_experimento_mh(
     mh: str,
-    carpeta: Path,
     *,
+    salida_base: str,
     instancias: list[str],
     reps: int,
     workers: int,
     root: str | None,
-    grid_libre: tuple[float, ...],
-) -> dict:
-    """Barre el parametro libre de la MH y elige la mejor config (menor gap medio).
+) -> Path:
+    """Crea la carpeta con timestamp, corre la config fija y consolida en final/.
 
-    Escribe grid_parciales/, calibracion_todas.csv y grid_resumen.csv. Devuelve
-    un dict con la mejor config: {libre_nombre, libre_valor, gap_medio, gap_std}.
+    No hay grid ni calibracion: se usa directamente CONFIG_FIJA[mh]. El selector
+    binario se aplica como patch dentro de cada worker (``aplicar_patch_selector``).
+    La trazabilidad queda en ``config_fija.json``.
     """
-    libre_nombre = GRID_LIBRE[mh][0]
-    dir_parciales = carpeta / "grid_parciales"
-    dir_parciales.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d-%H%M")
+    carpeta = Path(salida_base).expanduser().resolve() / f"{mh}_binario_capacidad_{ts}"
+    carpeta.mkdir(parents=True, exist_ok=True)
+    print(f"\n### Experimento binario_capacidad | MH={mh} | salida={carpeta}\n")
 
-    # Generamos la lista de tareas: cada (valor_libre x instancia x rep).
-    tareas: list[Tarea] = []
-    for libre_valor in grid_libre:
-        for instancia in instancias:
-            for rep in range(1, reps + 1):
-                idx = len(tareas)
-                parcial = dir_parciales / f"{mh}_{instancia}_{os.getpid()}_{idx}.csv"
-                tareas.append(Tarea(
-                    mh=mh, instancia=instancia, repeticion=rep,
-                    libre_nombre=libre_nombre, libre_valor=libre_valor,
-                    fase="calibracion", root=root, ruta_csv_parcial=str(parcial),
-                ))
+    libre_nombre, libre_valor = CONFIG_FIJA[mh]
 
-    print("=" * 80)
-    print(f"FASE 1 — CALIBRACION  MH={mh}  approach=binario_capacidad")
-    print(f"  configs={len(grid_libre)} ({libre_nombre})  "
-          f"instancias={len(instancias)}  reps={reps}")
-    print(f"  corridas totales={len(tareas)}  workers={workers}")
-    print("=" * 80)
-
-    resultados = _correr_tareas(tareas, workers)
-
-    # --- Consolidamos los parciales de la fase 1 (columnas completas) ---
-    _consolidar(
-        sorted(dir_parciales.glob(f"{mh}_*.csv")),
-        carpeta / "calibracion_todas.csv",
-    )
-
-    # --- Agregamos el gap medio por valor del parametro libre ---
-    acum: dict[float, list[float]] = {}
-    for tarea, info in resultados:
-        gap = info.get("gap", math.nan)
-        if gap is None or math.isnan(gap):
-            continue
-        acum.setdefault(tarea.libre_valor, []).append(gap)
-
-    filas_resumen: list[dict] = []
-    for libre_valor, gaps in acum.items():
-        media = sum(gaps) / len(gaps)
-        var = sum((g - media) ** 2 for g in gaps) / len(gaps)
-        filas_resumen.append({
-            "mh": mh,
-            libre_nombre: libre_valor,
-            "gap_medio": round(media, 4),
-            "gap_std": round(math.sqrt(var), 4),
-            "n_corridas": len(gaps),
-        })
-    # Orden: menor gap medio primero (mejor config arriba).
-    filas_resumen.sort(key=lambda r: (r["gap_medio"], r["gap_std"]))
-
-    ruta_resumen = carpeta / "grid_resumen.csv"
-    with ruta_resumen.open("w", encoding="utf-8", newline="") as f:
-        campos = ["mh", libre_nombre, "gap_medio", "gap_std", "n_corridas"]
-        writer = csv.DictWriter(f, fieldnames=campos)
-        writer.writeheader()
-        writer.writerows(filas_resumen)
-
-    if not filas_resumen:
-        raise RuntimeError(
-            f"FASE 1 sin gaps validos para MH={mh}: no se puede elegir config."
-        )
-
-    mejor = filas_resumen[0]
-    mejor_config = {
-        "mh": mh,
-        "selector": "binario_estricto_capacidad",
-        "libre_nombre": libre_nombre,
-        "libre_valor": mejor[libre_nombre],
-        "gap_medio": mejor["gap_medio"],
-        "gap_std": mejor["gap_std"],
-    }
-    print(f"  -> MEJOR CONFIG {mh}: {libre_nombre}={mejor_config['libre_valor']} "
-          f"| gap_medio={mejor_config['gap_medio']}%")
-    return mejor_config
-
-
-# ============================================================
-# Fase 2: corrida final con la mejor config
-# ============================================================
-
-def fase2_final(
-    mh: str,
-    carpeta: Path,
-    mejor_config: dict,
-    *,
-    instancias: list[str],
-    reps: int,
-    workers: int,
-    root: str | None,
-) -> None:
-    """Corre la mejor config con ``reps`` repeticiones y consolida en final/."""
     dir_final = carpeta / "final"
     dir_partials = dir_final / "_partials"
     dir_partials.mkdir(parents=True, exist_ok=True)
 
-    libre_nombre = mejor_config["libre_nombre"]
-    libre_valor = mejor_config["libre_valor"]
-
+    # Generamos tareas: config fija x instancias x repeticiones.
     tareas: list[Tarea] = []
     for instancia in instancias:
         for rep in range(1, reps + 1):
@@ -519,13 +424,14 @@ def fase2_final(
             tareas.append(Tarea(
                 mh=mh, instancia=instancia, repeticion=rep,
                 libre_nombre=libre_nombre, libre_valor=libre_valor,
-                fase="final", root=root, ruta_csv_parcial=str(parcial),
+                root=root, ruta_csv_parcial=str(parcial),
             ))
 
     print("=" * 80)
-    print(f"FASE 2 — FINAL  MH={mh}  config: {libre_nombre}={libre_valor}  "
-          f"instancias={len(instancias)}  reps={reps}")
-    print(f"  corridas totales={len(tareas)}  workers={workers}")
+    print(f"CONFIG FIJA  MH={mh}  approach=binario_capacidad")
+    print(f"  selector=binario_estricto_capacidad  {libre_nombre}={libre_valor}")
+    print(f"  instancias={len(instancias)}  reps={reps}  corridas={len(tareas)}")
+    print(f"  workers={workers}")
     print("=" * 80)
 
     _correr_tareas(tareas, workers)
@@ -543,53 +449,20 @@ def fase2_final(
         n += 1 if _consolidar(archivos, ruta) else 0
     print(f"  -> {n} CSV finales por instancia en {dir_final}")
 
-
-# ============================================================
-# Orquestacion de una MH (las dos fases)
-# ============================================================
-
-def ejecutar_experimento_mh(
-    mh: str,
-    *,
-    salida_base: str,
-    instancias: list[str],
-    reps_calibracion: int,
-    reps_final: int,
-    workers: int,
-    root: str | None,
-    grid_libre: tuple[float, ...],
-    solo_fase: str,
-) -> Path:
-    """Crea la carpeta con timestamp y corre las fases pedidas para una MH."""
-    ts = datetime.now().strftime("%Y%m%d-%H%M")
-    carpeta = Path(salida_base).expanduser().resolve() / f"{mh}_binario_capacidad_{ts}"
-    carpeta.mkdir(parents=True, exist_ok=True)
-    print(f"\n### Experimento binario_capacidad | MH={mh} | salida={carpeta}\n")
-
-    mejor_config: dict | None = None
-    if solo_fase in ("ambas", "1"):
-        mejor_config = fase1_calibracion(
-            mh, carpeta, instancias=instancias, reps=reps_calibracion,
-            workers=workers, root=root, grid_libre=grid_libre,
-        )
-        (carpeta / "mejor_config.json").write_text(
-            json.dumps(mejor_config, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-
-    if solo_fase in ("ambas", "2"):
-        if mejor_config is None:
-            # Permite re-correr solo la fase 2 leyendo una mejor_config previa.
-            ruta_cfg = carpeta / "mejor_config.json"
-            if not ruta_cfg.exists():
-                raise RuntimeError(
-                    "Fase 2 sin mejor_config.json; corre antes la fase 1."
-                )
-            mejor_config = json.loads(ruta_cfg.read_text(encoding="utf-8"))
-        fase2_final(
-            mh, carpeta, mejor_config, instancias=instancias,
-            reps=reps_final, workers=workers, root=root,
-        )
+    # Escribimos la config usada para trazabilidad y reproducibilidad.
+    config_fija_doc = {
+        "mh": mh,
+        "approach": "binario_capacidad",
+        "selector": "binario_estricto_capacidad",
+        "libre_nombre": libre_nombre,
+        "libre_valor": libre_valor,
+        "instancias": instancias,
+        "reps": reps,
+    }
+    (carpeta / "config_fija.json").write_text(
+        json.dumps(config_fija_doc, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
 
     return carpeta
 
@@ -618,47 +491,37 @@ def _parse_instancias(items: list[str] | None) -> list[str]:
 def main(argv: list[str] | None = None, *, mh_fijo: str | None = None) -> None:
     """Punto de entrada. ``mh_fijo`` lo usan los runners por-MH."""
     parser = argparse.ArgumentParser(
-        description="Approach binario_capacidad (selector binario) con grid en dos fases."
+        description="Approach binario_capacidad (selector binario) con config canonica fija."
     )
     if mh_fijo is None:
         parser.add_argument("--mh", type=str, required=True,
                             choices=list(MH_MODULOS.keys()))
     parser.add_argument("--salida-base", type=str, default="experimentos_costo_fixed")
-    parser.add_argument("--reps-calibracion", type=int, default=REPS_CALIBRACION_DEF)
-    parser.add_argument("--reps-final", type=int, default=REPS_FINAL_DEF)
+    parser.add_argument("--reps", type=int, default=REPS_DEF)
     parser.add_argument("--workers", type=int, default=os.cpu_count() or 1)
     parser.add_argument("--root", type=str, default=None)
     parser.add_argument("--instancias", type=str, default=None, nargs="*")
-    parser.add_argument("--solo-fase", type=str, default="ambas",
-                        choices=["ambas", "1", "2"])
     parser.add_argument("--smoke", action="store_true",
-                        help="Malla minima + 1 rep + 2 instancias (prueba rapida).")
+                        help="2 instancias + reps=1 (prueba rapida).")
     args = parser.parse_args(argv)
 
     mh = mh_fijo if mh_fijo is not None else args.mh
     instancias = _parse_instancias(args.instancias)
-    grid_libre = GRID_LIBRE[mh][1]
-    reps_cal = args.reps_calibracion
-    reps_fin = args.reps_final
+    reps = args.reps
 
     if args.smoke:
-        # Prueba rapida: 2 instancias, malla de 2 valores, 1 rep por fase.
+        # Prueba rapida: 2 instancias, 1 rep.
         if not args.instancias:
             instancias = ["gdb19", "kshs1"]
-        grid_libre = grid_libre[:2]
-        reps_cal = 1
-        reps_fin = 1
+        reps = 1
 
     ejecutar_experimento_mh(
         mh,
         salida_base=args.salida_base,
         instancias=instancias,
-        reps_calibracion=reps_cal,
-        reps_final=reps_fin,
+        reps=reps,
         workers=args.workers,
         root=args.root,
-        grid_libre=grid_libre,
-        solo_fase=args.solo_fase,
     )
 
 
