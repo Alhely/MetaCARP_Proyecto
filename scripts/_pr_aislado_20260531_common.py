@@ -210,16 +210,16 @@ def construir_kwargs(tarea: Tarea) -> dict:
             # Reheat acotado (imprescindible para alpha alto; ver approaches 1/2).
             patience=10,
             reheat_factor=0.5,
-            max_reheats_sin_mejora=5,
+            max_reheats_sin_mejora=10,
         )
     elif mh == "tabu_simple":
-        base.update(tabu_tenure=int(tarea.libre_valor), tam_vecindario=25)
+        base.update(tabu_tenure=int(tarea.libre_valor), tam_vecindario=40)
     elif mh == "tabu_reactiva":
-        base.update(factor_aumento=float(tarea.libre_valor), factor_reduccion=0.9)
+        base.update(factor_aumento=float(tarea.libre_valor), factor_reduccion=0.95)
     elif mh == "abc_simple":
-        base.update(num_fuentes=int(tarea.libre_valor))
+        base.update(num_fuentes=int(tarea.libre_valor), limite_abandono=60)
     elif mh == "cuckoo":
-        base.update(pa_abandono=float(tarea.libre_valor), beta_levy=1.5)
+        base.update(pa_abandono=float(tarea.libre_valor), beta_levy=1.3)
     else:
         raise ValueError(f"MH desconocida: {mh!r}")
     return base

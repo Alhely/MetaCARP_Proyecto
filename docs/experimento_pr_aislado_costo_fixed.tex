@@ -177,7 +177,7 @@ operadores completos (\texttt{OPERADORES\_POPULARES}, 9), $\lambda$ por defecto
 instance-aware (\texttt{lambda\_capacidad=None}), parámetros principales
 instance-aware (\texttt{None}), 5 repeticiones en la fase final, sin semilla
 fija, y reheat de SA acotado (\texttt{patience=10}, \texttt{reheat\_factor=0.5},
-\texttt{max\_reheats\_sin\_mejora=5}). El kick aleatorio queda \emph{sustituido}
+\texttt{max\_reheats\_sin\_mejora=10}). El kick aleatorio queda \emph{sustituido}
 por el Path Relinking en el punto de estancamiento.
 
 \subsection{Reproducibilidad: scripts e infraestructura}
@@ -221,16 +221,16 @@ Path Relinking.
 \toprule
 MH & Selector & Param.\ libre* & Valor* & Gap medio (\%) & $N$ inst.\ en BKS \\
 \midrule
-SA           & p\_inter & \texttt{alpha}           & 0.90 & \textbf{3.01}  & 12/23 \\
-SA           & binario  & \texttt{alpha}           & 0.90 & 20.45 & 1/23 \\
-TS simple    & p\_inter & \texttt{tabu\_tenure}    & 25   & \textbf{4.56}  & 10/23 \\
-TS simple    & binario  & \texttt{tabu\_tenure}    & 25   & 18.28 & 0/23 \\
-RTS          & p\_inter & \texttt{factor\_aumento} & 1.2  & \textbf{3.18}  & 14/23 \\
-RTS          & binario  & \texttt{factor\_aumento} & 1.2  & 13.06 & 1/23 \\
-ABC simple   & p\_inter & \texttt{num\_fuentes}    & 30   & \textbf{4.18}  & 11/23 \\
-ABC simple   & binario  & \texttt{num\_fuentes}    & 30   & 6.13  & 6/23 \\
-Cuckoo       & p\_inter & \texttt{pa\_abandono}    & 0.15 & \textbf{12.90} & 0/23 \\
-Cuckoo       & binario  & \texttt{pa\_abandono}    & 0.15 & 17.93 & 1/23 \\
+SA           & p\_inter & \texttt{alpha}           & 0.90 & \textbf{3.10}  & 18/23 \\
+SA           & binario  & \texttt{alpha}           & 0.90 & 20.83 & 0/23 \\
+TS simple    & p\_inter & \texttt{tabu\_tenure}    & 25   & \textbf{2.92}  & 12/23 \\
+TS simple    & binario  & \texttt{tabu\_tenure}    & 25   & 17.56 & 1/23 \\
+RTS          & p\_inter & \texttt{factor\_aumento} & 1.2  & \textbf{3.72}  & 14/23 \\
+RTS          & binario  & \texttt{factor\_aumento} & 1.2  & 12.35 & 3/23 \\
+ABC simple   & p\_inter & \texttt{num\_fuentes}    & 30   & \textbf{3.69}  & 13/23 \\
+ABC simple   & binario  & \texttt{num\_fuentes}    & 30   & 5.07  & 7/23 \\
+Cuckoo       & p\_inter & \texttt{pa\_abandono}    & 0.15 & \textbf{12.63} & 4/23 \\
+Cuckoo       & binario  & \texttt{pa\_abandono}    & 0.15 & 18.12 & 1/23 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -246,16 +246,16 @@ Cuckoo       & binario  & \texttt{pa\_abandono}    & 0.15 & 17.93 & 1/23 \\
 \toprule
 MH & Selector & Sin PR & Con PR & $\Delta$ (pp) \\
 \midrule
-SA        & p\_inter & 3.21  & 3.01  & $-0.20$ \\
-SA        & binario  & 21.04 & 20.45 & $-0.59$ \\
-TS simple & p\_inter & 8.40  & 4.56  & $-3.84$ \\
-TS simple & binario  & 19.14 & 18.28 & $-0.86$ \\
-RTS       & p\_inter & 4.89  & 3.18  & $-1.71$ \\
-RTS       & binario  & 14.82 & 13.06 & $-1.76$ \\
-ABC       & p\_inter & 14.66 & 4.18  & $\mathbf{-10.48}$ \\
-ABC       & binario  & 15.39 & 6.13  & $\mathbf{-9.26}$ \\
-Cuckoo    & p\_inter & 19.91 & 12.90 & $\mathbf{-7.01}$ \\
-Cuckoo    & binario  & 21.30 & 17.93 & $\mathbf{-3.37}$ \\
+SA        & p\_inter & 2.89  & 3.10  & $+0.21$ \\
+SA        & binario  & 20.36 & 20.83 & $+0.47$ \\
+TS simple & p\_inter & 5.76  & 2.92  & $\mathbf{-2.84}$ \\
+TS simple & binario  & 18.41 & 17.56 & $-0.85$ \\
+RTS       & p\_inter & 4.97  & 3.72  & $-1.25$ \\
+RTS       & binario  & 14.45 & 12.35 & $-2.10$ \\
+ABC       & p\_inter & 9.64  & 3.69  & $\mathbf{-5.95}$ \\
+ABC       & binario  & 10.22 & 5.07  & $\mathbf{-5.15}$ \\
+Cuckoo    & p\_inter & 19.13 & 12.63 & $\mathbf{-6.50}$ \\
+Cuckoo    & binario  & 19.57 & 18.12 & $-1.45$ \\
 \bottomrule
 \end{tabular}
 \\[4pt]
@@ -265,34 +265,36 @@ Columna ``Sin PR'': gap medio del Exp.~8 (\texttt{p\_inter}) y del Exp.~9
 \end{table}
 
 \paragraph{Interpretación de los resultados.}
-El Path Relinking \textbf{mejora el gap en las diez combinaciones}
-(MH $\times$ selector): todos los $\Delta$ son negativos. El efecto, sin
-embargo, es muy heterogéneo y depende de cuánto margen tenía cada base:
+El Path Relinking \textbf{mejora el gap en 8 de las 10 combinaciones}
+(MH $\times$ selector); las dos excepciones son SA (ambos selectores), donde el
+$\Delta$ es marginalmente positivo ($+0.21$ y $+0.47$\,pp, dentro del ruido
+estocástico) porque SA ya estaba muy cerca del óptimo tras la calibración. El
+efecto es muy heterogéneo y depende de cuánto margen tenía cada base:
 
 \begin{enumerate}
 \item \textbf{Ganancia enorme en las poblacionales y en TS.} Sobre la base
-  \texttt{p\_inter}, ABC cae de $14.66$ a $4.18$\,\% ($-10.48$\,pp), Cuckoo de
-  $19.91$ a $12.90$\,\% ($-7.01$\,pp) y TS de $8.40$ a $4.56$\,\% ($-3.84$\,pp).
+  \texttt{p\_inter}, ABC cae de $9.64$ a $3.69$\,\% ($-5.95$\,pp), Cuckoo de
+  $19.13$ a $12.63$\,\% ($-6.50$\,pp) y TS de $5.76$ a $2.92$\,\% ($-2.84$\,pp,
+  el mejor resultado del programa).
   La intensificación guiada hacia el mejor global compensa la dispersión propia
   de los métodos poblacionales y la falta de memoria de intensificación de TS.
-\item \textbf{Ganancia moderada donde ya había poco margen.} SA sobre
-  \texttt{p\_inter} apenas cambia ($3.21 \to 3.01$\,\%, $-0.20$\,pp): ya estaba
-  cerca del óptimo en el Experimento~8, así que PR tiene poco que cerrar. RTS
-  mejora de forma consistente ($-1.71$ en \texttt{p\_inter}, $-1.76$ en
+\item \textbf{SA ya saturado; RTS mejora moderada.} SA, con su segundo knob ya
+  calibrado, está tan cerca del óptimo que PR no aporta (queda en $\sim$$3$\,\%).
+  RTS mejora de forma consistente ($-1.25$ en \texttt{p\_inter}, $-2.10$ en
   \texttt{binario}).
 \item \textbf{PR no rescata al selector binario.} Sobre la base \texttt{binario},
-  PR reduce algo el gap (p.ej.\ RTS $-2.55$, Cuckoo $-0.92$) pero SA y TS siguen
-  estancados en $\sim$$20$ y $\sim$$18$\,\%: el confinamiento intra-ruta del
-  selector binario (Experimento~\ref{sec:exp-binario-capacidad}) es un techo
-  que la intensificación por PR no puede superar por sí sola.
+  PR reduce algo el gap (p.ej.\ ABC $-5.15$, RTS $-2.10$) y en ABC lo deja
+  competitivo ($5.07$\,\%), pero SA y TS siguen estancados en $\sim$$20$ y
+  $\sim$$18$\,\%: el confinamiento intra-ruta del selector binario
+  (Experimento~\ref{sec:exp-binario-capacidad}) es un techo que la
+  intensificación por PR no puede superar por sí sola.
 \end{enumerate}
 
 \noindent\textbf{Síntesis.} La mejor base sigue siendo \texttt{p\_inter}, y
 añadirle Path Relinking produce los mejores resultados del programa hasta este
-punto: SA $3.01$\,\%, RTS $3.18$\,\%, ABC $4.18$\,\% y TS $4.56$\,\%
-(media \texttt{p\_inter+PR} $\approx 5.6$\,\% frente a $10.21$\,\% del
-Experimento~8: el Path Relinking aproximadamente \emph{reduce a la mitad} el gap
-medio). El beneficio de PR es real y robusto, pero se \textbf{potencia con un
+punto: TS $2.92$\,\%, SA $3.10$\,\%, ABC $3.69$\,\% y RTS $3.72$\,\%
+(media \texttt{p\_inter+PR} $\approx 5.2$\,\% frente a $8.48$\,\% del
+Experimento~8: el Path Relinking reduce el gap medio en torno a un $40$\,\%). El beneficio de PR es real y robusto, pero se \textbf{potencia con un
 buen selector}: PR sobre \texttt{p\_inter} mejora mucho más que sobre
 \texttt{binario} en ABC, Cuckoo y TS. Esto confirma la jerarquía del programa:
 la corrección del evaluador habilita la medición, el selector

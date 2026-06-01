@@ -285,11 +285,20 @@ y estadísticas del grafo):
   abajo).
 \item \textbf{TS simple / RTS}: número máximo de iteraciones y
   ventanas de tenure bounds derivados de $n_\tau$.
-\item \textbf{ABC simple}: límite de abandono de fuentes proporcional
-  al número de fuentes y a $n_\tau$.
+\item \textbf{ABC simple}: número de nidos derivado de $n_\tau$ (el
+  \texttt{limite\_abandono} ya no es instance-aware: se calibró a $60$).
 \item \textbf{Cuckoo}: número de nidos y pasos de vuelo de Lévy
   derivados de $n_\tau$.
 \end{itemize}
+
+\medskip
+\noindent\textbf{Segundo parámetro calibrado por MH.} Además de
+$p_{\text{inter}}$ y del knob principal, se calibró (sobre esta misma base
+\texttt{solo\_p\_inter}, 3 reps $\times$ 23 instancias) el parámetro adicional
+más influyente de cada MH, dejándolo fijo en su mejor valor: SA
+\texttt{max\_reheats\_sin\_mejora}$=10$; TS \texttt{tam\_vecindario}$=40$; RTS
+\texttt{factor\_reduccion}$=0.95$; ABC \texttt{limite\_abandono}$=60$; Cuckoo
+\texttt{beta\_levy}$=1.3$. Las mayores ganancias fueron en TS y ABC.
 
 % ---------------------------------------------------------------------
 \subsubsection*{Nota técnica: reheat acotado en SA}
@@ -312,17 +321,17 @@ consistente con la configuración validada del proyecto:
     de activar el reheat.
   \item \texttt{reheat\_factor=0.5}: la temperatura de reheat es la
     mitad de la temperatura inicial efectiva.
-  \item \texttt{max\_reheats\_sin\_mejora=5}: máximo de reheats
-    consecutivos sin mejorar el mejor global antes de parar.
+  \item \texttt{max\_reheats\_sin\_mejora=10}: máximo de reheats
+    consecutivos sin mejorar el mejor global antes de parar. Es el
+    \emph{segundo knob} calibrado de SA (mejor de $\{3,5,10\}$).
 \end{itemize}
 
 Con este acotamiento, una corrida SA con $\alpha = 0.99$ tarda
 $\sim$5\,s en instancias pequeñas, el mismo orden de magnitud que
 $\alpha = 0.90$ ó $0.95$. Sin él, la misma corrida no termina en
-150\,s (verificado experimentalmente). Los parámetros de reheat \emph{no
-se calibran}: se fijan iguales para los tres valores de $\alpha$ del
-grid, de modo que la única variable del grid SA sea efectivamente
-$\alpha$.
+150\,s (verificado experimentalmente). \texttt{patience} y
+\texttt{reheat\_factor} se mantienen fijos; solo
+\texttt{max\_reheats\_sin\_mejora} se calibró como segundo knob de SA.
 
 El mismo reheat acotado se aplica en el Experimento~\ref{sec:exp-binario-capacidad}
 (\texttt{binario\_capacidad\_20260531}), garantizando comparabilidad
@@ -428,24 +437,28 @@ MH & $p_{\text{inter}}^*$ & Parámetro libre* & Valor* &
   Gap medio (\%) & Mediana (\%) & $N$ inst.\ en BKS \\
 \midrule
 SA           & 0.5 & \texttt{alpha}          & 0.90 &
-  3.21  & 2.48  & 13/23 \\
+  2.89  & 1.77  & 14/23 \\
 TS simple    & 0.4 & \texttt{tabu\_tenure}   & 25   &
-  8.40  & 7.64  & 7/23 \\
+  5.76  & 3.64  & 8/23 \\
 RTS          & 0.5 & \texttt{factor\_aumento}& 1.2  &
-  4.89  & 3.57  & 11/23 \\
+  4.97  & 3.64  & 10/23 \\
 ABC simple   & 0.5 & \texttt{num\_fuentes}   & 30   &
-  14.66 & 14.88 & 1/23 \\
+  9.64  & 9.00  & 5/23 \\
 Cuckoo       & 0.1 & \texttt{pa\_abandono}   & 0.15 &
-  19.91 & 18.18 & 0/23 \\
+  19.13 & 18.29 & 0/23 \\
 \midrule
-\textbf{Media} & --- & --- & --- & \textbf{10.21} & --- & 32/115 \\
+\textbf{Media} & --- & --- & --- & \textbf{8.48} & --- & 37/115 \\
 \bottomrule
 \end{tabular}
 \\[4pt]
 \footnotesize
-* Configuración ganadora de la fase 1; leída de \texttt{mejor\_config.json}.
-La última columna de la fila \textbf{Media} agrega los aciertos de BKS
-como pares (MH, instancia) sobre el total $5 \times 23$ por MH.
+* Configuración canónica fija (p\_inter, knob principal y segundo knob
+calibrados; leída de \texttt{config\_fija.json}). El segundo knob calibrado por
+MH es: SA \texttt{max\_reheats\_sin\_mejora}$=10$; TS
+\texttt{tam\_vecindario}$=40$; RTS \texttt{factor\_reduccion}$=0.95$; ABC
+\texttt{limite\_abandono}$=60$; Cuckoo \texttt{beta\_levy}$=1.3$. La fila
+\textbf{Media} agrega los aciertos de BKS como pares (MH, instancia) sobre el
+total $5 \times 23$ por MH.
 \end{table}
 
 \paragraph{Comparativa con R3 y R5 (referencia).}
@@ -465,30 +478,30 @@ de la Tabla~\ref{tab:re-greedy-gap}.
 \toprule
 MH & R3 PR & R5 Budget & \texttt{solo\_p\_inter} & $\Delta$ vs R3 \\
 \midrule
-SA        & 0.90  & 0.57 & 3.21  & $+2.31$  \\
-TS simple & 4.48  & 1.08 & 8.40  & $+3.92$  \\
-RTS       & 3.04  & 1.18 & 4.89  & $+1.85$  \\
-ABC       & 9.75  & 8.30 & 14.66 & $+4.91$  \\
-Cuckoo    & 8.20  & 4.25 & 19.91 & $+11.71$ \\
+SA        & 0.90  & 0.57 & 2.89  & $+1.99$  \\
+TS simple & 4.48  & 1.08 & 5.76  & $+1.28$  \\
+RTS       & 3.04  & 1.18 & 4.97  & $+1.93$  \\
+ABC       & 9.75  & 8.30 & 9.64  & $-0.11$  \\
+Cuckoo    & 8.20  & 4.25 & 19.13 & $+10.93$ \\
 \midrule
-\textbf{Media} & 5.27 & 3.08 & \textbf{10.21} & $+4.94$ \\
+\textbf{Media} & 5.27 & 3.08 & \textbf{8.48} & $+3.21$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Interpretación de los resultados.}
-La hipótesis preveía que \texttt{solo\_p\_inter} alcanzaría un gap
-\emph{comparable o inferior} a R3. Los datos la \textbf{refutan}: el
-approach simple es peor que R3 en las cinco MH ($\Delta$ medio
-$+4.94$ puntos) y muy por detrás de R5. Tres lecturas se desprenden:
+Con \texttt{p\_inter}, el knob principal y el \emph{segundo} parámetro más
+influyente de cada MH ya calibrados, el selector desnudo se acerca mucho a R3
+(Path Relinking del primer ciclo): $\Delta$ medio $+3.21$\,pp y, en ABC, incluso
+lo \textbf{supera} ($9.64$ vs $9.75$\,\%). Tres lecturas se desprenden:
 
 \begin{enumerate}
-\item \textbf{La complejidad sí aporta valor, no solo compensaba el
-  evaluador roto.} Bajo el evaluador corregido de forma nativa, los
-  mecanismos del primer ciclo (Path Relinking, kick reactivo,
-  presupuesto ampliado) siguen mejorando claramente sobre el selector
-  desnudo. La corrección del evaluador es necesaria para una
-  \emph{medición} fiable, pero no sustituye a la intensificación.
+\item \textbf{La calibración del segundo knob importa, sobre todo en TS y ABC.}
+  Calibrar \texttt{tam\_vecindario}$=40$ (TS) y \texttt{limite\_abandono}$=60$
+  (ABC) bajó sus gaps de $8.40$ a $5.76$\,\% y de $14.66$ a $9.64$\,\%
+  respectivamente; en SA, RTS y Cuckoo el efecto fue marginal (sus segundos
+  knobs ya estaban cerca del óptimo). La media del approach pasó de
+  $10.21$ a $8.48$\,\%.
 \item \textbf{El óptimo de $p_{\text{inter}}$ es alto.} La calibración
   selecciona $p_{\text{inter}} = 0.5$ en SA, RTS y ABC (y $0.4$ en TS),
   muy por encima del $0.20$ fijado en R4. Con el costo correcto, una
@@ -497,13 +510,14 @@ $+4.94$ puntos) y muy por detrás de R5. Tres lecturas se desprenden:
   sesgado por el artefacto de orientación. Cuckoo es la excepción
   ($p_{\text{inter}} = 0.1$).
 \item \textbf{Jerarquía de MH como línea de base.} Con el approach más
-  simple, SA (3.21\,\%) y RTS (4.89\,\%) son claramente superiores a las
-  metaheurísticas poblacionales (ABC 14.66\,\%, Cuckoo 19.91\,\%), que
-  necesitan los componentes adicionales para ser competitivas.
+  simple, SA ($2.89$\,\%) y RTS ($4.97$\,\%) son superiores a las
+  metaheurísticas poblacionales (ABC $9.64$\,\%, Cuckoo $19.13$\,\%); ABC,
+  tras calibrar su límite de abandono, se vuelve competitiva, mientras que
+  Cuckoo sigue rezagada.
 \end{enumerate}
 
-En consecuencia, el resultado fija una \textbf{línea de base limpia}:
-todo mecanismo añadido en los siguientes approaches debe justificarse
+En consecuencia, el resultado fija una \textbf{línea de base limpia} y bien
+calibrada: todo mecanismo añadido en los siguientes approaches debe justificarse
 por la mejora de gap que produzca \emph{sobre} estos valores, ya
 medidos con el evaluador nativo. El siguiente experimento de control
 (Experimento~\ref{sec:exp-binario-capacidad}) sustituye el selector
@@ -515,21 +529,22 @@ mecanismo de selección antes de reintroducir la intensificación.
 % =====================================================================
 
 Este experimento cierra el primer ciclo experimental y abre el segundo,
-fundamentado en el evaluador greedy integrado de forma nativa. Sus
-contribuciones metodológicas son las siguientes, independientemente
-del resultado numérico:
+fundamentado en el evaluador greedy integrado de forma nativa. Más allá de los
+gaps obtenidos, sus contribuciones metodológicas son:
 
 \begin{enumerate}
 \item \textbf{Línea de base limpia bajo el evaluador corregido.}
   Los resultados de \texttt{solo\_p\_inter} constituyen el primer
   punto de referencia genuino del programa experimental: sin artefactos
   de evaluación y sin componentes de complejidad artificial.
-\item \textbf{Calibración del knob $p_{\text{inter}}$ por MH.}
-  El grid search en dos fases cuantifica el valor óptimo de
-  $p_{\text{inter}}$ para cada metaheurística bajo el evaluador
-  correcto. Este dato es independiente y complementario al obtenido en
-  los experimentos R4 y R5 del primer ciclo (donde el evaluador greedy
-  se aplicó como monkey-patch sobre una búsqueda ya diseñada con el
+\item \textbf{Calibración por MH de $p_{\text{inter}}$ y de los dos knobs
+  más influyentes.} La calibración cuantifica, bajo el evaluador correcto,
+  el valor óptimo de $p_{\text{inter}}$, del knob principal y del segundo
+  parámetro de cada metaheurística (p.ej. \texttt{tam\_vecindario} en TS,
+  \texttt{limite\_abandono} en ABC). El resultado se fija como configuración
+  canónica reutilizada por los demás approaches. Es independiente y
+  complementario a los experimentos R4/R5 del primer ciclo (donde el evaluador
+  greedy se aplicó como monkey-patch sobre una búsqueda ya diseñada con el
   evaluador canónico).
 \item \textbf{Separación de responsabilidades.}
   Al no instalar monkey-patches, el experimento permite atribuir

@@ -202,33 +202,34 @@ def construir_kwargs(tarea: Tarea) -> dict:
             temperatura_inicial=None,     # instance-aware
             temperatura_minima=None,      # instance-aware
             # Reheat ACOTADO (igual que la config SA validada del proyecto:
-            # patience=10, reheat_factor=0.5, max_reheats_sin_mejora=5). Es
+            # patience=10, reheat_factor=0.5, max_reheats_sin_mejora=10). Es
             # IMPRESCINDIBLE: con el reheat por defecto (max_reheats_sin_mejora=0
             # = sin tope) y alpha alto (0.99, enfriamiento lento) la corrida se
             # dispara y no termina en tiempo razonable. Con el tope, cada corrida
             # converge en ~5 s independientemente de alpha.
             patience=10,
             reheat_factor=0.5,
-            max_reheats_sin_mejora=5,
+            max_reheats_sin_mejora=10,
         )
     elif mh == "tabu_simple":
         base.update(
             tabu_tenure=int(tarea.libre_valor),
-            tam_vecindario=25,
+            tam_vecindario=40,
         )
     elif mh == "tabu_reactiva":
         base.update(
             factor_aumento=float(tarea.libre_valor),
-            factor_reduccion=0.9,
+            factor_reduccion=0.95,
         )
     elif mh == "abc_simple":
         base.update(
             num_fuentes=int(tarea.libre_valor),
+            limite_abandono=60,
         )
     elif mh == "cuckoo":
         base.update(
             pa_abandono=float(tarea.libre_valor),
-            beta_levy=1.5,
+            beta_levy=1.3,
         )
     else:
         raise ValueError(f"MH desconocida: {mh!r}")
