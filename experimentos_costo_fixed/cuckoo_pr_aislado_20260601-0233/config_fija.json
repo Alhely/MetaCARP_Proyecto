@@ -1,0 +1,41 @@
+{
+  "mh": "cuckoo",
+  "approach": "pr_aislado",
+  "selectores": [
+    "p_inter",
+    "binario"
+  ],
+  "p_inter_fijo": {
+    "p_inter": 0.1
+  },
+  "libre_nombre": "pa_abandono",
+  "libre_valor": 0.15,
+  "umbral_pr": 30,
+  "intensificador": "path_relinking_limpio",
+  "instancias": [
+    "gdb19",
+    "kshs1",
+    "kshs2",
+    "kshs3",
+    "kshs4",
+    "kshs5",
+    "kshs6",
+    "gdb4",
+    "gdb14",
+    "gdb15",
+    "gdb1",
+    "gdb20",
+    "gdb3",
+    "gdb6",
+    "gdb7",
+    "gdb12",
+    "gdb10",
+    "gdb2",
+    "gdb5",
+    "gdb13",
+    "gdb16",
+    "gdb17",
+    "gdb21"
+  ],
+  "reps": 5
+}
