@@ -319,6 +319,31 @@ Dentro de cada CSV, cada fila es una corrida. Para una instancia ejecutada con S
 
 ---
 
+## Programa experimental con evaluador de costo corregido (mayo–jun 2026)
+
+Después de integrar el evaluador de **orientación greedy** como lógica nativa de `evaluador_costo.py` (commit mayo-31), se construyó un programa experimental paralelo en `scripts/` que ya no usa `experimentos.py`. Sus componentes son:
+
+### Módulos `_common` (configuración canónica fija)
+
+| Archivo | Approach |
+|---|---|
+| `scripts/_solo_p_inter_20260531_common.py` | Barrido de `p_inter` con la config canónica de cada MH |
+| `scripts/_binario_capacidad_20260531_common.py` | `p_inter` fijo + penalización binaria de capacidad |
+| `scripts/_pr_aislado_20260531_common.py` | `p_inter` fijo + Path Relinking como intensificador aislado |
+| `scripts/_calibracion_2knob_20260601.py` | Calibración del 2.º parámetro más influyente por MH |
+
+### Runners por MH y approach
+
+Cada approach tiene un runner por metaheurística con el prefijo `run_<mh>_<approach>_20260531.py` (p. ej., `run_sa_solo_p_inter_20260531.py`, `run_cuckoo_pr_aislado_20260531.py`). Los scripts de shell `run_all_<approach>_20260531.sh` lanzan las cinco MH en secuencia.
+
+### Diferencias clave respecto a `experimentos.py`
+
+- La config canónica está definida en el módulo `_common` y versionada en `config_fija.json` / `mejor_2knob.json` en la raíz del proyecto.
+- El evaluador de costo es greedy (no canónico), por lo que los gaps BKS de estas corridas son directamente comparables con los resultados finales.
+- Path Relinking usa el módulo limpio `metacarp/path_relinking_limpio_20260531.py` (sin frame-hacks) en lugar de `path_relinking_20260528.py`.
+
+---
+
 ## Documentación relacionada
 
 - `docs/recocido_simulado.md` — descripción detallada de SA y sus parámetros

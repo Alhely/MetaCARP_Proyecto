@@ -82,6 +82,8 @@ busqueda_abejas_simple(
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
+    max_iter_sin_mejora_kick: int | None = None,
+    intensificador: Callable | None = None,
     **_ignorado_kwargs,
 ) -> AbejasSimpleResult
 ```
@@ -94,7 +96,7 @@ busqueda_abejas_simple(
 |---|---|---|---|
 | `iteraciones` | `int \| None` | `None` → `max(200, 20·n)` | Número de ciclos completos (empleadas + observadoras + scouts) |
 | `num_fuentes` | `int \| None` | `None` → `max(10, round(2·√n))` | Fuentes de alimento (soluciones activas) en paralelo |
-| `limite_abandono` | `int \| None` | `None` → `max(15, n // 2)` | Intentos fallidos consecutivos antes de mandar fuente al scout |
+| `limite_abandono` | `int \| None` | `None` → `max(15, n // 2)` | Intentos fallidos consecutivos antes de mandar fuente al scout. En el programa experimental (`_calibracion_2knob_20260601.py`) este parámetro se calibra como segundo parámetro más influyente; el default instance-aware es un buen punto de partida pero puede ser un multiplicador distinto de `n // 2` según la instancia. |
 | `max_iter_sin_mejora` | `int \| None` | `None` → `max(50, 3·n)` | Criterio de parada anticipada por estancamiento; siempre activo |
 | `factor_fuentes` | `float \| None` | `None` | Si se pasa, `num_fuentes = max(10, round(f·√n))`. Solo actúa si `num_fuentes` es `None` |
 | `factor_abandono` | `float \| None` | `None` | Si se pasa, `limite_abandono = max(15, round(f·n))`. Solo actúa si `limite_abandono` es `None` |
@@ -105,6 +107,8 @@ busqueda_abejas_simple(
 | `usar_gpu` | `bool` | `False` | Si `True`, evaluación en lote (fase observadoras) intenta usar CuPy |
 | `usar_penalizacion_capacidad` | `bool` | `True` | Si `True`, objetivo = costo + λ × violación |
 | `lambda_capacidad` | `float \| None` | `None` | λ explícito. `None` = automático (~10× mediana deadhead) |
+| `max_iter_sin_mejora_kick` | `int \| None` | `None` | Umbral de ciclos consecutivos sin mejora para disparar el hook. Si `None`, el hook nunca se activa (no altera el comportamiento). Solo tiene efecto cuando `intensificador` también se provee. |
+| `intensificador` | `Callable \| None` | `None` | Hook opcional de intensificación. Cuando se dispara, se llama con `intensificador(sol_ids, mejor_ids, ctx, lam, rng, encoding, md)` sobre la fuente de menor objetivo. ABC usa backend IDs, por lo que el hook compatible es `hook_pr_ids` de `path_relinking_limpio_20260531`. Con `None` (default) el comportamiento es idéntico al anterior. |
 
 ### Precedencia de parámetros instance-aware
 

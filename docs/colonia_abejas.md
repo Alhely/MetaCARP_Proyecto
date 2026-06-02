@@ -250,6 +250,7 @@ def busqueda_abejas(
 | `usar_penalizacion_capacidad` | `bool` | `True` | Si `True`, el objetivo incluye `lambda * violacion_capacidad`. Permite explorar temporalmente soluciones infactibles. |
 | `lambda_capacidad` | `float \| None` | `None` | Peso λ de la penalización. Si `None`, se calcula automáticamente con `lambda_penal_capacidad_por_defecto` (~10 × mediana de la matriz de distancias). |
 | `extra_csv` | `dict[str, object] \| None` | `None` | Columnas adicionales que se añaden al registro CSV de esta corrida. |
+| `intensificador` | `Callable \| None` | `None` | Hook opcional de intensificación. Si se provee, se invoca en el punto de estancamiento en lugar del kick aleatorio. Con `None` (default) el comportamiento es idéntico al anterior. |
 
 ### Qué retorna
 

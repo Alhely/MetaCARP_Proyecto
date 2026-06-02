@@ -382,7 +382,7 @@ FIN
 ### Notas sobre el flujo
 
 - El algoritmo rastreaa por separado el **mejor global sin restriccion** (`mejor_any_c`) y el **mejor factible** (sin violacion de capacidad, `mejor_fact_c`). El resultado reportado prioriza el factible.
-- El `ContextoEvaluacion` se construye **una sola vez** al inicio mediante `construir_contexto_para_corrida`. Contiene la matriz Dijkstra densa precomputada y arrays NumPy con los datos de cada tarea. Esto hace que `costo_rapido` sea 10 a 50 veces mas rapido que el evaluador clasico basado en NetworkX.
+- El `ContextoEvaluacion` se construye **una sola vez** al inicio mediante `construir_contexto_para_corrida`. Contiene la matriz Dijkstra densa precomputada y arrays NumPy con los datos de cada tarea. Esto hace que `costo_rapido` sea 10 a 50 veces mas rapido que el evaluador clasico basado en NetworkX. El costo se calcula con **orientacion greedy**: para cada arco requerido se entra por el extremo mas cercano al nodo previo de la ruta, lo que produce costos de deadheading consistentes con `reporte_solucion.py`.
 - El generador aleatorio `rng = random.Random(semilla)` es local a la corrida, lo que garantiza reproducibilidad completa cuando se pasa una semilla.
 
 ---
@@ -421,6 +421,7 @@ def recocido_simulado(
     patience: int = 50,
     reheat_factor: float = 0.5,
     max_reheats_sin_mejora: int = 0,
+    intensificador: Callable | None = None,
 ) -> RecocidoSimuladoResult:
 ```
 
@@ -458,6 +459,7 @@ def recocido_simulado(
 | `patience` | `int` | `50` | Numero de niveles de temperatura consecutivos sin mejora del mejor global antes de activar el reheat (recalentamiento). Si `patience = 0` el reheat esta desactivado y se obtiene el SA clasico. Valores tipicos: 20–100. Debe ser `>= 0`. |
 | `reheat_factor` | `float` | `0.5` | Fraccion de `T_init_eff` a la que se sube la temperatura cuando se activa el reheat. Ej.: con `T_init_eff = 1500` y `reheat_factor = 0.5`, `T` salta a 750. Debe estar en `(0, 1]`. Valores tipicos: 0.3–0.7. |
 | `max_reheats_sin_mejora` | `int` | `0` | Criterio de parada temprana basado en reheats consecutivos sin mejorar el mejor global. Si `> 0`, define cuantos reheats seguidos sin avance se toleran antes de interrumpir el bucle externo. Si `= 0` (default), el criterio esta desactivado y el SA corre hasta que `T < temperatura_minima`. Valores tipicos: 3–10. Util cuando el reheat ya no aporta diversificacion efectiva y se quiere ahorrar tiempo. |
+| `intensificador` | `Callable \| None` | `None` | Hook opcional de intensificacion. Si se provee, se invoca con `intensificador(sol, mejor_global, ctx, lam, rng, encoding, md)` en el punto de estancamiento (cuando `patience` hubiera disparado el reheat o cuando se detecta un kick aleatorio). Con `None` (default) el comportamiento es identico al anterior: el reheat sube la temperatura normalmente. No cambia ningun otro aspecto de la busqueda. |
 
 ### Que retorna
 

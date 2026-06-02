@@ -189,6 +189,7 @@ def busqueda_tabu_simple(
     extra_csv: dict[str, object] | None = None,
     alpha_inter: float | None = None,
     p_inter: float | None = None,
+    intensificador: Callable | None = None,
     **_ignorado_kwargs: object,
 ) -> BusquedaTabuSimpleResult
 ```
@@ -220,6 +221,7 @@ def busqueda_tabu_simple(
 | `extra_csv` | `dict[str, object] \| None` | `None` | Columnas adicionales escritas en el CSV. |
 | `alpha_inter` | `float \| None` | `None` → `0.8` | Probabilidad de elegir el grupo inter-ruta cuando la solución actual **viola** capacidad. `None` usa el mismo default que SA (`0.8`). |
 | `p_inter` | `float \| None` | `None` → `0.6` | Probabilidad de elegir el grupo inter-ruta cuando la solución es **factible**. `None` usa el mismo default que SA (`0.6`). |
+| `intensificador` | `Callable \| None` | `None` | Hook opcional de intensificación. Si se provee, se invoca en el punto de estancamiento (`max_iter_sin_mejora`) en lugar del kick aleatorio con la firma `intensificador(sol, mejor_global, ctx, lam, rng, encoding, md)`. Con `None` (default) el comportamiento es idéntico al anterior. |
 
 ### Parámetros instance-aware
 

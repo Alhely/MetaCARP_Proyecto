@@ -191,6 +191,8 @@ def busqueda_tabu_reactiva(
     extra_csv: dict[str, object] | None = None,
     alpha_inter: float | None = None,
     p_inter: float | None = None,
+    max_iter_sin_mejora_kick: int | None = None,
+    intensificador: Callable | None = None,
     **_ignorado_kwargs: object,
 ) -> BusquedaTabuReactivaResult
 ```
@@ -229,6 +231,8 @@ def busqueda_tabu_reactiva(
 | `extra_csv` | `dict[str, object] \| None` | `None` | Columnas adicionales para el CSV. |
 | `alpha_inter` | `float \| None` | `None` → `0.8` | P(elegir inter-ruta) cuando la solución viola capacidad. |
 | `p_inter` | `float \| None` | `None` → `0.6` | P(elegir inter-ruta) cuando la solución es factible. |
+| `max_iter_sin_mejora_kick` | `int \| None` | `None` | Umbral de iteraciones consecutivas sin mejora para disparar el hook del intensificador. Si `None`, el hook nunca se activa. Solo tiene efecto cuando `intensificador` también se provee. |
+| `intensificador` | `Callable \| None` | `None` | Hook opcional de intensificación. Si se provee, se invoca con `intensificador(sol, mejor_global, ctx, lam, rng, encoding, md)` cuando `iter_sin_mejora >= max_iter_sin_mejora_kick`. Con `None` (default) el comportamiento es idéntico al anterior. |
 
 ### Función de conveniencia: `busqueda_tabu_reactiva_desde_instancia`
 

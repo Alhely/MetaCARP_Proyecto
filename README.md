@@ -23,11 +23,12 @@ Es fundamental en logística, recogida de residuos, mantenimiento de carreteras 
   - Recocido Simulado (Simulated Annealing)
 
 - **Evaluación de costo optimizada:**
+  - Orientación greedy nativa: cada arco se recorre entrando por el extremo más cercano al nodo previo de la ruta
   - Matriz de caminos mínimos precalculada (Dijkstra)
   - Vectorización rápida con NumPy (10×–50× más rápida que métodos ingenuos)
   - Soporte opcional de GPU con CuPy para evaluación en lote
 
-- **Vecindarios eficientes:** 7 operadores de movimiento implementados para generar soluciones vecinas
+- **Vecindarios eficientes:** 9 operadores de movimiento implementados para generar soluciones vecinas (3 intra-ruta + 6 inter-ruta)
 
 - **Validación de factibilidad:** verificación de capacidades y cobertura de aristas
 
@@ -46,6 +47,9 @@ MetaCARP_Proyecto/
 │
 ├── docs/                                  # Documentación técnica de las metaheurísticas
 │   ├── busqueda_tabu.md
+│   ├── busqueda_tabu_simple.md
+│   ├── busqueda_tabu_reactiva.md
+│   ├── abc_simple.md
 │   ├── colonia_abejas.md
 │   ├── cuckoo_search.md
 │   ├── recocido_simulado.md
@@ -53,7 +57,12 @@ MetaCARP_Proyecto/
 │
 ├── scripts/                               # Scripts ejecutables
 │   ├── testing.py                         # Demostración interactiva de la API
-│   ├── experimentos.py                    # Campaña de experimentación (grid search)
+│   ├── experimentos.py                    # Campaña de experimentación (grid search original)
+│   ├── _solo_p_inter_20260531_common.py   # Config canónica: barrido p_inter
+│   ├── _binario_capacidad_20260531_common.py  # Config canónica: penalización binaria
+│   ├── _pr_aislado_20260531_common.py     # Config canónica: Path Relinking aislado
+│   ├── _calibracion_2knob_20260601.py     # Calibración 2.º parámetro influyente por MH
+│   ├── run_<mh>_<approach>_20260531.py    # Runners por MH y approach (15 scripts)
 │   └── __init__.py
 │
 ├── Grafos/                                # Archivos de instancias (grafos GEXF e imágenes)
@@ -80,10 +89,15 @@ MetaCARP_Proyecto/
 │   ├── vecindarios.py                     # Operadores de vecindario (7 tipos)
 │
 │   Metaheurísticas:
-│   ├── busqueda_tabu.py                   # Búsqueda Tabú
-│   ├── abejas.py                          # Colonia de Abejas
+│   ├── busqueda_tabu.py                   # Búsqueda Tabú (versión extendida)
+│   ├── busqueda_tabu_simple.py            # Búsqueda Tabú Simple (versión didáctica FIFO)
+│   ├── busqueda_tabu_reactiva.py          # Búsqueda Tabú Reactiva (tenure dinámico + escape)
+│   ├── abejas.py                          # Colonia de Abejas (versión extendida)
+│   ├── abejas_simple.py                   # Colonia de Abejas Simple (Karaboga 2005 canónico)
 │   ├── cuckoo_search.py                   # Búsqueda del Cucú
 │   ├── recocido_simulado.py               # Recocido Simulado
+│   ├── path_relinking_limpio_20260531.py  # Path Relinking puro (hook_pr_labels / hook_pr_ids)
+│   ├── path_relinking_20260528.py         # Path Relinking original (experimentos anteriores)
 │   ├── metaheuristicas_utils.py           # Utilidades compartidas
 │
 │   Utilerías:
@@ -367,7 +381,7 @@ Consulta los archivos en [docs/](docs/) para detalles técnicos profundos:
 - [colonia_abejas.md](docs/colonia_abejas.md) — Mecánica de la colonia y operadores
 - [cuckoo_search.md](docs/cuckoo_search.md) — Vuelos de Lévy y abandono de nidos
 - [recocido_simulado.md](docs/recocido_simulado.md) — Escalas de temperatura y enfriamiento
-- [generacion_vecinos.md](docs/generacion_vecinos.md) — Los 7 operadores de vecindario
+- [generacion_vecinos.md](docs/generacion_vecinos.md) — Los 9 operadores de vecindario
 
 ---
 

@@ -204,6 +204,8 @@ def cuckoo_search(
     usar_penalizacion_capacidad: bool = True,
     lambda_capacidad: float | None = None,
     extra_csv: dict[str, object] | None = None,
+    max_iter_sin_mejora_kick: int | None = None,
+    intensificador: Callable | None = None,
     **_ignorado_kwargs,
 ) -> CuckooSearchResult:
 ```
@@ -222,7 +224,9 @@ def cuckoo_search(
 | `pasos_levy_base` | `int \| None` | `None` → `max(3, round(√n/2))` | Escala base del número de perturbaciones en el vuelo de Lévy. Valores más altos producen saltos más largos en promedio. |
 | `max_iter_sin_mejora` | `int \| None` | `None` → `max(50, 3·n)` | Criterio de parada anticipada por estancamiento; siempre activo en la versión modernizada. |
 | `pa_abandono` | `float` | `0.25` | Fracción de peores nidos a abandonar por iteración. Debe estar en el intervalo abierto (0, 1). Es una **ratio**, no escala con `n`. |
-| `beta_levy` | `float` | `1.5` | Parámetro de forma de la distribución de Lévy discreta. Valor clásico de la literatura. Si se pasa un valor <= 0, se usa 1.5 automáticamente. |
+| `beta_levy` | `float` | `1.5` | Parámetro de forma de la distribución de Lévy discreta. Valor clásico de la literatura. Si se pasa un valor <= 0, se usa 1.5 automáticamente. En el programa experimental (`_calibracion_2knob_20260601.py`), el valor calibrado como segundo parámetro más influyente para Cuckoo Search es `1.3`. |
+| `max_iter_sin_mejora_kick` | `int \| None` | `None` | Umbral de ciclos consecutivos sin mejora para disparar el hook de intensificación. Si `None`, el hook nunca se activa. Solo tiene efecto cuando `intensificador` también se provee. |
+| `intensificador` | `Callable \| None` | `None` | Hook opcional de intensificación. Cuando se dispara, se llama con `intensificador(sol_ids, mejor_ids, ctx, lam, rng, encoding, md)` sobre el nido de menor objetivo. Con `None` (default) el comportamiento es idéntico al anterior; el kick aleatorio existente sigue activo. |
 | `factor_iter` | `float \| None` | `None` | Si se pasa, `iteraciones = max(200, round(f·n))`. Solo actúa si `iteraciones` es `None`. |
 | `factor_nidos` | `float \| None` | `None` | Si se pasa, `num_nidos = max(10, round(f·√n))`. Solo actúa si `num_nidos` es `None`. |
 | `factor_pasos` | `float \| None` | `None` | Si se pasa, `pasos_levy_base = max(3, round(f·√n))`. Solo actúa si `pasos_levy_base` es `None`. |
