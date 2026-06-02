@@ -62,6 +62,8 @@ MetaCARP_Proyecto/
 │   ├── _binario_capacidad_20260531_common.py  # Config canónica: penalización binaria
 │   ├── _pr_aislado_20260531_common.py     # Config canónica: Path Relinking aislado
 │   ├── _calibracion_2knob_20260601.py     # Calibración 2.º parámetro influyente por MH
+│   ├── _calibracion_restantes_20260601.py # Calibración de lambda, alpha_inter y umbral PR
+│   ├── _canonico_puro_20260601.py         # Exp. 0: línea de base inferior (sin mecanismos de escape)
 │   ├── run_<mh>_<approach>_20260531.py    # Runners por MH y approach (15 scripts)
 │   └── __init__.py
 │

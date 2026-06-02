@@ -331,6 +331,8 @@ Después de integrar el evaluador de **orientación greedy** como lógica nativa
 | `scripts/_binario_capacidad_20260531_common.py` | `p_inter` fijo + penalización binaria de capacidad |
 | `scripts/_pr_aislado_20260531_common.py` | `p_inter` fijo + Path Relinking como intensificador aislado |
 | `scripts/_calibracion_2knob_20260601.py` | Calibración del 2.º parámetro más influyente por MH |
+| `scripts/_calibracion_restantes_20260601.py` | Calibración de los tres parámetros restantes (lambda, alpha_inter, umbral PR) |
+| `scripts/_canonico_puro_20260601.py` | Experimento 0: línea de base inferior con mecanismos de escape desactivados |
 
 ### Runners por MH y approach
 
@@ -341,6 +343,144 @@ Cada approach tiene un runner por metaheurística con el prefijo `run_<mh>_<appr
 - La config canónica está definida en el módulo `_common` y versionada en `config_fija.json` / `mejor_2knob.json` en la raíz del proyecto.
 - El evaluador de costo es greedy (no canónico), por lo que los gaps BKS de estas corridas son directamente comparables con los resultados finales.
 - Path Relinking usa el módulo limpio `metacarp/path_relinking_limpio_20260531.py` (sin frame-hacks) en lugar de `path_relinking_20260528.py`.
+
+---
+
+### Calibración de parámetros restantes (`_calibracion_restantes_20260601.py`)
+
+Sobre la base del approach `solo_p_inter` con la config canónica fija (p_inter + knob 1 + knob 2 ya calibrados), este script calibra los tres parámetros que no habían sido tocados en el programa experimental con costo corregido. La calibración se ejecuta con 23 instancias × 3 repeticiones.
+
+**Parámetro 1 — `lambda_factor` (transversal a todas las MH)**
+
+Multiplica `lambda_penal_capacidad_por_defecto(ctx)` por un factor escalar. El factor `1.0` reproduce la config canónica; `0.3` la aligera (penalización más suave) y `3.0` la endurece. La calibración usa SA como MH representativa.
+
+| `lambda_factor` | Descripción |
+|---|---|
+| `0.3` | Penalización de capacidad más suave; mayor tolerancia a infactibilidades |
+| `1.0` | Reproduce el valor canónico actual |
+| `3.0` | Penalización de capacidad más estricta |
+
+**Parámetro 2 — `alpha_inter` (solo SA, TS simple y RTS)**
+
+Fracción de probabilidad total asignada a los operadores inter-ruta cuando la solución es **infactible**. Afecta únicamente a las MH que exponen este parámetro. El valor canónico previo era `0.8`.
+
+| `alpha_inter` | SA | TS simple | RTS |
+|---|---|---|---|
+| `0.5` | | | ganador |
+| `0.7` | ganador | | |
+| `0.9` | | ganador | |
+
+**Parámetro 3 — `umbral_pr` / `max_iter_sin_mejora_kick` (solo approach `pr_aislado`)**
+
+Número de iteraciones de estancamiento sin mejora antes de disparar el hook de Path Relinking. El valor canónico actual es `30`. La calibración cubre todas las MH con el selector `p_inter`.
+
+| `umbral_pr` | Descripción |
+|---|---|
+| `15` | Dispara PR rápido; mayor frecuencia de intensificación |
+| `30` | Valor canónico actual |
+| `60` | Dispara PR tardío; mayor libertad de exploración antes de intensificar |
+
+> **Nota:** Los resultados del umbral PR no estaban disponibles al cierre de esta documentación.
+
+**Resultados de calibración obtenidos**
+
+| Parámetro | MH de referencia | Valor ganador | Gap medio |
+|---|---|---|---|
+| `lambda_factor` | SA | `3.0` | 2.38 % |
+| `alpha_inter` | SA | `0.7` | 2.79 % |
+| `alpha_inter` | TS simple | `0.9` | 5.50 % |
+| `alpha_inter` | RTS | `0.5` | 4.56 % |
+| `umbral_pr` | todas | pendiente | — |
+
+**Salida en disco**
+
+```
+experimentos_costo_fixed/_calibracion_restantes/
+├── mejor_lambda.json        # factor lambda ganador + gap medio
+├── mejor_alpha_inter.json   # alpha_inter ganador por MH + gap medio
+├── mejor_umbral_pr.json     # umbral PR ganador por MH + gap medio (cuando esté disponible)
+└── _partials/               # CSVs parciales de las corridas individuales
+```
+
+**Uso**
+
+```bash
+# Calibrar los tres parámetros en secuencia (por defecto)
+python scripts/_calibracion_restantes_20260601.py
+
+# Calibrar solo uno
+python scripts/_calibracion_restantes_20260601.py --objetivo lambda
+python scripts/_calibracion_restantes_20260601.py --objetivo alpha
+python scripts/_calibracion_restantes_20260601.py --objetivo umbral
+```
+
+**Referencia de argumentos**
+
+| Argumento | Tipo | Default | Descripción |
+|---|---|---|---|
+| `--objetivo` | `str` | `todos` | Parámetro a calibrar: `lambda`, `alpha`, `umbral` o `todos` |
+| `--reps` | `int` | `3` | Repeticiones por combinación instancia × valor |
+| `--workers` | `int` | `cpu_count()` | Procesos paralelos (ProcessPoolExecutor) |
+| `--instancias` | `str...` | las 23 canónicas | Subconjunto de instancias a usar |
+| `--salida` | `str` | `experimentos_costo_fixed/_calibracion_restantes` | Directorio de salida |
+| `--root` | `str` | `None` | Raíz de datos alternativa; si no se pasa, usa `CARPTHESIS_ROOT` |
+
+---
+
+### Experimento 0: canónico puro (`_canonico_puro_20260601.py`)
+
+Mide la calidad de cada metaheurística en su forma más básica —la descrita en el artículo original— sin ningún mecanismo de diversificación o escape. Sirve como **línea de base inferior** del programa experimental: al compararlo con el Experimento 8 (`solo_p_inter`), se cuantifica el aporte real de cada mecanismo de escape.
+
+**Principio de diseño.** Para que la comparación sea controlada, todo lo demás permanece igual al Exp. 8: misma config canónica calibrada (p_inter, knob 1, knob 2), mismos operadores (`OPERADORES_POPULARES`, 9 operadores), lambda por defecto (`None`). La única diferencia es el parámetro que desactiva el mecanismo de escape de cada MH.
+
+**Configuración canónica pura por metaheurística**
+
+| MH | Referencia | Mecanismo desactivado | Parámetro modificado |
+|---|---|---|---|
+| SA | Kirkpatrick, Gelatt & Vecchi (1983) | Reheat | `patience=0` |
+| TS simple | Glover (1986) | Parada anticipada por estancamiento | `max_iter_sin_mejora=10_000` |
+| RTS | Battiti & Tecchiolli (1994) | Reactividad del tenure | `factor_aumento=1.0`, `factor_reduccion=1.0` |
+| ABC | Karaboga (2005) | Fase scout | `limite_abandono=10_000` |
+| Cuckoo | Yang & Deb (2009) | Abandono de nidos | `pa_abandono=0.0` |
+
+**Volumen de corridas:** 5 MH × 23 instancias × 5 repeticiones = **575 corridas**.
+
+**Salida en disco**
+
+```
+experimentos_costo_fixed/canonico_puro_<YYYYMMDD-HHmm>/
+├── sa_canonico_<instancia>.csv
+├── tabu_simple_canonico_<instancia>.csv
+├── tabu_reactiva_canonico_<instancia>.csv
+├── abc_simple_canonico_<instancia>.csv
+├── cuckoo_canonico_<instancia>.csv
+└── _partials/    # CSVs parciales antes de consolidar
+```
+
+**Uso**
+
+```bash
+# Todas las MH, 23 instancias, 5 reps (ejecución completa)
+python scripts/_canonico_puro_20260601.py
+
+# Solo algunas MH
+python scripts/_canonico_puro_20260601.py --mhs sa tabu_simple
+
+# Prueba rápida (2 instancias, 1 rep)
+python scripts/_canonico_puro_20260601.py --smoke
+```
+
+**Referencia de argumentos**
+
+| Argumento | Tipo | Default | Descripción |
+|---|---|---|---|
+| `--mhs` | `str...` | las 5 MH | Subconjunto de metaheurísticas: `sa tabu_simple tabu_reactiva abc_simple cuckoo` |
+| `--reps` | `int` | `5` | Repeticiones por instancia |
+| `--workers` | `int` | `cpu_count()` | Procesos paralelos (ProcessPoolExecutor) |
+| `--instancias` | `str...` | las 23 canónicas | Subconjunto de instancias a usar |
+| `--salida-base` | `str` | `experimentos_costo_fixed` | Directorio raíz; el script crea un subdirectorio `canonico_puro_<ts>` dentro |
+| `--root` | `str` | `None` | Raíz de datos alternativa; si no se pasa, usa `CARPTHESIS_ROOT` |
+| `--smoke` | flag | desactivado | Modo prueba rápida: 2 instancias (`gdb19`, `kshs1`), 1 repetición |
 
 ---
 
