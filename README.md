@@ -49,11 +49,14 @@ MetaCARP_Proyecto/
 │   ├── busqueda_tabu.md
 │   ├── busqueda_tabu_simple.md
 │   ├── busqueda_tabu_reactiva.md
+│   ├── comparativa_tabu.md
 │   ├── abc_simple.md
 │   ├── colonia_abejas.md
 │   ├── cuckoo_search.md
 │   ├── recocido_simulado.md
-│   └── generacion_vecinos.md
+│   ├── generacion_vecinos.md
+│   ├── experimentacion.md
+│   └── experimentos_full_combined_all.txt
 │
 ├── scripts/                               # Scripts ejecutables
 │   ├── testing.py                         # Demostración interactiva de la API
@@ -88,7 +91,7 @@ MetaCARP_Proyecto/
 │
 │   Búsqueda y encoding:
 │   ├── busqueda_indices.py                # Codificación índice <-> etiqueta
-│   ├── vecindarios.py                     # Operadores de vecindario (7 tipos)
+│   ├── vecindarios.py                     # Operadores de vecindario (9: 3 intra + 6 inter)
 │
 │   Metaheurísticas:
 │   ├── busqueda_tabu.py                   # Búsqueda Tabú (versión extendida)
@@ -164,7 +167,7 @@ Si CuPy no está disponible o falla la importación, el código hace fallback au
 El script [scripts/testing.py](scripts/testing.py) muestra todas las funcionalidades del paquete:
 
 ```bash
-python -m metacarp.scripts.testing
+python scripts/testing.py
 ```
 
 Este script demuestra:
@@ -182,14 +185,13 @@ from metacarp import busqueda_tabu_desde_instancia
 
 resultado = busqueda_tabu_desde_instancia(
     nombre_instancia="gdb19",
-    num_iteraciones=500,
+    iteraciones=500,
     usar_gpu=False,
     semilla=42
 )
 
 print(f"Mejor costo encontrado: {resultado.mejor_costo}")
 print(f"Tiempo de ejecución: {resultado.tiempo_segundos:.2f}s")
-print(f"Iteraciones ejecutadas: {resultado.iteraciones}")
 ```
 
 ### 3. Campaña de experimentación
@@ -198,23 +200,29 @@ El script [scripts/experimentos.py](scripts/experimentos.py) ejecuta grid search
 
 ```bash
 # Ejecución por defecto (todas las instancias, todas las metaheurísticas)
-python -m metacarp.scripts.experimentos
+python scripts/experimentos.py
 
 # Instancias y metaheurísticas específicas
-python -m metacarp.scripts.experimentos \
+python scripts/experimentos.py \
     --instancias gdb19 gdb20 \
     --metaheuristicas sa tabu \
-    --iteraciones 300 200 \
     --repeticiones 5 \
     --seed 7
 
-# Con penalización de capacidad personalizada
-python -m metacarp.scripts.experimentos \
-    --lambda-capacidad 500 \
+# Etiqueta de experimento y carpeta de salida personalizadas
+python scripts/experimentos.py \
+    --experimento mi_corrida \
     --salida-dir mis_resultados
 ```
 
-Los resultados se guardan en arquivos CSV por metaheurística e instancia, con columnas de tiempo, costo, iteraciones y contador de operadores.
+> **Nota:** `experimentos.py` (grid search original) acepta únicamente los flags
+> `--instancias`, `--metaheuristicas`, `--repeticiones`, `--seed`, `--experimento`,
+> `--salida-dir`, `--usar-gpu` y `--root`. Las rejillas de hiperparámetros (iteraciones,
+> tenure, lambda, etc.) están definidas dentro del propio script. El programa
+> experimental moderno con evaluador de costo corregido vive en `scripts/` con sus
+> propios runners (ver [docs/experimentacion.md](docs/experimentacion.md)).
+
+Los resultados se guardan en archivos CSV por metaheurística e instancia, con columnas de tiempo, costo, iteraciones y contador de operadores.
 
 ---
 
@@ -231,15 +239,15 @@ from metacarp import busqueda_tabu_desde_instancia
 
 resultado = busqueda_tabu_desde_instancia(
     nombre_instancia="gdb19",
-    num_iteraciones=500,
-    tamaño_lista_tabu=50,
-    tamaño_vecindario=30,
+    iteraciones=400,
+    tenure_tabu=20,
+    tam_vecindario=25,
     semilla=42,
     usar_gpu=False
 )
 ```
 
-**Parámetros recomendados:** ver [docs/busqueda_tabu.md](docs/busqueda_tabu.md)
+**Parámetros recomendados:** ver [docs/busqueda_tabu.md](docs/busqueda_tabu.md) (extendida), [docs/busqueda_tabu_simple.md](docs/busqueda_tabu_simple.md) y [docs/busqueda_tabu_reactiva.md](docs/busqueda_tabu_reactiva.md)
 
 ### Colonia de Abejas Artificiales
 
@@ -250,15 +258,15 @@ from metacarp import busqueda_abejas_desde_instancia
 
 resultado = busqueda_abejas_desde_instancia(
     nombre_instancia="gdb19",
-    num_iteraciones=500,
-    tamaño_colonia=30,
-    tamaño_vecindario=20,
+    iteraciones=250,
+    num_fuentes=16,
+    limite_abandono=35,
     semilla=42,
     usar_gpu=False
 )
 ```
 
-**Parámetros recomendados:** ver [docs/colonia_abejas.md](docs/colonia_abejas.md)
+**Parámetros recomendados:** ver [docs/colonia_abejas.md](docs/colonia_abejas.md) (versión extendida) y [docs/abc_simple.md](docs/abc_simple.md) (versión canónica `abejas_simple` con defaults instance-aware)
 
 ### Búsqueda del Cucú
 
@@ -269,9 +277,9 @@ from metacarp import cuckoo_search_desde_instancia
 
 resultado = cuckoo_search_desde_instancia(
     nombre_instancia="gdb19",
-    num_iteraciones=500,
-    tamaño_nido=25,
-    tamaño_vecindario=20,
+    iteraciones=None,        # None → instance-aware: max(200, 20·n)
+    num_nidos=None,          # None → max(10, round(2·√n))
+    pasos_levy_base=None,    # None → max(3, round(√n/2))
     semilla=42,
     usar_gpu=False
 )
@@ -288,10 +296,9 @@ from metacarp import recocido_simulado_desde_instancia
 
 resultado = recocido_simulado_desde_instancia(
     nombre_instancia="gdb19",
-    num_iteraciones=500,
-    temperatura_inicial=100.0,
-    factor_enfriamiento=0.995,
-    tamaño_vecindario=30,
+    temperatura_inicial=None,   # None → adaptativa: 20·d_max/n
+    temperatura_minima=None,    # None → adaptativa: 20·d_max/n²
+    alpha=0.95,                 # factor de enfriamiento geométrico
     semilla=42,
     usar_gpu=False
 )
@@ -421,32 +428,44 @@ Los experimentos generan tablas CSV con columnas:
 ### Comparación de metaheurísticas
 
 ```bash
-python -m metacarp.scripts.experimentos \
+python scripts/experimentos.py \
     --instancias gdb19 gdb21 \
     --metaheuristicas sa tabu abejas cuckoo \
     --repeticiones 10 \
     --salida-dir comparativa_2025
 ```
 
-Luego analiza los CSV con pandas:
+Luego analiza los CSV con pandas (la salida se organiza en subcarpetas por
+metaheurística: `<salida-dir>/sa/sa_<instancia>_<experimento>_<timestamp>.csv`):
 
 ```python
+import glob
 import pandas as pd
 
-df = pd.read_csv("comparativa_2025/resultados_sa_gdb19.csv")
+archivos = glob.glob("comparativa_2025/sa/sa_gdb19_*.csv")
+df = pd.concat(pd.read_csv(f) for f in archivos)
 print(df.describe())
 ```
 
 ### Ajuste de parámetros
 
-```bash
-python -m metacarp.scripts.experimentos \
-    --instancias gdb19 \
-    --metaheuristicas tabu \
-    --tamaño-lista-tabu 30 50 100 \
-    --tamaño-vecindario 20 30 50 \
-    --iteraciones 500 \
-    --repeticiones 3
+`experimentos.py` no expone rejillas de hiperparámetros por CLI. Para barrer
+parámetros concretos, llama a la función de la metaheurística directamente desde
+Python:
+
+```python
+from metacarp import busqueda_tabu_desde_instancia
+
+for tenure in (10, 20, 40):
+    for tam in (20, 30, 50):
+        r = busqueda_tabu_desde_instancia(
+            nombre_instancia="gdb19",
+            iteraciones=500,
+            tenure_tabu=tenure,
+            tam_vecindario=tam,
+            semilla=42,
+        )
+        print(tenure, tam, r.mejor_costo)
 ```
 
 ### Reproducibilidad garantizada
@@ -454,7 +473,7 @@ python -m metacarp.scripts.experimentos \
 Especifica `--seed` para obtener exactamente los mismos resultados:
 
 ```bash
-python -m metacarp.scripts.experimentos \
+python scripts/experimentos.py \
     --seed 12345 \
     --instancias gdb19 \
     --metaheuristicas sa \

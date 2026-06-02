@@ -615,39 +615,46 @@ usa.
 
 ### Parametros tipicos de `generar_vecino` por metaheuristica
 
+La tabla refleja los **módulos canónicos** del programa experimental (los
+documentados en los `.md` por algoritmo). Salvo el tope fijo de `iteraciones_max`
+de TS simple y la cadena `L = n²` de SA, todos los tamaños son **instance-aware**
+(`None` ⇒ fórmula en función de `n`, el número de tareas requeridas).
+
 | Metaheuristica | Modulo | `iteraciones` (u.e.) | `backend` tipico | Operadores activos | Genera vecinos en lote |
 |---|---|---|---|---|---|
-| Busqueda Tabu | `busqueda_tabu.py` | 400 | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`tam_vecindario=25` por iteracion) |
-| Abejas (ABC) | `abejas.py` | 250 | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`num_fuentes=16` empleadas + observadoras) |
-| Cuckoo Search | `cuckoo_search.py` | 260 | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`num_nidos=20` cuckoos) |
+| Busqueda Tabu Simple | `busqueda_tabu_simple.py` | `400` (fijo) | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`tam_vecindario=25` por iteracion) |
+| Busqueda Tabu Reactiva | `busqueda_tabu_reactiva.py` | `None → max(50, 20·n)` | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`tam_vecindario None → max(20, 2·n)`) |
+| Abejas (ABC) | `abejas_simple.py` | `None → max(200, 20·n)` | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`num_fuentes None → max(10, round(2·√n))` empleadas + observadoras) |
+| Cuckoo Search | `cuckoo_search.py` | `None → max(200, 20·n)` | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) | Si (`num_nidos None → max(10, round(2·√n))` cuckoos) |
 | Recocido Simulado (SA) | `recocido_simulado.py` | `L = n²` iteraciones por nivel (adaptativo a la instancia) | `"labels"` (por defecto) | Todos (`OPERADORES_POPULARES`) con selección por dado (`p_inter`) | No (1 vecino por evaluacion) |
 
 ### Detalle por metaheuristica
 
-**Busqueda Tabu** (`busqueda_tabu`):
-- Genera `tam_vecindario` (por defecto 25) vecinos por iteracion llamando a
-  `generar_vecino` en un bucle.
-- Evalua el lote completo con `costo_lote_penalizado_ids`.
+**Busqueda Tabu** (`busqueda_tabu_simple` / `busqueda_tabu_reactiva`):
+- Genera `tam_vecindario` (TS simple: 25 fijo; RTS: `None → max(20, 2·n)`) vecinos
+  por iteracion llamando a `generar_vecino` en un bucle.
+- Evalua el lote completo de forma vectorizada (`costo_lote_ids` / penalizado).
 - Elige el mejor vecino no tabu (o el mejor tabu si cumple el criterio de aspiracion).
-- Registra el movimiento elegido en el diccionario `tabu_hasta` por `tenure_tabu`
-  iteraciones.
+- Registra el movimiento elegido en la lista tabu por `tabu_tenure` iteraciones.
 - La clave tabu se construye a partir de `(mov.operador, mov.ruta_a, mov.ruta_b,
   mov.i, mov.j, mov.k, mov.l, tuple(mov.labels_movidos))`.
 
-**Abejas (ABC)** (`busqueda_abejas`):
-- Mantiene `num_fuentes` (por defecto 16) soluciones activas en paralelo.
+**Abejas (ABC)** (`busqueda_abejas_simple`):
+- Mantiene `num_fuentes` (`None → max(10, round(2·√n))`) soluciones activas en paralelo.
 - **Fase empleadas**: genera 1 vecino por fuente (lote de `num_fuentes`).
 - **Fase observadoras**: selecciona fuentes por **ruleta categórica** (`rng.choices`),
   con probabilidad proporcional a su fitness, y genera otro lote de `num_fuentes` vecinos.
-- **Fase scout**: fuentes que no mejoraron en `limite_abandono` (por defecto 35)
-  intentos consecutivos se reemplazan con vecinos de la mejor fuente.
+- **Fase scout**: fuentes que no mejoraron en `limite_abandono` (`None → max(15, n//2)`)
+  intentos consecutivos se reemplazan con una **solución aleatoria pura** (permutación
+  uniforme de tareas con `rng.shuffle` + asignación greedy por capacidad), el sello de
+  Karaboga 2005.
 
 **Cuckoo Search** (`cuckoo_search`):
-- Mantiene `num_nidos` (por defecto 20) soluciones activas.
+- Mantiene `num_nidos` (`None → max(10, round(2·√n))`) soluciones activas.
 - Por iteracion genera 1 "cuckoo" (vecino perturbado) por nido usando multiples
   llamadas consecutivas a `generar_vecino` (vuelo de Levy discreto).
-- Los `floor(pa_abandono * num_nidos)` (por defecto `floor(0.25 * 20) = 5`) peores
-  nidos se abandonan y reemplazan con vecinos del mejor nido.
+- Los `floor(pa_abandono * num_nidos)` (con `pa_abandono = 0.25` por defecto) peores
+  nidos se abandonan y reemplazan con vecinos (vuelo de Lévy) del mejor nido.
 
 **Recocido Simulado** (`recocido_simulado`):
 - Genera 1 vecino por evaluacion.

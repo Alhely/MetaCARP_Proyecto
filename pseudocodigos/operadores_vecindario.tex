@@ -1,57 +1,97 @@
 % operadores_vecindario.tex
-% Self-contained section documenting all 9 neighborhood operators
-% of the MetaCARP project.  Intended to be \input{} from a master document
-% that already loads: amsmath, amssymb, algorithm2e (ruled/vlined/linesnumbered),
-% hyperref, xcolor, tikz.
+% Sección autocontenida que documenta los 9 operadores de vecindario
+% del proyecto MetaCARP.  Pensada para incluirse con \input{} desde un
+% documento maestro que ya cargue: amsmath, amssymb, algorithm2e
+% (ruled/vlined/linesnumbered), hyperref, xcolor, tikz.
 %
-% DO NOT add \documentclass, \begin{document}, etc. here.
+% NO agregar \documentclass, \begin{document}, etc. aquí.
+%
+% NOTA SOBRE LA REVISIÓN (2026): los pseudocódigos de esta versión son
+% AUTOCONTENIDOS y fieles a metacarp/vecindarios.py.  A diferencia de la
+% versión anterior, cada algoritmo muestra explícitamente los cinco pasos
+% que el código real ejecuta alrededor del movimiento puro y que los
+% pseudocódigos ingenuos omitían:
+%   (1) Normalización: se quita el token de depósito "D" antes de operar.
+%   (2) Filtrado de rutas candidatas según el requisito del operador.
+%   (3) Bucle de reintentos (hasta 500): ante un sorteo inaplicable se hace
+%       "continue" en vez de devolver null.
+%   (4) Copia profunda de la solución antes de mutarla (Python pasa listas
+%       por referencia).
+%   (5) Desnormalización: se restaura "D" al inicio y fin de cada ruta.
 
 % ============================================================
-\section{Neighborhood Operators}
+\section{Operadores de Vecindario}
 \label{sec:neighborhood-operators}
 % ============================================================
 
-A \emph{neighborhood operator} defines a small, reversible transformation that
-turns a feasible CARP solution $s$ into a \emph{neighbor} $s'$.
-At each iteration, every metaheuristic in MetaCARP (Tabu Search, Simulated
-Annealing, Bee Colony, Cuckoo Search) calls a single master routine that picks
-one operator at random---with optional non-uniform weights---and applies it to
-the current solution (see Algorithm~\ref{alg:gen-neighbor} for the master
-procedure and the retry-loop logic).  Nine operators are registered in
-\texttt{OPERADORES\_POPULARES}; they are divided into two families:
+Un \emph{operador de vecindario} define una transformación pequeña y
+reversible que convierte una solución factible del CARP $s$ en un
+\emph{vecino} $s'$.
+En cada iteración, todas las metaheurísticas de MetaCARP (Búsqueda Tabú,
+Recocido Simulado, Colonia de Abejas, Cuckoo Search) llaman a una única
+rutina maestra que elige un operador al azar ---con pesos no uniformes
+opcionales--- y lo aplica a la solución actual.  Nueve operadores están
+registrados en \texttt{OPERADORES\_POPULARES}; se dividen en dos familias:
 
 \begin{itemize}
-    \item \textbf{Intra-route} (3 operators): act on a single route $r_a$;
-          the set of tasks assigned to each route does not change.
-    \item \textbf{Inter-route} (6 operators): transfer or exchange tasks between
-          two distinct routes $r_a$ and $r_b$; they can rebalance load across
-          routes and are preferred when a capacity violation is detected.
+    \item \textbf{Intra-ruta} (3 operadores): actúan sobre una sola ruta
+          $r_a$; el conjunto de tareas asignado a cada ruta no cambia.
+    \item \textbf{Inter-ruta} (6 operadores): transfieren o intercambian
+          tareas entre dos rutas distintas $r_a$ y $r_b$; pueden reequilibrar
+          la carga entre rutas y se prefieren cuando se detecta una violación
+          de capacidad.
 \end{itemize}
 
 % ------------------------------------------------------------
-\subsection{Notation}
+\subsection{Notación y andamiaje común}
 \label{subsec:notation-ops}
 % ------------------------------------------------------------
 
-Throughout this section the following conventions hold.
+A lo largo de esta sección rigen las siguientes convenciones.
 
 \begin{itemize}
-    \item $r[i]$: task at 0-indexed position $i$ in route $r$.
-    \item $r[i{:}j]$: contiguous sub-sequence from position $i$ up to and
-          including position $j$ (both bounds inclusive).
-    \item $r_a$, $r_b$: two distinct routes ($a \neq b$), except where
-          explicitly noted for the intra-route fallback of
-          \texttt{or\_opt\_2} / \texttt{or\_opt\_3}.
+    \item $r[i]$: tarea en la posición 0-indexada $i$ de la ruta $r$.
+    \item $r[i{:}j]$: subsecuencia contigua desde la posición $i$ hasta la
+          posición $j$ inclusive (ambos extremos incluidos).
+    \item $r_a$, $r_b$: dos rutas distintas ($a \neq b$), salvo en el caso
+          de respaldo intra-ruta de \texttt{or\_opt\_2} / \texttt{or\_opt\_3}.
     \item $\mathit{head}(r, c) = r[0{:}c]$,\enspace
           $\mathit{tail}(r, c) = r[c{+}1{:}]$.
-    \item $\|$ denotes list concatenation.
-    \item Task labels are written as $\mathtt{TR1}, \mathtt{TR2}, \ldots$;
-          the depot token \texttt{D} is stripped before applying any operator
-          and restored afterwards.
+    \item $\|$ denota concatenación de listas.
+    \item Las etiquetas de tarea se escriben $\mathtt{TR1}, \mathtt{TR2},
+          \ldots$; el token de depósito \texttt{D} se elimina antes de
+          aplicar cualquier operador y se restaura después.
 \end{itemize}
 
+\paragraph{Pasos compartidos por todos los operadores.}
+Los pseudocódigos de esta sección son \emph{autocontenidos}: cada uno refleja
+exactamente lo que ejecuta \texttt{generar\_vecino} en
+\texttt{metacarp/vecindarios.py}.  Cinco pasos rodean al movimiento puro y
+aparecen en \textbf{todos} los algoritmos:
+
+\begin{enumerate}
+    \item \textsc{NormalizarQuitarDepósito}$(s)$: elimina el token \texttt{D}
+          del inicio y fin de cada ruta, dejando solo etiquetas de tarea
+          ($\hat{s}$).  Sin este paso, un \texttt{pop} podría extraer un
+          \texttt{D} en lugar de una tarea real.
+    \item Filtrado de \emph{rutas candidatas} según el requisito mínimo del
+          operador (p.\,ej.\ $|r| \geq 2$ para \texttt{relocate\_intra}).
+    \item Bucle \textsc{Repeat} de hasta $T_{\max}=500$ intentos: ante un
+          sorteo inaplicable se ejecuta \textbf{continue} y se vuelve a
+          intentar; si se supera $T_{\max}$ se lanza \texttt{RuntimeError}.
+          (Donde un pseudocódigo ingenuo escribía \texttt{Return null}, el
+          código real hace \textbf{continue}.)
+    \item \textsc{CopiaProfunda}$(\hat{s})$: Python pasa las listas por
+          referencia; sin una copia independiente el movimiento corrompería
+          la solución original.
+    \item \textsc{RestaurarDepósito}$(\hat{s}')$: vuelve a añadir \texttt{D}
+          al inicio y fin de cada ruta antes de devolver el vecino, junto
+          con un registro \textsc{MovimientoVecindario} que describe el
+          movimiento aplicado.
+\end{enumerate}
+
 % ============================================================
-\subsection{Intra-route Operators}
+\subsection{Operadores Intra-ruta}
 \label{subsec:intra-operators}
 % ============================================================
 
@@ -59,46 +99,48 @@ Throughout this section the following conventions hold.
 \subsubsection{\texttt{relocate\_intra}}
 \label{sssec:relocate-intra}
 
-\textbf{Move.}
-Remove the task at position $i$ from route $r_a$ and re-insert it at
-position $j \neq i$ of the same route.
+\textbf{Movimiento.}
+Quita la tarea en la posición $i$ de la ruta $r_a$ y la reinserta en la
+posición $j \neq i$ de la misma ruta.
 
-\textbf{Requirement.} $|r_a| \geq 2$.
+\textbf{Requisito.} $|r_a| \geq 2$.
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\texttt{relocate\_intra} --- Move a task to a different position within the same route}
+\caption{\texttt{relocate\_intra} --- Mover una tarea a otra posición dentro de la misma ruta}
 \label{alg:relocate-intra}
 
-\KwIn{Solution $s$;\; random generator $\mathit{rng}$}
-\KwOut{Neighbor $s'$;\; movement record $m$}
+\KwIn{Solución con depósito $s$;\; generador aleatorio $\mathit{rng}$;\; máximo de intentos $T_{\max}=500$}
+\KwOut{Vecino con depósito $s'$;\; registro de movimiento $m$}
 
 \BlankLine
-$\mathcal{C} \leftarrow \{k : |r_k| \geq 2\}$
-    \tcp{candidate routes: at least 2 tasks}
-\lIf{$\mathcal{C} = \emptyset$}{\Return \texttt{null}}
-
-$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$;\quad
-$n \leftarrow |r_a|$ \;
-$i \leftarrow \mathit{rng}.\textsc{randrange}(n)$
-    \tcp{source position}
-$j \leftarrow \mathit{rng}.\textsc{randrange}(n)$;\enspace
-    \lIf{$i = j$}{\Return \texttt{null}}
-    \tcp{target position must differ}
-
-\BlankLine
-$s' \leftarrow \textsc{Copy}(s)$ \;
-$e \leftarrow r'_a.\textsc{pop}(i)$
-    \tcp{extract task; route shrinks by one}
-$r'_a.\textsc{insert}(j,\, e)$
-    \tcp{re-insert at target position}
-
-\BlankLine
-$m \leftarrow (\texttt{relocate\_intra},\; a,\; i,\; j)$ \;
-\Return $(s',\, m)$
+$\hat{s} \leftarrow \textsc{NormalizarQuitarDepósito}(s)$
+\tcp{elimina el token "D" de inicio y fin de cada ruta}
+$t \leftarrow 0$\;
+\Repeat{movimiento válido encontrado}{
+    $t \leftarrow t + 1$\;
+    \lIf{$t > T_{\max}$}{\textbf{lanzar} \texttt{RuntimeError}}
+    $\mathcal{C} \leftarrow \{k : |\hat{r}_k| \geq 2\}$
+    \tcp{rutas candidatas: al menos 2 tareas}
+    \lIf{$\mathcal{C} = \emptyset$}{\textbf{continue}}
+    $a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$;\quad $n \leftarrow |\hat{r}_a|$\;
+    $i \leftarrow \mathit{rng}.\textsc{randrange}(n)$
+    \tcp{posición de origen, uniforme en $\{0,\ldots,n-1\}$}
+    $j \leftarrow \mathit{rng}.\textsc{randrange}(n)$
+    \tcp{posición de destino, uniforme en $\{0,\ldots,n-1\}$}
+    \lIf{$i = j$}{\textbf{continue} \tcp*{no genera vecino distinto}}
+    $\hat{s}' \leftarrow \textsc{CopiaProfunda}(\hat{s})$
+    \tcp{Python pasa listas por referencia; sin copia se corrompería $\hat{s}$}
+    $e \leftarrow \hat{r}'_a.\textsc{pop}(i)$\;
+    $\hat{r}'_a.\textsc{insert}(j,\, e)$\;
+    $m \leftarrow \textsc{MovimientoVecindario}(\texttt{relocate\_intra},\; \mathit{ruta\_a}=a,\; i=i,\; j=j)$\;
+    $s' \leftarrow \textsc{RestaurarDepósito}(\hat{s}')$
+    \tcp{añade "D" al inicio y fin de cada ruta antes de devolver}
+    \Return $(s',\, m)$\;
+}
 \end{algorithm}
 
-\noindent\textbf{Visual example} ($i=0$, $j=2$):
+\noindent\textbf{Ejemplo visual} ($i=0$, $j=2$):
 \[
     r_a = [\,\mathtt{TR1},\; \mathtt{TR2},\; \mathtt{TR3},\; \mathtt{TR4}\,]
     \;\xrightarrow{\;\text{pop}(0),\;\text{insert}(2)\;}\;
@@ -109,40 +151,45 @@ $m \leftarrow (\texttt{relocate\_intra},\; a,\; i,\; j)$ \;
 \subsubsection{\texttt{swap\_intra}}
 \label{sssec:swap-intra}
 
-\textbf{Move.}
-Exchange the tasks at positions $i$ and $j$ ($i \neq j$) within the
-same route $r_a$.
+\textbf{Movimiento.}
+Intercambia las tareas en las posiciones $i$ y $j$ ($i \neq j$) dentro de
+la misma ruta $r_a$.
 
-\textbf{Requirement.} $|r_a| \geq 2$.
+\textbf{Requisito.} $|r_a| \geq 2$.
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\texttt{swap\_intra} --- Swap two tasks within the same route}
+\caption{\texttt{swap\_intra} --- Intercambiar dos tareas dentro de la misma ruta}
 \label{alg:swap-intra}
 
-\KwIn{Solution $s$;\; $\mathit{rng}$}
-\KwOut{Neighbor $s'$;\; movement $m$}
+\KwIn{Solución con depósito $s$;\; generador aleatorio $\mathit{rng}$;\; máximo de intentos $T_{\max}=500$}
+\KwOut{Vecino con depósito $s'$;\; registro de movimiento $m$}
 
 \BlankLine
-$\mathcal{C} \leftarrow \{k : |r_k| \geq 2\}$ \;
-\lIf{$\mathcal{C} = \emptyset$}{\Return \texttt{null}}
-
-$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$;\quad
-$n \leftarrow |r_a|$ \;
-$(i,\, j) \leftarrow \mathit{rng}.\textsc{sample}(\{0,\ldots,n{-}1\},\; 2)$
-    \tcp{two distinct indices, no repetition}
-
-\BlankLine
-$s' \leftarrow \textsc{Copy}(s)$ \;
-$r'_a[i],\; r'_a[j] \leftarrow r'_a[j],\; r'_a[i]$
-    \tcp{simultaneous swap via tuple unpacking}
-
-\BlankLine
-$m \leftarrow (\texttt{swap\_intra},\; a,\; i,\; j)$ \;
-\Return $(s',\, m)$
+$\hat{s} \leftarrow \textsc{NormalizarQuitarDepósito}(s)$
+\tcp{elimina el token "D" de inicio y fin de cada ruta}
+$t \leftarrow 0$\;
+\Repeat{movimiento válido encontrado}{
+    $t \leftarrow t + 1$\;
+    \lIf{$t > T_{\max}$}{\textbf{lanzar} \texttt{RuntimeError}}
+    $\mathcal{C} \leftarrow \{k : |\hat{r}_k| \geq 2\}$
+    \tcp{rutas candidatas: al menos 2 tareas}
+    \lIf{$\mathcal{C} = \emptyset$}{\textbf{continue}}
+    $a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$;\quad $n \leftarrow |\hat{r}_a|$\;
+    $(i,\, j) \leftarrow \mathit{rng}.\textsc{sample}(\{0,\ldots,n-1\},\, 2)$
+    \tcp{dos índices distintos sin reemplazo (garantiza $i \neq j$ por construcción)}
+    $\hat{s}' \leftarrow \textsc{CopiaProfunda}(\hat{s})$
+    \tcp{Python pasa listas por referencia; sin copia se corrompería $\hat{s}$}
+    $\hat{r}'_a[i],\, \hat{r}'_a[j] \leftarrow \hat{r}'_a[j],\, \hat{r}'_a[i]$
+    \tcp{intercambio atómico: lado derecho se evalúa completo antes de asignar}
+    $m \leftarrow \textsc{MovimientoVecindario}(\texttt{swap\_intra},\; \mathit{ruta\_a}=a,\; i=i,\; j=j)$\;
+    $s' \leftarrow \textsc{RestaurarDepósito}(\hat{s}')$
+    \tcp{añade "D" al inicio y fin de cada ruta antes de devolver}
+    \Return $(s',\, m)$\;
+}
 \end{algorithm}
 
-\noindent\textbf{Visual example} ($i=0$, $j=3$):
+\noindent\textbf{Ejemplo visual} ($i=0$, $j=3$):
 \[
     r_a = [\,\mathtt{TR1},\; \mathtt{TR2},\; \mathtt{TR3},\; \mathtt{TR4}\,]
     \;\xrightarrow{\;\text{swap}(0,3)\;}\;
@@ -153,42 +200,48 @@ $m \leftarrow (\texttt{swap\_intra},\; a,\; i,\; j)$ \;
 \subsubsection{\texttt{2opt\_intra}}
 \label{sssec:2opt-intra}
 
-\textbf{Move.}
-Reverse the contiguous sub-sequence $r_a[i{:}j]$ (both bounds inclusive),
-where $i < j$.  The tasks outside the segment are not affected.
+\textbf{Movimiento.}
+Invierte la subsecuencia contigua $r_a[i{:}j]$ (ambos extremos inclusive),
+con $i < j$.  Las tareas fuera del segmento no se ven afectadas.
 
-\textbf{Requirement.} $|r_a| \geq 3$ (guarantees a segment of at least
-two tasks when $j > i$).
+\textbf{Requisito.} $|r_a| \geq 3$ (garantiza un segmento de al menos dos
+tareas cuando $j > i$).
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\texttt{2opt\_intra} --- Reverse a contiguous segment within a route}
+\caption{\texttt{2opt\_intra} --- Invertir un segmento de tareas dentro de la misma ruta}
 \label{alg:2opt-intra}
 
-\KwIn{Solution $s$;\; $\mathit{rng}$}
-\KwOut{Neighbor $s'$;\; movement $m$}
+\KwIn{Solución con depósito $s$;\; generador aleatorio $\mathit{rng}$;\; máximo de intentos $T_{\max}=500$}
+\KwOut{Vecino con depósito $s'$;\; registro de movimiento $m$}
 
 \BlankLine
-$\mathcal{C} \leftarrow \{k : |r_k| \geq 3\}$ \;
-\lIf{$\mathcal{C} = \emptyset$}{\Return \texttt{null}}
-
-$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$;\quad
-$n \leftarrow |r_a|$ \;
-$i \leftarrow \mathit{rng}.\textsc{randrange}(0,\; n{-}1)$ \;
-$j \leftarrow \mathit{rng}.\textsc{randrange}(i{+}1,\; n)$
-    \tcp{$j > i$ always holds}
-
-\BlankLine
-$s' \leftarrow \textsc{Copy}(s)$ \;
-$r'_a[i{:}j] \leftarrow \textsc{Reverse}(r'_a[i{:}j])$
-    \tcp{in-place reversal of the segment $[i,j]$}
-
-\BlankLine
-$m \leftarrow (\texttt{2opt\_intra},\; a,\; i,\; j)$ \;
-\Return $(s',\, m)$
+$\hat{s} \leftarrow \textsc{NormalizarQuitarDepósito}(s)$
+\tcp{elimina el token "D" de inicio y fin de cada ruta}
+$t \leftarrow 0$\;
+\Repeat{movimiento válido encontrado}{
+    $t \leftarrow t + 1$\;
+    \lIf{$t > T_{\max}$}{\textbf{lanzar} \texttt{RuntimeError}}
+    $\mathcal{C} \leftarrow \{k : |\hat{r}_k| \geq 3\}$
+    \tcp{rutas candidatas: mínimo 3 tareas para garantizar segmento de longitud $\geq 2$}
+    \lIf{$\mathcal{C} = \emptyset$}{\textbf{continue}}
+    $a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$;\quad $n \leftarrow |\hat{r}_a|$\;
+    $i \leftarrow \mathit{rng}.\textsc{randrange}(0,\, n-1)$
+    \tcp{inicio del segmento, uniforme en $\{0,\ldots,n-2\}$}
+    $j \leftarrow \mathit{rng}.\textsc{randrange}(i+1,\, n)$
+    \tcp{fin del segmento, uniforme en $\{i+1,\ldots,n-1\}$; garantiza $j > i$}
+    $\hat{s}' \leftarrow \textsc{CopiaProfunda}(\hat{s})$
+    \tcp{Python pasa listas por referencia; sin copia se corrompería $\hat{s}$}
+    $\hat{r}'_a[i\,{:}\,j{+}1] \leftarrow \textsc{Revertir}(\hat{r}'_a[i\,{:}\,j{+}1])$
+    \tcp{asignación de slice: reemplaza el segmento en su lugar}
+    $m \leftarrow \textsc{MovimientoVecindario}(\texttt{2opt\_intra},\; \mathit{ruta\_a}=a,\; i=i,\; j=j)$\;
+    $s' \leftarrow \textsc{RestaurarDepósito}(\hat{s}')$
+    \tcp{añade "D" al inicio y fin de cada ruta antes de devolver}
+    \Return $(s',\, m)$\;
+}
 \end{algorithm}
 
-\noindent\textbf{Visual example} ($i=1$, $j=3$):
+\noindent\textbf{Ejemplo visual} ($i=1$, $j=3$):
 \[
     r_a =
     \bigl[\,\mathtt{TR1},\;
@@ -199,7 +252,7 @@ $m \leftarrow (\texttt{2opt\_intra},\; a,\; i,\; j)$ \;
 \]
 
 % ============================================================
-\subsection{Inter-route Operators}
+\subsection{Operadores Inter-ruta}
 \label{subsec:inter-operators}
 % ============================================================
 
@@ -207,53 +260,57 @@ $m \leftarrow (\texttt{2opt\_intra},\; a,\; i,\; j)$ \;
 \subsubsection{\texttt{relocate\_inter}}
 \label{sssec:relocate-inter}
 
-\textbf{Move.}
-Remove the task at position $i$ of route $r_a$ and insert it at
-position $j$ of route $r_b$, where $a \neq b$.
+\textbf{Movimiento.}
+Quita la tarea en la posición $i$ de la ruta $r_a$ y la inserta en la
+posición $j$ de la ruta $r_b$, con $a \neq b$.
 
-\textbf{Requirement.} $|r_a| \geq 1$; $r_b$ may be empty (the task is
-simply appended).
+\textbf{Requisito.} $|r_a| \geq 1$; $r_b$ puede estar vacía (la tarea
+simplemente se agrega).
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\texttt{relocate\_inter} --- Move a task from one route to another}
+\caption{\texttt{relocate\_inter} --- Mover una tarea de una ruta a otra ruta distinta}
 \label{alg:relocate-inter}
 
-\KwIn{Solution $s$;\; $\mathit{rng}$}
-\KwOut{Neighbor $s'$;\; movement $m$}
+\KwIn{Solución con depósito $s$;\; generador aleatorio $\mathit{rng}$;\; máximo de intentos $T_{\max}=500$}
+\KwOut{Vecino con depósito $s'$;\; registro de movimiento $m$}
 
 \BlankLine
-$\mathcal{A} \leftarrow \{k : |r_k| \geq 1\}$
-    \tcp{non-empty routes, source candidates}
-\lIf{$|\mathcal{A}| < 1$ \textbf{ or } $K < 2$}{\Return \texttt{null}}
-
-$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{A})$ \;
-$b \leftarrow \mathit{rng}.\textsc{randrange}(K)$;\enspace
-    \lIf{$a = b$}{\Return \texttt{null}}
-
-$i \leftarrow \mathit{rng}.\textsc{randrange}(|r_a|)$
-    \tcp{source position in $r_a$}
-$j \leftarrow \mathit{rng}.\textsc{randrange}(|r_b|{+}1)$
-    \tcp{insertion position in $r_b$; $+1$ allows appending at end}
-
-\BlankLine
-$s' \leftarrow \textsc{Copy}(s)$ \;
-$e \leftarrow r'_a.\textsc{pop}(i)$
-    \tcp{extract task from $r_a$}
-$r'_b.\textsc{insert}(j,\, e)$
-    \tcp{insert into $r_b$}
-
-\BlankLine
-$m \leftarrow (\texttt{relocate\_inter},\; a,\; b,\; i,\; j)$ \;
-\Return $(s',\, m)$
+$\hat{s} \leftarrow \textsc{NormalizarQuitarDepósito}(s)$
+\tcp{elimina el token "D" de inicio y fin de cada ruta}
+$t \leftarrow 0$\;
+\Repeat{movimiento válido encontrado}{
+    $t \leftarrow t + 1$\;
+    \lIf{$t > T_{\max}$}{\textbf{lanzar} \texttt{RuntimeError}}
+    $\mathcal{A} \leftarrow \{k : |\hat{r}_k| \geq 1\}$
+    \tcp{rutas con al menos 1 tarea (candidatas como origen)}
+    \lIf{$|\mathcal{A}| < 1$ \textbf{o} $|\hat{s}| < 2$}{\textbf{continue}}
+    $\mathit{ra} \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{A})$
+    \tcp{ruta origen: uniforme entre rutas no vacías}
+    $\mathit{rb} \leftarrow \mathit{rng}.\textsc{randrange}(|\hat{s}|)$
+    \tcp{ruta destino: uniforme entre \textbf{todas} las rutas (puede estar vacía)}
+    \lIf{$\mathit{ra} = \mathit{rb}$}{\textbf{continue} \tcp*{debe ser inter-ruta}}
+    $i \leftarrow \mathit{rng}.\textsc{randrange}(|\hat{r}_{\mathit{ra}}|)$
+    \tcp{posición en la ruta origen}
+    $j \leftarrow \mathit{rng}.\textsc{randrange}(|\hat{r}_{\mathit{rb}}| + 1)$
+    \tcp{posición en la ruta destino; $+1$ permite insertar al final}
+    $\hat{s}' \leftarrow \textsc{CopiaProfunda}(\hat{s})$
+    \tcp{Python pasa listas por referencia; sin copia se corrompería $\hat{s}$}
+    $e \leftarrow \hat{r}'_{\mathit{ra}}.\textsc{pop}(i)$\;
+    $\hat{r}'_{\mathit{rb}}.\textsc{insert}(j,\, e)$\;
+    $m \leftarrow \textsc{MovimientoVecindario}(\texttt{relocate\_inter},\; \mathit{ruta\_a}=\mathit{ra},\; \mathit{ruta\_b}=\mathit{rb},\; i=i,\; j=j)$\;
+    $s' \leftarrow \textsc{RestaurarDepósito}(\hat{s}')$
+    \tcp{añade "D" al inicio y fin de cada ruta antes de devolver}
+    \Return $(s',\, m)$\;
+}
 \end{algorithm}
 
-\noindent\textbf{Visual example} ($i=2$, $j=1$):
+\noindent\textbf{Ejemplo visual} ($i=2$, $j=1$):
 \[
     \begin{array}{ll}
         r_a = [\mathtt{TR1},\;\mathtt{TR2},\;\mathtt{TR3}]
         & r_b = [\mathtt{TR4},\;\mathtt{TR5}] \\[4pt]
-        \multicolumn{2}{c}{\xrightarrow{\;\text{move}\;\mathtt{TR3}\;\text{from}\;r_a[2]\;\text{to}\;r_b[1]\;}} \\[4pt]
+        \multicolumn{2}{c}{\xrightarrow{\;\text{mover}\;\mathtt{TR3}\;\text{de}\;r_a[2]\;\text{a}\;r_b[1]\;}} \\[4pt]
         r'_a = [\mathtt{TR1},\;\mathtt{TR2}]
         & r'_b = [\mathtt{TR4},\;\mathtt{TR3},\;\mathtt{TR5}]
     \end{array}
@@ -263,41 +320,50 @@ $m \leftarrow (\texttt{relocate\_inter},\; a,\; b,\; i,\; j)$ \;
 \subsubsection{\texttt{swap\_inter}}
 \label{sssec:swap-inter}
 
-\textbf{Move.}
-Exchange the task at position $i$ of route $r_a$ with the task at
-position $j$ of route $r_b$ ($a \neq b$).  Both routes keep the same
-number of tasks.
+\textbf{Movimiento.}
+Intercambia la tarea en la posición $i$ de la ruta $r_a$ con la tarea en
+la posición $j$ de la ruta $r_b$ ($a \neq b$).  Ambas rutas conservan el
+mismo número de tareas.
 
-\textbf{Requirement.} $|r_a| \geq 1$ and $|r_b| \geq 1$.
+\textbf{Requisito.} $|r_a| \geq 1$ y $|r_b| \geq 1$.
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\texttt{swap\_inter} --- Exchange one task between two distinct routes}
+\caption{\texttt{swap\_inter} --- Intercambiar una tarea entre dos rutas distintas}
 \label{alg:swap-inter}
 
-\KwIn{Solution $s$;\; $\mathit{rng}$}
-\KwOut{Neighbor $s'$;\; movement $m$}
+\KwIn{Solución con depósito $s$;\; generador aleatorio $\mathit{rng}$;\; máximo de intentos $T_{\max}=500$}
+\KwOut{Vecino con depósito $s'$;\; registro de movimiento $m$}
 
 \BlankLine
-$\mathcal{A} \leftarrow \{k : |r_k| \geq 1\}$ \;
-\lIf{$|\mathcal{A}| < 2$}{\Return \texttt{null}}
-$(a,\, b) \leftarrow \mathit{rng}.\textsc{sample}(\mathcal{A},\; 2)$
-    \tcp{two distinct non-empty routes}
-
-$i \leftarrow \mathit{rng}.\textsc{randrange}(|r_a|)$ \;
-$j \leftarrow \mathit{rng}.\textsc{randrange}(|r_b|)$ \;
-
-\BlankLine
-$s' \leftarrow \textsc{Copy}(s)$ \;
-$r'_a[i],\; r'_b[j] \leftarrow r'_b[j],\; r'_a[i]$
-    \tcp{simultaneous swap across routes}
-
-\BlankLine
-$m \leftarrow (\texttt{swap\_inter},\; a,\; b,\; i,\; j)$ \;
-\Return $(s',\, m)$
+$\hat{s} \leftarrow \textsc{NormalizarQuitarDepósito}(s)$
+\tcp{elimina el token "D" de inicio y fin de cada ruta}
+$t \leftarrow 0$\;
+\Repeat{movimiento válido encontrado}{
+    $t \leftarrow t + 1$\;
+    \lIf{$t > T_{\max}$}{\textbf{lanzar} \texttt{RuntimeError}}
+    \lIf{$|\hat{s}| < 2$}{\textbf{continue}}
+    $\mathcal{N} \leftarrow \{k : |\hat{r}_k| \geq 1\}$
+    \tcp{rutas no vacías; ambas rutas participantes deben tener al menos 1 tarea}
+    \lIf{$|\mathcal{N}| < 2$}{\textbf{continue}}
+    $(\mathit{ra},\, \mathit{rb}) \leftarrow \mathit{rng}.\textsc{sample}(\mathcal{N},\, 2)$
+    \tcp{dos rutas distintas no vacías, sin reemplazo; garantiza $\mathit{ra} \neq \mathit{rb}$}
+    $i \leftarrow \mathit{rng}.\textsc{randrange}(|\hat{r}_{\mathit{ra}}|)$
+    \tcp{posición en la ruta $\mathit{ra}$}
+    $j \leftarrow \mathit{rng}.\textsc{randrange}(|\hat{r}_{\mathit{rb}}|)$
+    \tcp{posición en la ruta $\mathit{rb}$}
+    $\hat{s}' \leftarrow \textsc{CopiaProfunda}(\hat{s})$
+    \tcp{Python pasa listas por referencia; sin copia se corrompería $\hat{s}$}
+    $\hat{r}'_{\mathit{ra}}[i],\, \hat{r}'_{\mathit{rb}}[j] \leftarrow \hat{r}'_{\mathit{rb}}[j],\, \hat{r}'_{\mathit{ra}}[i]$
+    \tcp{intercambio atómico: lado derecho se evalúa completo antes de asignar}
+    $m \leftarrow \textsc{MovimientoVecindario}(\texttt{swap\_inter},\; \mathit{ruta\_a}=\mathit{ra},\; \mathit{ruta\_b}=\mathit{rb},\; i=i,\; j=j)$\;
+    $s' \leftarrow \textsc{RestaurarDepósito}(\hat{s}')$
+    \tcp{añade "D" al inicio y fin de cada ruta antes de devolver}
+    \Return $(s',\, m)$\;
+}
 \end{algorithm}
 
-\noindent\textbf{Visual example} ($i=0$, $j=1$):
+\noindent\textbf{Ejemplo visual} ($i=0$, $j=1$):
 \[
     \begin{array}{ll}
         r_a = [\mathtt{TR1},\;\mathtt{TR2}]
@@ -312,51 +378,63 @@ $m \leftarrow (\texttt{swap\_inter},\; a,\; b,\; i,\; j)$ \;
 \subsubsection{\texttt{2opt\_star}}
 \label{sssec:2opt-star}
 
-\textbf{Move.}
-Split route $r_a$ at cut point $c_a$ into head $r_a[0{:}c_a]$ and tail
-$r_a[c_a{+}1{:}]$; split $r_b$ at $c_b$ likewise.  Reassemble by swapping
-the tails:
+\textbf{Movimiento.}
+Divide la ruta $r_a$ en el punto de corte $c_a$ en cabeza $r_a[0{:}c_a]$ y
+cola $r_a[c_a{+}1{:}]$; divide $r_b$ en $c_b$ de igual modo.  Reensambla
+intercambiando las colas:
 \[
     r'_a = \mathit{head}_a \;\|\; \mathit{tail}_b,
     \qquad
     r'_b = \mathit{head}_b \;\|\; \mathit{tail}_a.
 \]
-This is the inter-route analogue of the classical 2-opt move; it can
-correct geographically crossing routes.
+Es el análogo inter-ruta del 2-opt clásico; puede corregir rutas que se
+cruzan geográficamente.
 
-\textbf{Requirement.} $|r_a| \geq 1$ and $|r_b| \geq 1$.
+\textbf{Requisito.} $|r_a| \geq 1$ y $|r_b| \geq 1$.
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\texttt{2opt\_star} --- Swap the tails of two routes at chosen cut points}
+\caption{\texttt{2opt\_star} --- Intercambiar las colas de dos rutas (2-opt*)}
 \label{alg:2opt-star}
 
-\KwIn{Solution $s$;\; $\mathit{rng}$}
-\KwOut{Neighbor $s'$;\; movement $m$}
+\KwIn{Solución con depósito $s$;\; generador aleatorio $\mathit{rng}$;\; máximo de intentos $T_{\max}=500$}
+\KwOut{Vecino con depósito $s'$;\; registro de movimiento $m$}
 
 \BlankLine
-$\mathcal{A} \leftarrow \{k : |r_k| \geq 1\}$ \;
-\lIf{$|\mathcal{A}| < 2$}{\Return \texttt{null}}
-$(a,\, b) \leftarrow \mathit{rng}.\textsc{sample}(\mathcal{A},\; 2)$ \;
-
-$c_a \leftarrow \mathit{rng}.\textsc{randrange}(|r_a|)$
-    \tcp{cut point in $r_a$ (inclusive in head)}
-$c_b \leftarrow \mathit{rng}.\textsc{randrange}(|r_b|)$
-    \tcp{cut point in $r_b$}
-
-\BlankLine
-$s' \leftarrow \textsc{Copy}(s)$ \;
-$\mathit{head}_a,\; \mathit{tail}_a \leftarrow r_a[0{:}c_a{+}1],\; r_a[c_a{+}1{:}]$ \;
-$\mathit{head}_b,\; \mathit{tail}_b \leftarrow r_b[0{:}c_b{+}1],\; r_b[c_b{+}1{:}]$ \;
-$r'_a \leftarrow \mathit{head}_a \;\|\; \mathit{tail}_b$ \;
-$r'_b \leftarrow \mathit{head}_b \;\|\; \mathit{tail}_a$ \;
-
-\BlankLine
-$m \leftarrow (\texttt{2opt\_star},\; a,\; b,\; c_a,\; c_b)$ \;
-\Return $(s',\, m)$
+$\hat{s} \leftarrow \textsc{NormalizarQuitarDepósito}(s)$
+\tcp{elimina el token "D" de inicio y fin de cada ruta}
+$t \leftarrow 0$\;
+\Repeat{movimiento válido encontrado}{
+    $t \leftarrow t + 1$\;
+    \lIf{$t > T_{\max}$}{\textbf{lanzar} \texttt{RuntimeError}}
+    \lIf{$|\hat{s}| < 2$}{\textbf{continue}}
+    $\mathcal{N} \leftarrow \{k : |\hat{r}_k| \geq 1\}$
+    \tcp{rutas no vacías; ambas participantes necesitan al menos 1 tarea}
+    \lIf{$|\mathcal{N}| < 2$}{\textbf{continue}}
+    $(\mathit{ra},\, \mathit{rb}) \leftarrow \mathit{rng}.\textsc{sample}(\mathcal{N},\, 2)$
+    \tcp{dos rutas distintas no vacías, sin reemplazo}
+    $\mathit{cut\_a} \leftarrow \mathit{rng}.\textsc{randrange}(|\hat{r}_{\mathit{ra}}|)$
+    \tcp{punto de corte en la ruta A, uniforme en $\{0,\ldots,|\hat{r}_{\mathit{ra}}|-1\}$}
+    $\mathit{cut\_b} \leftarrow \mathit{rng}.\textsc{randrange}(|\hat{r}_{\mathit{rb}}|)$
+    \tcp{punto de corte en la ruta B, uniforme en $\{0,\ldots,|\hat{r}_{\mathit{rb}}|-1\}$}
+    $\hat{s}' \leftarrow \textsc{CopiaProfunda}(\hat{s})$
+    \tcp{Python pasa listas por referencia; sin copia se corrompería $\hat{s}$}
+    $\mathit{head\_A} \leftarrow \hat{r}'_{\mathit{ra}}[:\mathit{cut\_a}{+}1]$;\quad
+    $\mathit{tail\_A} \leftarrow \hat{r}'_{\mathit{ra}}[\mathit{cut\_a}{+}1:]$\;
+    $\mathit{head\_B} \leftarrow \hat{r}'_{\mathit{rb}}[:\mathit{cut\_b}{+}1]$;\quad
+    $\mathit{tail\_B} \leftarrow \hat{r}'_{\mathit{rb}}[\mathit{cut\_b}{+}1:]$\;
+    $\hat{r}'_{\mathit{ra}} \leftarrow \mathit{head\_A} \mathbin{\|} \mathit{tail\_B}$
+    \tcp{ruta A adopta la cola de B}
+    $\hat{r}'_{\mathit{rb}} \leftarrow \mathit{head\_B} \mathbin{\|} \mathit{tail\_A}$
+    \tcp{ruta B adopta la cola de A}
+    $m \leftarrow \textsc{MovimientoVecindario}(\texttt{2opt\_star},\; \mathit{ruta\_a}=\mathit{ra},\; \mathit{ruta\_b}=\mathit{rb},\; i=\mathit{cut\_a},\; j=\mathit{cut\_b})$\;
+    $s' \leftarrow \textsc{RestaurarDepósito}(\hat{s}')$
+    \tcp{añade "D" al inicio y fin de cada ruta antes de devolver}
+    \Return $(s',\, m)$\;
+}
 \end{algorithm}
 
-\noindent\textbf{Visual example} ($c_a=1$, $c_b=1$):
+\noindent\textbf{Ejemplo visual} ($c_a=1$, $c_b=1$):
 \[
     \begin{array}{ll}
         r_a = \bigl[\,\underbrace{\mathtt{TR1},\;\mathtt{TR2}}_{\mathit{head}_a},\;
@@ -375,56 +453,65 @@ $m \leftarrow (\texttt{2opt\_star},\; a,\; b,\; c_a,\; c_b)$ \;
 \subsubsection{\texttt{cross\_exchange}}
 \label{sssec:cross-exchange}
 
-\textbf{Move.}
-Extract a contiguous segment $\mathit{seg}_a = r_a[i{:}j]$ from $r_a$
-and a contiguous segment $\mathit{seg}_b = r_b[k{:}l]$ from $r_b$
-(all indices inclusive, $i \leq j$, $k \leq l$), then swap the two
-segments:
+\textbf{Movimiento.}
+Extrae un segmento contiguo $\mathit{seg}_a = r_a[i{:}j]$ de $r_a$ y un
+segmento contiguo $\mathit{seg}_b = r_b[k{:}l]$ de $r_b$ (todos los índices
+inclusive, $i \leq j$, $k \leq l$), y luego intercambia los segmentos:
 \[
     r'_a = r_a[0{:}i] \;\|\; \mathit{seg}_b \;\|\; r_a[j{+}1{:}],
     \qquad
     r'_b = r_b[0{:}k] \;\|\; \mathit{seg}_a \;\|\; r_b[l{+}1{:}].
 \]
-The segments may have different lengths, making this a more disruptive
-move than \texttt{swap\_inter}.
+Los segmentos pueden tener distinta longitud, lo que hace este movimiento
+más disruptivo que \texttt{swap\_inter}.
 
-\textbf{Requirement.} $|r_a| \geq 2$ and $|r_b| \geq 2$ (each segment
-must contain at least two tasks so that $j > i$ and $l > k$ can hold).
+\textbf{Requisito.} $|r_a| \geq 2$ y $|r_b| \geq 2$ (cada segmento debe
+contener al menos dos tareas para que puedan cumplirse $j > i$ y $l > k$).
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\texttt{cross\_exchange} --- Swap contiguous segments between two routes}
+\caption{\texttt{cross\_exchange} --- Intercambiar segmentos contiguos entre dos rutas}
 \label{alg:cross-exchange}
 
-\KwIn{Solution $s$;\; $\mathit{rng}$}
-\KwOut{Neighbor $s'$;\; movement $m$}
+\KwIn{Solución con depósito $s$;\; generador aleatorio $\mathit{rng}$;\; máximo de intentos $T_{\max}=500$}
+\KwOut{Vecino con depósito $s'$;\; registro de movimiento $m$}
 
 \BlankLine
-$\mathcal{A} \leftarrow \{k : |r_k| \geq 2\}$ \;
-\lIf{$|\mathcal{A}| < 2$}{\Return \texttt{null}}
-$(a,\, b) \leftarrow \mathit{rng}.\textsc{sample}(\mathcal{A},\; 2)$;\quad
-$n_a \leftarrow |r_a|$;\; $n_b \leftarrow |r_b|$ \;
-
-$i \leftarrow \mathit{rng}.\textsc{randrange}(0,\; n_a{-}1)$;\quad
-$j \leftarrow \mathit{rng}.\textsc{randrange}(i{+}1,\; n_a)$
-    \tcp{$j > i$: segment of $\geq 2$ tasks in $r_a$}
-$k \leftarrow \mathit{rng}.\textsc{randrange}(0,\; n_b{-}1)$;\quad
-$l \leftarrow \mathit{rng}.\textsc{randrange}(k{+}1,\; n_b)$
-    \tcp{$l > k$: segment of $\geq 2$ tasks in $r_b$}
-
-\BlankLine
-$s' \leftarrow \textsc{Copy}(s)$ \;
-$\mathit{seg}_a \leftarrow r_a[i{:}j{+}1]$;\quad
-$\mathit{seg}_b \leftarrow r_b[k{:}l{+}1]$ \;
-$r'_a \leftarrow r_a[0{:}i] \;\|\; \mathit{seg}_b \;\|\; r_a[j{+}1{:}]$ \;
-$r'_b \leftarrow r_b[0{:}k] \;\|\; \mathit{seg}_a \;\|\; r_b[l{+}1{:}]$ \;
-
-\BlankLine
-$m \leftarrow (\texttt{cross\_exchange},\; a,\; b,\; i,\; j,\; k,\; l)$ \;
-\Return $(s',\, m)$
+$\hat{s} \leftarrow \textsc{NormalizarQuitarDepósito}(s)$
+\tcp{elimina el token "D" de inicio y fin de cada ruta}
+$t \leftarrow 0$\;
+\Repeat{movimiento válido encontrado}{
+    $t \leftarrow t + 1$\;
+    \lIf{$t > T_{\max}$}{\textbf{lanzar} \texttt{RuntimeError}}
+    \lIf{$|\hat{s}| < 2$}{\textbf{continue}}
+    $\mathcal{N} \leftarrow \{k : |\hat{r}_k| \geq 2\}$
+    \tcp{rutas con al menos 2 tareas en ambas participantes (requisito del segmento)}
+    \lIf{$|\mathcal{N}| < 2$}{\textbf{continue}}
+    $(\mathit{ra},\, \mathit{rb}) \leftarrow \mathit{rng}.\textsc{sample}(\mathcal{N},\, 2)$
+    \tcp{dos rutas distintas con $\geq 2$ tareas, sin reemplazo}
+    $n_a \leftarrow |\hat{r}_{\mathit{ra}}|$;\quad $n_b \leftarrow |\hat{r}_{\mathit{rb}}|$\;
+    $i \leftarrow \mathit{rng}.\textsc{randrange}(0,\, n_a - 1)$
+    \tcp{inicio del segmento en A, uniforme en $\{0,\ldots,n_a-2\}$}
+    $j \leftarrow \mathit{rng}.\textsc{randrange}(i+1,\, n_a)$
+    \tcp{fin del segmento en A, uniforme en $\{i+1,\ldots,n_a-1\}$; garantiza $j > i$}
+    $k \leftarrow \mathit{rng}.\textsc{randrange}(0,\, n_b - 1)$
+    \tcp{inicio del segmento en B, uniforme en $\{0,\ldots,n_b-2\}$}
+    $l \leftarrow \mathit{rng}.\textsc{randrange}(k+1,\, n_b)$
+    \tcp{fin del segmento en B, uniforme en $\{k+1,\ldots,n_b-1\}$; garantiza $l > k$}
+    $\hat{s}' \leftarrow \textsc{CopiaProfunda}(\hat{s})$
+    \tcp{Python pasa listas por referencia; sin copia se corrompería $\hat{s}$}
+    $\mathit{seg\_A} \leftarrow \hat{r}'_{\mathit{ra}}[i\,{:}\,j{+}1]$;\quad
+    $\mathit{seg\_B} \leftarrow \hat{r}'_{\mathit{rb}}[k\,{:}\,l{+}1]$\;
+    $\hat{r}'_{\mathit{ra}} \leftarrow \hat{r}'_{\mathit{ra}}[{:}i] \mathbin{\|} \mathit{seg\_B} \mathbin{\|} \hat{r}'_{\mathit{ra}}[j{+}1{:}]$\;
+    $\hat{r}'_{\mathit{rb}} \leftarrow \hat{r}'_{\mathit{rb}}[{:}k] \mathbin{\|} \mathit{seg\_A} \mathbin{\|} \hat{r}'_{\mathit{rb}}[l{+}1{:}]$\;
+    $m \leftarrow \textsc{MovimientoVecindario}(\texttt{cross\_exchange},\; \mathit{ruta\_a}=\mathit{ra},\; \mathit{ruta\_b}=\mathit{rb},\; i=i,\; j=j,\; k=k,\; l=l)$\;
+    $s' \leftarrow \textsc{RestaurarDepósito}(\hat{s}')$
+    \tcp{añade "D" al inicio y fin de cada ruta antes de devolver}
+    \Return $(s',\, m)$\;
+}
 \end{algorithm}
 
-\noindent\textbf{Visual example} ($i=1$, $j=2$, $k=0$, $l=1$):
+\noindent\textbf{Ejemplo visual} ($i=1$, $j=2$, $k=0$, $l=1$):
 \[
     \begin{array}{ll}
         r_a = \bigl[\mathtt{TR1},\;
@@ -444,66 +531,68 @@ $m \leftarrow (\texttt{cross\_exchange},\; a,\; b,\; i,\; j,\; k,\; l)$ \;
 \subsubsection{\texttt{or\_opt\_2}}
 \label{sssec:or-opt-2}
 
-\textbf{Move.}
-Extract the contiguous block of exactly \textbf{2} tasks
-$\mathit{block} = r_a[i{:}i{+}2]$ from route $r_a$ and insert it
-at position $j$ of route $r_b$ ($a \neq b$) \emph{in the same order}
-(never reversed).  This distinguishes \texttt{or\_opt\_2} from
-\texttt{cross\_exchange}, which may exchange segments of different sizes
-and does not preserve insertion order.
+\textbf{Movimiento.}
+Extrae el bloque contiguo de exactamente \textbf{2} tareas
+$\mathit{block} = r_a[i{:}i{+}2]$ de la ruta $r_a$ y lo inserta en la
+posición $j$ de la ruta $r_b$ ($a \neq b$) \emph{en el mismo orden}
+(nunca invertido).  Esto distingue a \texttt{or\_opt\_2} de
+\texttt{cross\_exchange}, que puede intercambiar segmentos de distinto
+tamaño y no preserva el orden de inserción.
 
-\textbf{Requirement.} $|r_a| \geq 2$.  If there is only a single route
-in the solution, $r_b$ may equal $r_a$ (intra fallback): the block is
-removed and re-inserted at a different position within the same route.
+\textbf{Requisito.} $|r_a| \geq 2$.  Si la solución tiene una sola ruta,
+$r_b$ puede igualar a $r_a$ (respaldo intra): el bloque se quita y se
+reinserta en otra posición de la misma ruta.
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\texttt{or\_opt\_2} --- Relocate a block of 2 consecutive tasks between routes}
+\caption{\texttt{or\_opt\_2} --- Mover un bloque de 2 tareas consecutivas a otra ruta}
 \label{alg:or-opt-2}
 
-\KwIn{Solution $s$;\; $\mathit{rng}$}
-\KwOut{Neighbor $s'$;\; movement $m$}
+\KwIn{Solución con depósito $s$;\; generador aleatorio $\mathit{rng}$;\; máximo de intentos $T_{\max}=500$}
+\KwOut{Vecino con depósito $s'$;\; registro de movimiento $m$}
 
 \BlankLine
-$\mathcal{C} \leftarrow \{k : |r_k| \geq 2\}$
-    \tcp{routes with enough tasks to donate a block of 2}
-\lIf{$\mathcal{C} = \emptyset$}{\Return \texttt{null}}
-
-$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$;\quad
-$n_a \leftarrow |r_a|$ \;
-$\mathcal{D} \leftarrow \{k : k \neq a\}$;\enspace
-    \lIf{$\mathcal{D} = \emptyset$}{$\mathcal{D} \leftarrow \{a\}$}
-    \tcp{single-route fallback}
-$b \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{D})$ \;
-
-$i \leftarrow \mathit{rng}.\textsc{randrange}(0,\; n_a{-}1)$
-    \tcp{block starts at $i$, covers $[i, i{+}1]$}
-
-\BlankLine
-\eIf{$b = a$}{
-    $t \leftarrow n_a - 2$;\enspace
-    \lIf{$t \leq 0$}{\Return \texttt{null}} \;
-    $j \leftarrow \mathit{rng}.\textsc{randrange}(0,\; t{+}1)$;\enspace
-    \lIf{$j = i$}{\Return \texttt{null}}
-        \tcp{same position yields no new neighbor}
-}{
-    $j \leftarrow \mathit{rng}.\textsc{randrange}(0,\; |r_b|{+}1)$
+$\hat{s} \leftarrow \textsc{NormalizarQuitarDepósito}(s)$
+\tcp{elimina el token "D" de inicio y fin de cada ruta}
+$t \leftarrow 0$\;
+\Repeat{movimiento válido encontrado}{
+    $t \leftarrow t + 1$\;
+    \lIf{$t > T_{\max}$}{\textbf{lanzar} \texttt{RuntimeError}}
+    $\mathcal{C} \leftarrow \{k : |\hat{r}_k| \geq 2\}$
+    \tcp{rutas candidatas como origen: al menos 2 tareas (tamaño del bloque)}
+    \lIf{$\mathcal{C} = \emptyset$}{\textbf{continue}}
+    $\mathit{ra} \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$\;
+    $\mathcal{D} \leftarrow \{x : x \neq \mathit{ra}\}$
+    \tcp{rutas destino distintas a la origen; si solo hay una, $\mathcal{D} = \{\mathit{ra}\}$}
+    \lIf{$\mathcal{D} = \emptyset$}{$\mathcal{D} \leftarrow \{\mathit{ra}\}$}
+    $\mathit{rb} \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{D})$\;
+    $n_a \leftarrow |\hat{r}_{\mathit{ra}}|$\;
+    $i \leftarrow \mathit{rng}.\textsc{randrange}(0,\, n_a - 2 + 1)$
+    \tcp{inicio del bloque; garantiza que caben 2 tareas desde $i$}
+    \eIf{$\mathit{rb} = \mathit{ra}$}{
+        $\tau \leftarrow n_a - 2$
+        \tcp{posiciones disponibles tras extraer el bloque}
+        \lIf{$\tau \leq 0$}{\textbf{continue}}
+        $j \leftarrow \mathit{rng}.\textsc{randrange}(0,\, \tau + 1)$\;
+        \lIf{$j = i$}{\textbf{continue} \tcp*{no genera vecino distinto}}
+    }{
+        $j \leftarrow \mathit{rng}.\textsc{randrange}(0,\, |\hat{r}_{\mathit{rb}}| + 1)$
+        \tcp{posición de inserción; $+1$ permite insertar al final}
+    }
+    $\hat{s}' \leftarrow \textsc{CopiaProfunda}(\hat{s})$
+    \tcp{Python pasa listas por referencia; sin copia se corrompería $\hat{s}$}
+    $\mathit{bloque} \leftarrow \hat{r}'_{\mathit{ra}}[i\,{:}\,i{+}2]$\;
+    $\text{eliminar } \hat{r}'_{\mathit{ra}}[i\,{:}\,i{+}2]$\;
+    $\hat{r}'_{\mathit{rb}}[j\,{:}\,j] \leftarrow \mathit{bloque}$
+    \tcp{inserción sin sobreescribir: slice vacío $[j:j]$ abre espacio en la posición $j$}
+    $m \leftarrow \textsc{MovimientoVecindario}(\texttt{or\_opt\_2},\; \mathit{ruta\_a}=\mathit{ra},\; \mathit{ruta\_b}=\mathit{rb},\; i=i,\; j=j,\; k=2)$\;
+    $s' \leftarrow \textsc{RestaurarDepósito}(\hat{s}')$
+    \tcp{añade "D" al inicio y fin de cada ruta antes de devolver}
+    \Return $(s',\, m)$\;
 }
-
-\BlankLine
-$s' \leftarrow \textsc{Copy}(s)$ \;
-$\mathit{block} \leftarrow r'_a[i{:}i{+}2]$ \;
-\textbf{delete} $r'_a[i{:}i{+}2]$
-    \tcp{remove 2 tasks from source}
-$r'_b[j{:}j] \leftarrow \mathit{block}$
-    \tcp{insert block at position $j$ without inversion}
-
-\BlankLine
-$m \leftarrow (\texttt{or\_opt\_2},\; a,\; b,\; i,\; j,\; k{=}2)$ \;
-\Return $(s',\, m)$
 \end{algorithm}
 
-\noindent\textbf{Visual example} ($i=1$, $j=1$, $r_a \neq r_b$):
+\noindent\textbf{Ejemplo visual} ($i=1$, $j=1$, $r_a \neq r_b$):
 \[
     \begin{array}{ll}
         r_a = \bigl[\mathtt{TR1},\;
@@ -511,124 +600,127 @@ $m \leftarrow (\texttt{or\_opt\_2},\; a,\; b,\; i,\; j,\; k{=}2)$ \;
                     \mathtt{TR4}\bigr]
         &
         r_b = [\mathtt{TR5},\;\mathtt{TR6},\;\mathtt{TR7}] \\[8pt]
-        \multicolumn{2}{c}{\xrightarrow{\;\text{remove block from }r_a,\;\text{insert at }r_b[1]\;}} \\[4pt]
+        \multicolumn{2}{c}{\xrightarrow{\;\text{quitar bloque de }r_a,\;\text{insertar en }r_b[1]\;}} \\[4pt]
         r'_a = [\mathtt{TR1},\;\mathtt{TR4}]
         &
         r'_b = [\mathtt{TR5},\;\mathtt{TR2},\;\mathtt{TR3},\;\mathtt{TR6},\;\mathtt{TR7}]
     \end{array}
 \]
 
-\noindent Note that the block $[\mathtt{TR2}, \mathtt{TR3}]$ is inserted in its
-original order; no reversal is performed.
+\noindent El bloque $[\mathtt{TR2}, \mathtt{TR3}]$ se inserta en su orden
+original; no se realiza ninguna inversión.
 
 % ---- or_opt_3 ----
 \subsubsection{\texttt{or\_opt\_3}}
 \label{sssec:or-opt-3}
 
-\textbf{Move.}
-Identical to \texttt{or\_opt\_2} but the block has exactly \textbf{3}
-consecutive tasks: $\mathit{block} = r_a[i{:}i{+}3]$.
-The block is inserted at position $j$ of $r_b$ in the \emph{same order}
-(no inversion).  Moving a larger block generates more disruptive neighbors
-and helps the search escape deeper local minima.
+\textbf{Movimiento.}
+Idéntico a \texttt{or\_opt\_2} pero el bloque tiene exactamente \textbf{3}
+tareas consecutivas: $\mathit{block} = r_a[i{:}i{+}3]$.
+El bloque se inserta en la posición $j$ de $r_b$ en el \emph{mismo orden}
+(sin inversión).  Mover un bloque mayor genera vecinos más disruptivos y
+ayuda a la búsqueda a escapar de mínimos locales más profundos.
 
-\textbf{Requirement.} $|r_a| \geq 3$.  The single-route fallback applies
-identically to \texttt{or\_opt\_2}: if only one route exists, $r_b$ may
-equal $r_a$ and the block is relocated within the same route.
+\textbf{Requisito.} $|r_a| \geq 3$.  El respaldo de ruta única se aplica
+igual que en \texttt{or\_opt\_2}: si solo existe una ruta, $r_b$ puede
+igualar a $r_a$ y el bloque se reubica dentro de la misma ruta.
 
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{\texttt{or\_opt\_3} --- Relocate a block of 3 consecutive tasks between routes}
+\caption{\texttt{or\_opt\_3} --- Mover un bloque de 3 tareas consecutivas a otra ruta}
 \label{alg:or-opt-3}
 
-\KwIn{Solution $s$;\; $\mathit{rng}$}
-\KwOut{Neighbor $s'$;\; movement $m$}
+\KwIn{Solución con depósito $s$;\; generador aleatorio $\mathit{rng}$;\; máximo de intentos $T_{\max}=500$}
+\KwOut{Vecino con depósito $s'$;\; registro de movimiento $m$}
 
 \BlankLine
-$\mathcal{C} \leftarrow \{k : |r_k| \geq 3\}$
-    \tcp{routes with at least 3 tasks}
-\lIf{$\mathcal{C} = \emptyset$}{\Return \texttt{null}}
-
-$a \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$;\quad
-$n_a \leftarrow |r_a|$ \;
-$\mathcal{D} \leftarrow \{k : k \neq a\}$;\enspace
-    \lIf{$\mathcal{D} = \emptyset$}{$\mathcal{D} \leftarrow \{a\}$}
-    \tcp{single-route fallback}
-$b \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{D})$ \;
-
-$i \leftarrow \mathit{rng}.\textsc{randrange}(0,\; n_a{-}2)$
-    \tcp{block covers $[i, i{+}1, i{+}2]$}
-
-\BlankLine
-\eIf{$b = a$}{
-    $t \leftarrow n_a - 3$;\enspace
-    \lIf{$t \leq 0$}{\Return \texttt{null}} \;
-    $j \leftarrow \mathit{rng}.\textsc{randrange}(0,\; t{+}1)$;\enspace
-    \lIf{$j = i$}{\Return \texttt{null}}
-}{
-    $j \leftarrow \mathit{rng}.\textsc{randrange}(0,\; |r_b|{+}1)$
+$\hat{s} \leftarrow \textsc{NormalizarQuitarDepósito}(s)$
+\tcp{elimina el token "D" de inicio y fin de cada ruta}
+$t \leftarrow 0$\;
+\Repeat{movimiento válido encontrado}{
+    $t \leftarrow t + 1$\;
+    \lIf{$t > T_{\max}$}{\textbf{lanzar} \texttt{RuntimeError}}
+    $\mathcal{C} \leftarrow \{k : |\hat{r}_k| \geq 3\}$
+    \tcp{rutas candidatas como origen: al menos 3 tareas (tamaño del bloque)}
+    \lIf{$\mathcal{C} = \emptyset$}{\textbf{continue}}
+    $\mathit{ra} \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{C})$\;
+    $\mathcal{D} \leftarrow \{x : x \neq \mathit{ra}\}$
+    \tcp{rutas destino distintas a la origen; si solo hay una, $\mathcal{D} = \{\mathit{ra}\}$}
+    \lIf{$\mathcal{D} = \emptyset$}{$\mathcal{D} \leftarrow \{\mathit{ra}\}$}
+    $\mathit{rb} \leftarrow \mathit{rng}.\textsc{choice}(\mathcal{D})$\;
+    $n_a \leftarrow |\hat{r}_{\mathit{ra}}|$\;
+    $i \leftarrow \mathit{rng}.\textsc{randrange}(0,\, n_a - 3 + 1)$
+    \tcp{inicio del bloque; garantiza que caben 3 tareas desde $i$}
+    \eIf{$\mathit{rb} = \mathit{ra}$}{
+        $\tau \leftarrow n_a - 3$
+        \tcp{posiciones disponibles tras extraer el bloque}
+        \lIf{$\tau \leq 0$}{\textbf{continue}}
+        $j \leftarrow \mathit{rng}.\textsc{randrange}(0,\, \tau + 1)$\;
+        \lIf{$j = i$}{\textbf{continue} \tcp*{no genera vecino distinto}}
+    }{
+        $j \leftarrow \mathit{rng}.\textsc{randrange}(0,\, |\hat{r}_{\mathit{rb}}| + 1)$
+        \tcp{posición de inserción; $+1$ permite insertar al final}
+    }
+    $\hat{s}' \leftarrow \textsc{CopiaProfunda}(\hat{s})$
+    \tcp{Python pasa listas por referencia; sin copia se corrompería $\hat{s}$}
+    $\mathit{bloque} \leftarrow \hat{r}'_{\mathit{ra}}[i\,{:}\,i{+}3]$\;
+    $\text{eliminar } \hat{r}'_{\mathit{ra}}[i\,{:}\,i{+}3]$\;
+    $\hat{r}'_{\mathit{rb}}[j\,{:}\,j] \leftarrow \mathit{bloque}$
+    \tcp{inserción sin sobreescribir: slice vacío $[j:j]$ abre espacio en la posición $j$}
+    $m \leftarrow \textsc{MovimientoVecindario}(\texttt{or\_opt\_3},\; \mathit{ruta\_a}=\mathit{ra},\; \mathit{ruta\_b}=\mathit{rb},\; i=i,\; j=j,\; k=3)$\;
+    $s' \leftarrow \textsc{RestaurarDepósito}(\hat{s}')$
+    \tcp{añade "D" al inicio y fin de cada ruta antes de devolver}
+    \Return $(s',\, m)$\;
 }
-
-\BlankLine
-$s' \leftarrow \textsc{Copy}(s)$ \;
-$\mathit{block} \leftarrow r'_a[i{:}i{+}3]$ \;
-\textbf{delete} $r'_a[i{:}i{+}3]$
-    \tcp{remove 3 tasks from source}
-$r'_b[j{:}j] \leftarrow \mathit{block}$
-    \tcp{insert block without inversion}
-
-\BlankLine
-$m \leftarrow (\texttt{or\_opt\_3},\; a,\; b,\; i,\; j,\; k{=}3)$ \;
-\Return $(s',\, m)$
 \end{algorithm}
 
-\noindent\textbf{Visual example} ($i=0$, $j=1$, $r_a \neq r_b$):
+\noindent\textbf{Ejemplo visual} ($i=0$, $j=1$, $r_a \neq r_b$):
 \[
     \begin{array}{ll}
         r_a = \bigl[\overbrace{\mathtt{TR1},\;\mathtt{TR2},\;\mathtt{TR3}}^{\mathit{block}},\;
                     \mathtt{TR4}\bigr]
         &
         r_b = [\mathtt{TR5},\;\mathtt{TR6},\;\mathtt{TR7}] \\[8pt]
-        \multicolumn{2}{c}{\xrightarrow{\;\text{remove block from }r_a,\;\text{insert at }r_b[1]\;}} \\[4pt]
+        \multicolumn{2}{c}{\xrightarrow{\;\text{quitar bloque de }r_a,\;\text{insertar en }r_b[1]\;}} \\[4pt]
         r'_a = [\mathtt{TR4}]
         &
         r'_b = [\mathtt{TR5},\;\mathtt{TR1},\;\mathtt{TR2},\;\mathtt{TR3},\;\mathtt{TR6},\;\mathtt{TR7}]
     \end{array}
 \]
 
-\noindent As with \texttt{or\_opt\_2}, the block $[\mathtt{TR1}, \mathtt{TR2}, \mathtt{TR3}]$
-is inserted in its original order.
+\noindent Como en \texttt{or\_opt\_2}, el bloque $[\mathtt{TR1}, \mathtt{TR2}, \mathtt{TR3}]$
+se inserta en su orden original.
 
 % ============================================================
-\subsection{Summary Table}
+\subsection{Tabla Resumen}
 \label{subsec:operator-summary}
 % ============================================================
 
-Table~\ref{tab:operator-summary} summarises the key properties of all
-nine operators.
+La Tabla~\ref{tab:operator-summary} resume las propiedades clave de los
+nueve operadores.
 
 \begin{table}[h]
 \centering
 \renewcommand{\arraystretch}{1.4}
 \begin{tabular}{llccp{5.2cm}}
 \hline
-\textbf{Operator} & \textbf{Type} & \textbf{Min.\ tasks} & \textbf{Routes} & \textbf{Effect} \\
+\textbf{Operador} & \textbf{Tipo} & \textbf{Tareas mín.} & \textbf{Rutas} & \textbf{Efecto} \\
 \hline
-\texttt{relocate\_intra}  & intra & 2      & 1 & Move one task to another position within the same route \\
-\texttt{swap\_intra}      & intra & 2      & 1 & Swap two tasks within the same route \\
-\texttt{2opt\_intra}      & intra & 3      & 1 & Reverse a contiguous segment within the same route \\
-\texttt{relocate\_inter}  & inter & 1      & 2 & Move one task from one route to another (destination may be empty) \\
-\texttt{swap\_inter}      & inter & 1$+$1  & 2 & Exchange one task between two distinct non-empty routes \\
-\texttt{2opt\_star}       & inter & 1$+$1  & 2 & Swap the tails of two routes at chosen cut points \\
-\texttt{cross\_exchange}  & inter & 2$+$2  & 2 & Swap contiguous segments of $\geq$2 tasks between two routes \\
-\texttt{or\_opt\_2}       & inter & 2      & 2$^*$ & Relocate a block of exactly 2 consecutive tasks (order preserved) \\
-\texttt{or\_opt\_3}       & inter & 3      & 2$^*$ & Relocate a block of exactly 3 consecutive tasks (order preserved) \\
+\texttt{relocate\_intra}  & intra & 2      & 1 & Mover una tarea a otra posición dentro de la misma ruta \\
+\texttt{swap\_intra}      & intra & 2      & 1 & Intercambiar dos tareas dentro de la misma ruta \\
+\texttt{2opt\_intra}      & intra & 3      & 1 & Invertir un segmento contiguo dentro de la misma ruta \\
+\texttt{relocate\_inter}  & inter & 1      & 2 & Mover una tarea de una ruta a otra (el destino puede estar vacío) \\
+\texttt{swap\_inter}      & inter & 1$+$1  & 2 & Intercambiar una tarea entre dos rutas distintas no vacías \\
+\texttt{2opt\_star}       & inter & 1$+$1  & 2 & Intercambiar las colas de dos rutas en puntos de corte elegidos \\
+\texttt{cross\_exchange}  & inter & 2$+$2  & 2 & Intercambiar segmentos contiguos de $\geq$2 tareas entre dos rutas \\
+\texttt{or\_opt\_2}       & inter & 2      & 2$^*$ & Reubicar un bloque de exactamente 2 tareas consecutivas (orden preservado) \\
+\texttt{or\_opt\_3}       & inter & 3      & 2$^*$ & Reubicar un bloque de exactamente 3 tareas consecutivas (orden preservado) \\
 \hline
-\multicolumn{5}{l}{$^*$ Falls back to intra-route relocation when only one route exists.}
+\multicolumn{5}{l}{$^*$ Recae en reubicación intra-ruta cuando solo existe una ruta.}
 \end{tabular}
-\caption{Summary of the nine neighborhood operators.
-         ``Min.\ tasks'' gives the minimum number of tasks required in the
-         source route(s); ``Routes'' gives the number of distinct routes
-         normally involved.}
+\caption{Resumen de los nueve operadores de vecindario.
+         ``Tareas mín.'' indica el número mínimo de tareas requerido en la(s)
+         ruta(s) de origen; ``Rutas'' indica el número de rutas distintas
+         normalmente involucradas.}
 \label{tab:operator-summary}
 \end{table}
