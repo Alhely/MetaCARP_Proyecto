@@ -468,8 +468,9 @@ TS-Simple(sol_inicial, tabu_tenure, iteraciones_max, max_iter_sin_mejora,
     // Seleccionar grupo de operadores (sesgo p_inter / alpha_inter)
     viol ← exceso_capacidad(s)
     p_ef ← alpha_inter si viol > ε, p_inter si no
-    si random() < p_ef: grupo ← ops_inter
+    si random() < p_ef: grupo ← ops_inter     // random() ~ Uniforme[0,1)
     si no:              grupo ← ops_intra
+    // El operador concreto se elige luego UNIFORMEMENTE dentro del grupo
 
     // Generar lote de vecinos
     N ← {generar_vecino(s, grupo) para _ en range(tam_vecindario)}
@@ -511,7 +512,7 @@ En cada iteración, los `tam_vecindario` vecinos se codifican a IDs enteros con 
 
 ### Sesgo inter/intra compartido con SA y RTS
 
-El mecanismo de sesgo está centralizado en `seleccionar_grupo_operadores_inter_intra` (módulo `metaheuristicas_utils`). La función realiza exactamente un `rng.random()` por iteración del bucle principal y devuelve el grupo de operadores elegido. Esto preserva la reproducibilidad bit-a-bit: la secuencia de números aleatorios del TS simple con `semilla=42` es idéntica en términos de estructura a la del SA o RTS con la misma semilla.
+El mecanismo de sesgo está centralizado en `seleccionar_grupo_operadores_inter_intra` (módulo `metaheuristicas_utils`). La función realiza exactamente un `rng.random()` —un sorteo **uniforme** en `[0,1)`— por iteración del bucle principal y devuelve el grupo de operadores elegido; el operador concreto se sortea después **uniformemente** dentro de ese grupo (`rng.choice`). Esto preserva la reproducibilidad bit-a-bit: la secuencia de números aleatorios del TS simple con `semilla=42` es idéntica en términos de estructura a la del SA o RTS con la misma semilla.
 
 ---
 

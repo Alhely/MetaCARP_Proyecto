@@ -41,8 +41,8 @@ n_pasos = min(12, 1 + floor( |N(0,1)|^(1/beta) * pasos_base ))
 
 Donde:
 
-- `N(0,1)` es una muestra de la distribución normal estándar.
-- `|·|` toma el valor absoluto.
+- `N(0,1)` es una muestra de la distribución **normal estándar** (media 0, desviación 1), obtenida con `rng.gauss(0.0, 1.0)`. No es uniforme: es el único punto del proyecto donde se muestrea una gaussiana.
+- `|·|` toma el valor absoluto, de modo que la magnitud sigue una **semi-normal** y la transformación `^(1/beta)` la convierte en una **cola pesada tipo Lévy**.
 - `beta` controla la forma de la distribución (valor clásico: `1.5`).
 - `pasos_base` escala la magnitud de los saltos.
 - El tope de **12 pasos** evita que saltos extremadamente grandes saturen el tiempo de cómputo sin beneficio proporcional.

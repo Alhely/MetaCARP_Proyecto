@@ -465,9 +465,10 @@ def generar_vecino(
 1. Si `backend="ids"`: codifica la solucion con `encode_solution`, llama a
    `generar_vecino_ids` y decodifica el resultado con `decode_solution`.
 2. Si `backend="labels"`: elimina el marcador de deposito con
-   `normalizar_para_vecindario`, elige un operador al azar, selecciona indices
-   aleatorios validos para ese operador (con hasta 500 reintentos si los elegidos no
-   son aplicables), aplica el operador, y restaura el deposito si se pide.
+   `normalizar_para_vecindario`, elige un operador **de forma uniforme** (`rng.choice`)
+   —o por **ruleta categórica** `rng.choices(weights=...)` si se pasa `pesos_operadores`—,
+   selecciona indices **uniformes** validos para ese operador (con hasta 500 reintentos
+   si los elegidos no son aplicables), aplica el operador, y restaura el deposito si se pide.
 
 ---
 
@@ -636,8 +637,8 @@ usa.
 **Abejas (ABC)** (`busqueda_abejas`):
 - Mantiene `num_fuentes` (por defecto 16) soluciones activas en paralelo.
 - **Fase empleadas**: genera 1 vecino por fuente (lote de `num_fuentes`).
-- **Fase observadoras**: selecciona fuentes con probabilidad proporcional a su calidad
-  y genera otro lote de `num_fuentes` vecinos.
+- **Fase observadoras**: selecciona fuentes por **ruleta categórica** (`rng.choices`),
+  con probabilidad proporcional a su fitness, y genera otro lote de `num_fuentes` vecinos.
 - **Fase scout**: fuentes que no mejoraron en `limite_abandono` (por defecto 35)
   intentos consecutivos se reemplazan con vecinos de la mejor fuente.
 
@@ -650,11 +651,41 @@ usa.
 
 **Recocido Simulado** (`recocido_simulado`):
 - Genera 1 vecino por evaluacion.
-- Acepta siempre si mejora; si empeora, acepta con probabilidad `exp(-delta/T)`.
+- Acepta siempre si mejora; si empeora, acepta con probabilidad `exp(-delta/T)` (regla de Metrópolis: se compara un sorteo **uniforme** `rng.random()` en `[0,1)` contra ese umbral).
 - `T` decrece geometricamente por factor `alpha` en cada nivel; la condicion de parada es `T < temperatura_minima`.
 - La longitud de la cadena de Markov es `L = n²`, donde `n` es el numero de arcos requeridos de la instancia.
 - `temperatura_inicial` y `temperatura_minima` pueden fijarse manualmente o calcularse de forma automatica desde la instancia (`temperatura_inicial = 20 · d_max / n`, `temperatura_minima = 20 · d_max / n²`).
-- **Mecanismo de dado (`p_inter`)**: antes de elegir el operador en cada iteracion, se lanza un numero aleatorio en `[0,1)`. Si es menor que `p_efectiva` (= `alpha_inter = 0.8` cuando la solucion viola capacidad, o `p_inter` cuando es factible), se elige del grupo inter-ruta; en caso contrario, del grupo intra-ruta. Esto equilibra diversificacion (entre rutas) e intensificacion (dentro de ruta).
+- **Mecanismo de dado (`p_inter`)**: antes de elegir el operador en cada iteracion, se lanza un numero aleatorio **uniforme** en `[0,1)` (`rng.random()`). Si es menor que `p_efectiva` (= `alpha_inter = 0.8` cuando la solucion viola capacidad, o `p_inter` cuando es factible), se elige del grupo inter-ruta; en caso contrario, del grupo intra-ruta. Esto equilibra diversificacion (entre rutas) e intensificacion (dentro de ruta).
+
+---
+
+## 6.1 Distribuciones de probabilidad de cada decisión aleatoria
+
+Todas las decisiones aleatorias del proyecto se toman con un `random.Random(semilla)`
+local a la corrida (módulo `random` de la biblioteca estándar de Python), nunca con el
+RNG global. Esto garantiza reproducibilidad bit-a-bit cuando se pasa una semilla. La
+siguiente tabla declara **explícitamente** la distribución de cada sorteo:
+
+| Decisión | Llamada concreta | Distribución | Soporte |
+|---|---|---|---|
+| Selección del grupo inter/intra (dado `p_inter`) | `rng.random() < p_efectiva` | **Uniforme continua** `U[0,1)` | `[0, 1)` |
+| Elección del operador dentro del grupo (sin pesos) | `rng.choice(ops)` | **Uniforme discreta** | operadores del grupo |
+| Elección del operador con pesos (AOS / `pesos_operadores`) | `rng.choices(ops, weights=w, k=1)` | **Categórica** (probabilidad ∝ peso) | operadores del grupo |
+| Selección de ruta / posición índice | `rng.randrange(n)` | **Uniforme discreta** | `{0, …, n-1}` |
+| Selección de dos índices o rutas distintas | `rng.sample(rango, 2)` | **Uniforme discreta sin reemplazo** | pares sin repetición |
+| Aceptación de Metrópolis (SA) | `rng.random() < exp(-Δ/T)` | **Uniforme continua** `U[0,1)` comparada contra el umbral de Boltzmann | `[0, 1)` |
+| Ruleta de observadoras (ABC) | `rng.choices(fuentes, weights=probs)` | **Categórica proporcional al fitness** | fuentes activas |
+| Reinicio de scout (ABC) | `rng.shuffle(tareas)` | **Permutación uniforme** (Fisher–Yates) | permutaciones de tareas |
+| Longitud del salto Lévy (Cuckoo) | `abs(rng.gauss(0,1)) ** (1/β)` | **Normal estándar** `|N(0,1)|` transformada para imitar una **cola pesada de Lévy** | `[0, ∞)` discretizado a `1..12` pasos |
+| Nido rival en la competencia (Cuckoo) | `rng.randrange(num_nidos)` | **Uniforme discreta** | `{0, …, num_nidos-1}` |
+
+> **Resumen:** salvo dos excepciones, todos los sorteos son **uniformes**. Las dos
+> excepciones deliberadas son (1) la **ruleta categórica proporcional al fitness** de las
+> abejas observadoras (ABC) y (2) la **transformación de cola pesada tipo Lévy** del
+> tamaño de salto en Cuckoo Search, que parte de una normal estándar `N(0,1)`. La
+> selección sesgada de operador por pesos (`rng.choices`) solo se activa cuando se pasa
+> un vector `pesos_operadores` (p. ej. desde AOS); en ausencia de pesos, la elección del
+> operador es uniforme.
 
 ---
 

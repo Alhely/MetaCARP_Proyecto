@@ -429,6 +429,8 @@ RTS(sol_inicial, tenure_ini, tenure_min, tenure_max, f_aum, f_red,
   mientras iter < iter_max Y sin_mej < max_sin_mejora:
 
     // Selección de grupo de operadores (sesgo p_inter)
+    // un sorteo Uniforme[0,1) decide inter/intra; el operador se elige
+    // luego UNIFORMEMENTE dentro del grupo
     grupo ← seleccionar_grupo(alpha_inter, p_inter, viol(s))
     N     ← generar_lote(s, grupo, tam_vec)
     evaluar_lote(N)
@@ -456,6 +458,7 @@ RTS(sol_inicial, tenure_ini, tenure_min, tenure_max, f_aum, f_red,
         si H[h]["veces"] >= umbral_esc:
             // ESCAPE
             para _ en range(n_esc):
+                // operador e índices elegidos UNIFORMEMENTE (lista completa, sin sesgo)
                 s ← aplicar_movimiento_aleatorio(s)  // ignora lista tabú
             limpiar T, T_set, H
             rep_cnt ← 0

@@ -343,6 +343,18 @@ código de las metaheurísticas garantiza que NO hay estado global
 contaminante entre repeticiones. Esto se verifico inspeccionando con
 \texttt{grep} todos los módulos del paquete \texttt{metacarp}.
 
+\paragraph{Distribuciones empleadas.} Salvo dos excepciones, todos los
+sorteos del proyecto son \textbf{uniformes}: la regla de Metrópolis (SA), el
+dado inter/intra del selector de grupo, la elección de operador dentro del
+grupo, la selección de índices/rutas (\texttt{rng.random}, \texttt{rng.choice},
+\texttt{rng.randrange}, \texttt{rng.sample}) y la elección del nido rival en
+Cuckoo. Las dos excepciones deliberadas son: (i) la \textbf{ruleta categórica}
+proporcional al fitness de las abejas observadoras en ABC (\texttt{rng.choices}
+con pesos), y (ii) la \textbf{transformación de cola pesada tipo Lévy} del
+tamaño de salto en Cuckoo Search, que parte de una \textbf{normal estándar}
+$|N(0,1)|$ (\texttt{rng.gauss}). La selección sesgada de operador por pesos
+(AOS) solo se activa cuando se pasa un vector \texttt{pesos\_operadores}.
+
 % =====================================================================
 \section{Algoritmos base}
 \label{sec:algoritmos-base}
@@ -356,7 +368,9 @@ conjunto de soluciones simultaneamente).
 \subsection{Recocido Simulado (SA)}
 
 SA~\cite{kirkpatrick1983} es una metaheurística de trayectoria que acepta
-movimientos deteriorantes con probabilidad $\exp(-\Delta/T)$, donde $T$ es la
+movimientos deteriorantes con probabilidad $\exp(-\Delta/T)$ (regla de
+Metrópolis: se compara un sorteo \textbf{uniforme} $u \sim U[0,1)$ contra ese
+umbral y se acepta si $u < \exp(-\Delta/T)$), donde $T$ es la
 temperatura que decrece en cada nivel según
 $T_{k+1} = \alpha \cdot T_k$. El esquema implementado anade
 \emph{reheating} (cuando se acumulan \texttt{patience} niveles sin
@@ -377,26 +391,34 @@ RTS~\cite{battiti1994} extiende TS Simple con dos mecanismos adicionales:
 detecta ciclos, lo reduce cuando hay diversificación;
 (ii) \emph{escape}: si una solución se visita más de
 \texttt{umbral\_repeticiones\_escape} veces, se aplica una perturbación
-de \texttt{num\_movimientos\_escape} pasos aleatorios.
+de \texttt{num\_movimientos\_escape} pasos aleatorios (en el escape el
+operador y sus índices se eligen de forma \textbf{uniforme} sobre la lista
+completa de operadores, sin el sesgo $p_{\text{inter}}$).
 
 \subsection{Colonia Artificial de Abejas (ABC)}
 
 ABC~\cite{karaboga2005} es una metaheurística poblacional. Mantiene un conjunto de
 \texttt{num\_fuentes} soluciones (las \emph{fuentes de alimento}). En
 cada ciclo, cada abeja \emph{empleada} explora un vecino de su fuente;
-las abejas \emph{observadoras} eligen una fuente con probabilidad
-proporcional a su fitness y la perturban; cuando una fuente no mejora
+las abejas \emph{observadoras} eligen una fuente por \textbf{ruleta}
+(muestreo \textbf{categórico con reemplazo}, probabilidad proporcional al
+fitness; \texttt{rng.choices}) y la perturban; cuando una fuente no mejora
 en \texttt{limite\_abandono} ciclos, se abandona y se sustituye por una
-solución aleatoria nueva (\emph{scout}).
+solución aleatoria nueva (\emph{scout}: \textbf{permutación uniforme} de las
+tareas con \texttt{rng.shuffle} + asignación greedy por capacidad).
 
 \subsection{Cuckoo Search}
 
 Cuckoo Search~\cite{yang2009} mantiene un conjunto de \texttt{num\_nidos} soluciones.
 En cada iteración, cada nido genera un nuevo huevo aplicando un
-\emph{Levy flight} (\texttt{pasos\_levy\_base} pasos aleatorios con
-distribución de cola pesada). El nuevo huevo reemplaza al nido si
-mejora la calidad. Una fracción \texttt{pa\_abandono} de los peores
-nidos se abandonan al final de cada iteración y se sustituyen.
+\emph{Levy flight}: el número de perturbaciones consecutivas se obtiene
+muestreando una \textbf{normal estándar} $|N(0,1)|$ (vía \texttt{rng.gauss})
+y aplicándole la transformación $x^{1/\beta}$ para imitar una
+\textbf{cola pesada de Lévy}. El nuevo huevo compite con un nido elegido
+\textbf{uniformemente} al azar y lo reemplaza si mejora la calidad. Una
+fracción \texttt{pa\_abandono} de los peores nidos se abandonan al final de
+cada iteración y se sustituyen. Dentro de cada perturbación, el operador
+concreto se elige de forma \textbf{uniforme} dentro del grupo seleccionado.
 
 Los pseudocódigos detallados de las cinco MHs se encuentran en el
 directorio \texttt{pseudocodigos/} del repositorio del proyecto y son
@@ -474,6 +496,14 @@ en \texttt{metacarp.metaheuristicas\_utils}) usa dos parámetros:
 \item $p_{\text{inter}}$: probabilidad de elegir inter cuando la
   solución actual es FACTIBLE.
 \end{itemize}
+
+La decisión se toma con un \textbf{único} sorteo \textbf{uniforme}
+$u \sim U[0,1)$ por iteración (\texttt{rng.random()}): si $u < p_{\text{ef}}$
+se usa el grupo inter, en caso contrario el intra. Una vez fijado el grupo, el
+operador concreto se elige \textbf{uniformemente} dentro de él
+(\texttt{rng.choice}), salvo que se proporcione un vector de pesos (AOS), en
+cuyo caso la elección es \textbf{categórica} proporcional a esos pesos
+(\texttt{rng.choices}).
 
 El experimento \texttt{strict\_intra\_inter\_20260524} sustituye este
 selector probabilístico por uno binario estricto; el experimento

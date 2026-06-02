@@ -39,7 +39,7 @@ La diferencia conceptual fundamental: las empleadas explotan localmente, las obs
 |---|---|---|
 | **Se MANTIENE** | Tres fases empleadas → observadoras → scouts | Estructura nuclear del ABC |
 | **Se MANTIENE** | Ruleta por fitness inverso `1/(1+obj)` en observadoras | Fórmula original Karaboga |
-| **Se MANTIENE** | Scouts puramente aleatorios (greedy por capacidad) | El sello distintivo del ABC canónico; generan un punto sin sesgo histórico |
+| **Se MANTIENE** | Scouts puramente aleatorios (greedy por capacidad) | El sello distintivo del ABC canónico; generan un punto sin sesgo histórico. La aleatoriedad es una **permutación uniforme** de las tareas (`rng.shuffle`, Fisher–Yates) seguida de asignación greedy por capacidad |
 | **Se MANTIENE** | Comparación greedy en empleadas y observadoras | Misma regla de actualización del paper |
 | **Se SIMPLIFICA** | Una sola lista `mejor_sol_ids` (no se rastrea mejor factible aparte) | Penalización ya guía la búsqueda hacia región factible; segundo rastreo añadía complejidad sin beneficio en instancias estudiadas |
 | **Se SIMPLIFICA** | Backend de generación fijo en IDs | Evita la rama dual `labels`/`ids` que complica el código sin acelerar nada relevante |

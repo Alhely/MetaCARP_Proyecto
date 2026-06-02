@@ -163,7 +163,7 @@ P_i = fitness_i / sum_{j=0}^{num_fuentes-1} fitness_j
 
 donde `obj_i` es el objetivo penalizado de la fuente i: `costo_puro_i + lambda * violacion_i`.
 
-La selección se realiza con `rng.choices(rango_fuentes, weights=probs, k=num_fuentes)`, que permite repeticiones. Una fuente con objetivo bajo (solución de alta calidad) tiene un fitness alto y una probabilidad alta de ser elegida múltiples veces, concentrando el esfuerzo de búsqueda en las zonas prometedoras del espacio de soluciones.
+La selección se realiza con `rng.choices(rango_fuentes, weights=probs, k=num_fuentes)`: un **muestreo categórico con reemplazo** cuya probabilidad de cada fuente es proporcional a su fitness (`P_i` de la fórmula anterior). **No es uniforme**: una fuente con objetivo bajo (solución de alta calidad) tiene un fitness alto y una probabilidad alta de ser elegida múltiples veces, concentrando el esfuerzo de búsqueda en las zonas prometedoras del espacio de soluciones. Solo en el caso degenerado de que todos los fitness sumen ≤ 0 se cae a una distribución **uniforme** como salvaguarda.
 
 ### Los scouts: abandono y reinicio
 
@@ -454,7 +454,7 @@ La tabla siguiente resume las diferencias clave para comprender cuánto del rend
 
 | Aspecto | `busqueda_abejas` (esta implementación) | `busqueda_abejas_simple` (canónica) |
 |---|---|---|
-| **Scouts** | Vecino de la mejor fuente actual | **Solución aleatoria pura** (barajar tareas + asignación greedy) — el sello de Karaboga 2005 |
+| **Scouts** | Vecino de la mejor fuente actual | **Solución aleatoria pura** (**permutación uniforme** de tareas con `rng.shuffle` + asignación greedy) — el sello de Karaboga 2005 |
 | **Sesgo inter/intra** | `pesos_inter_bias` en empleadas, observadoras y scouts | `seleccionar_grupo_operadores_inter_intra` solo en empleadas y observadoras; scouts sin sesgo |
 | **Parámetro de sesgo** | `alpha_inter` (bajo violación) + `p_inter` (factible) | Un único `p_inter`; el algoritmo aplica `max(p_inter, 0.8)` automáticamente bajo violación |
 | **Mejor factible** | Rastreado separado del mejor penalizado (`mejor_sol_factible`) | Un único mejor (la penalización guía la búsqueda; no se necesita rastreo separado) |

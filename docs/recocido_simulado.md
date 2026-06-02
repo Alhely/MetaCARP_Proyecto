@@ -742,10 +742,10 @@ OPERADORES_POPULARES = (
 )
 ```
 
-En el SA, el operador no se elige directamente de esta lista de forma uniforme. En su
-lugar se usa el **mecanismo de dado (`p_inter`)**: se lanza un numero aleatorio y,
-dependiendo de si supera `p_inter` (o `alpha_inter` en caso de infactibilidad), se
-elige aleatoriamente dentro del grupo inter-ruta
+En el SA, el operador no se elige directamente de esta lista completa de forma uniforme. En su
+lugar se usa el **mecanismo de dado (`p_inter`)**: se lanza un numero aleatorio **uniforme**
+en `[0,1)` (`rng.random()`) y, dependiendo de si supera `p_inter` (o `alpha_inter` en caso
+de infactibilidad), se elige **uniformemente** dentro del grupo inter-ruta
 (`relocate_inter`, `swap_inter`, `2opt_star`, `cross_exchange`, `or_opt_2`, `or_opt_3`)
 o del grupo intra-ruta (`relocate_intra`, `swap_intra`, `2opt_intra`).
 Luego `generar_vecino` aplica ese operador a la solucion actual, produciendo un vecino
