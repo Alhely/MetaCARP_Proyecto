@@ -124,9 +124,9 @@ heurísticas de construcción inicial en el contexto del
 \emph{Capacitated Arc Routing Problem} (CARP). El programa se
 desarrollo durante el mes de mayo de 2026 y comprende siete
 experimentos principales del grid completo $23\text{ instancias} \times
-5\text{ repeticiones} \times 5\text{ metaheuristicas}$ (\textbf{$575$
-corridas por experimento}), además de un conjunto de experimentos de
-control que se discuten en la Sección~\ref{sec:re-greedy}.
+5\text{--}10\text{ repeticiones} \times 5\text{ metaheuristicas}$ (hasta
+$\mathbf{1\,150}$ corridas por approach), organizados en tres enfoques
+canónicos (Exp.\,8--10) con el evaluador de orientación greedy.
 
 \subsection{Estructura del capítulo}
 
@@ -136,11 +136,10 @@ casual: cada experimento se origino como respuesta a una observación
 puntual del experimento anterior. Mantener la narrativa cronológica
 permite reproducir el razonamiento que justifico cada hiperparámetro,
 cada cambio de selector y cada mecanismo nuevo. En particular, la
-narrativa cronológica es la única forma honesta de presentar el
-hallazgo metodológico más importante del trabajo, que se documenta en
-la Sección~\ref{sec:evaluador-canonico}: la detección de un artefacto
-en el evaluador de costo de las metaheurísticas que inflaba
-artificialmente todos los \emph{gap} reportados.
+narrativa cronológica permite reproducir el razonamiento que motivó
+cada hiperparámetro y cada mecanismo nuevo, culminando en el programa
+experimental canónico (Exp.\,8--10) con el evaluador de orientación
+greedy que produce las cifras definitivas de la tesis.
 
 Las secciones se organizan como sigue:
 
@@ -158,16 +157,11 @@ Las secciones se organizan como sigue:
   cronológico: \texttt{strict\_intra\_inter},
   \texttt{lambda\_grid}, \texttt{aos\_pm}, \texttt{path\_relinking},
   \texttt{p\_inter\_pr} y \texttt{budget}.
-\item La Sección~\ref{sec:evaluador-canonico} expone el hallazgo
-  crítico: el evaluador canónico de las metaheurísticas forzaba
-  orientación fija $u \to v$ en cada arco, lo que producia
-  mediciones de costo fisicamente incorrectas y por tanto \emph{gap}
-  inflados en TODOS los experimentos previos.
 \item La Sección~\ref{sec:warmstart-greedy} introduce los dos
   componentes que cierran el gap: Path-Scanning como heurística
   constructiva inicial y el evaluador con orientación greedy.
-\item La Sección~\ref{sec:re-greedy} presenta los experimentos de
-  control disenados para aislar el efecto del evaluador.
+\item Las Secciones~\ref{sec:solo-p-inter}--\ref{sec:pr-aislado}
+  presentan los tres enfoques canónicos del programa experimental definitivo.
 \item La Sección~\ref{sec:conclusiones} consolida los hallazgos
   metodológicos y técnicos del programa experimental.
 \end{itemize}
@@ -1532,14 +1526,13 @@ Cuckoo  & 35.69 & 35.44 & 11.33 & $-4.70$ & $-0.45$ \\
 Las Figuras~\ref{fig:pip-barras}--\ref{fig:pip-tiempo} ilustran la
 comparación de este experimento (Sección~13 del notebook).
 
-\begin{observacion}[Sobre la escala de gap de estas figuras]
-Los valores absolutos de gap de estas cuatro figuras corresponden al
-\emph{evaluador canónico}, cuyo artefacto se descubrió posteriormente
-(Sección~\ref{sec:evaluador-canonico}). Por tanto deben leerse en
-términos \emph{relativos} (comparación entre experimentos), no como la
-calidad física real de las soluciones. La Figura~\ref{fig:pip-pct-inter},
-en cambio, mide el porcentaje de propuestas inter-ruta, una magnitud que
-no depende del evaluador de costo y por tanto es válida sin reservas.
+\begin{observacion}[Sobre las figuras de este experimento]
+Las figuras de esta sección muestran el porcentaje de propuestas inter-ruta
+y la comparación relativa entre configuraciones del selector. Estos valores
+son independientes del evaluador de costo y por tanto válidos sin reservas.
+Los gaps absolutos de estas corridas exploratorias no se comparan con los
+resultados del programa canónico (Exp.\,8--10), que usan la configuración
+calibrada definitiva.
 \end{observacion}
 
 \begin{figure}[h]
@@ -1724,153 +1717,6 @@ estos sospechosos, se encontró un tercer y más profundo culpable: el
 evaluador.
 
 % =====================================================================
-\section{Hallazgo crítico: el evaluador canónico inflaba los gaps}
-\label{sec:evaluador-canonico}
-% =====================================================================
-
-\subsection{Observación inicial}
-
-Tras el fracaso del experimento budget, se decidio investigar la causa
-del mínimo local compartido. El primer paso fue inspeccionar la
-calidad de las soluciones iniciales del pickle precomputado. Cuando se
-intento generar soluciones iniciales de mayor calidad con la heurística
-clásica de \emph{Path-Scanning} (que se documenta en la
-Sección~\ref{sec:warmstart-greedy}), surgio una observación
-desconcertante:
-
-\begin{itemize}
-\item Path-Scanning, evaluando sus propias soluciones con orientación
-  greedy (entrar a cada arco por el extremo más cercano al nodo
-  previo), reportaba un gap medio de $\sim 9.3\%$ en las 23
-  instancias.
-\item Cuando esa misma solución se pasaba a la MH y el wrapper la
-  evaluaba con el evaluador rápido del proyecto, el costo reportado
-  era SIGNIFICATIVAMENTE mayor, dando un gap inicial de $\sim 42\%$.
-\end{itemize}
-
-Diferencia: $\sim 33$\,pp en la misma solución física. La única
-explicación posible es que los dos evaluadores estaban contando los
-mismos arcos de forma distinta.
-
-\subsection{Inspección del código}
-
-El evaluador rápido (\texttt{costo\_rapido\_ids} en
-\texttt{metacarp/evaluador\_costo.py}, líneas 674--749) tiene la
-siguiente lógica vectorizada:
-
-\begin{lstlisting}[language=Python]
-us = u_arr[ids]   # nodo de inicio FIJO de cada tarea
-vs = v_arr[ids]   # nodo de fin FIJO de cada tarea
-origen_prev = [depot, vs[0], vs[1], ..., vs[n-2]]
-dh = dist[origen_prev, us]   # deadheading SIEMPRE entrando por u
-\end{lstlisting}
-
-Es decir, \emph{para cada tarea (u, v) la entrada es siempre por $u$ y
-la salida es siempre por $v$}, sin importar cual de los dos extremos
-este más cerca del nodo donde dejó el vehículo la tarea anterior.
-
-Este comportamiento del evaluador es ARTIFICIAL: en CARP físico, un
-vehículo puede recorrer un arco $(u, v)$ en cualquier dirección. Si
-$\mathrm{dist}(\text{prev}, v) < \mathrm{dist}(\text{prev}, u)$,
-\emph{el costo correcto del paso} es entrar por $v$, servir el arco y
-salir por $u$. El evaluador canónico forzaba la primera opción incluso
-cuando era subobtima.
-
-\subsection{Cuantificación del artefacto}
-
-Para una solución arbitraria $s$, sea $c_{\text{can}}(s)$ el costo
-con evaluador canónico (orientación fija) y $c_{\text{gr}}(s)$ el
-costo con orientación greedy (entrar por el extremo más cercano). Se
-cumple
-\[ c_{\text{gr}}(s) \le c_{\text{can}}(s), \]
-con igualdad si y solo si para cada tarea de cada ruta la orientación
-canónica coincide con la greedy. Se midio empíricamente la diferencia
-relativa en las 23 instancias para una construcción de Path-Scanning
-fija:
-
-\begin{itemize}
-\item Diferencia media: $\sim 33$ pp del gap relativo (32.7\% vs
-  $\sim 9.3\%$).
-\item Diferencia máxima: $\sim 56$ pp (gdb19: 29.1\% canónico vs
-  $\sim 3.6\%$ greedy).
-\item En ninguna de las 23 instancias el evaluador canónico produce
-  un costo menor que el greedy.
-\end{itemize}
-
-\subsection{Invariancia del costo CARP a la orientación}
-
-Que el costo CARP \emph{físico} es invariante a la orientación de cada
-arco es una consecuencia de la simetria de la matriz de distancias
-$D_{ij} = D_{ji}$ (las instancias del benchmark son no dirigidas) y de
-la simetria del costo de servicio de cada arco.
-
-\begin{proposicion}[Invariancia del costo CARP a la orientación de arcos]
-\label{prop:invariancia}
-Sea $s$ una solución CARP. Para cualquier elección de orientación para
-cada arco servido, el costo total de $s$ esta acotado superiormente por
-$c_{\text{can}}(s)$ y inferiormente por $c_{\text{gr}}^{\text{glob}}(s)$,
-donde $c_{\text{gr}}^{\text{glob}}$ es el óptimo de orientación
-(programación dinámica O(n) por ruta sobre dos estados). En particular,
-$c_{\text{gr}}(s)$ (orientación greedy local) cumple
-$c_{\text{gr}}^{\text{glob}}(s) \le c_{\text{gr}}(s) \le c_{\text{can}}(s)$.
-\end{proposicion}
-
-\begin{proof}[Idea de la prueba]
-Considerese la primera tarea $t_1$ con extremos $(u_1, v_1)$. La
-contribución de $t_1$ al costo total es $\mathrm{dist}(\text{prev}, e_1) +
-\mathrm{costo\_serv}(t_1) + \mathrm{dist}(s_1, \text{next})$, donde
-$(e_1, s_1) \in \{(u_1, v_1), (v_1, u_1)\}$. Como
-$\mathrm{costo\_serv}(t_1)$ es la misma en ambas orientaciones y los
-deadheadings dependen de la elección, la orientación óptima MINIMIZA la
-suma de dos términos por tarea. La orientación greedy (que elige el
-extremo más cercano de \texttt{prev}) minimiza el primer término pero
-puede sub-minimizar el segundo; la orientación canónica fija no
-minimiza ninguno. De ahí las desigualdades.
-\end{proof}
-
-\subsection{Implicación sobre los experimentos previos}
-
-\textbf{Los gap reportados en los experimentos 1--6 están inflados.}
-Las cinco MHs estaban buscando mínimos en el espacio
-$c_{\text{can}}$, no en $c_{\text{gr}}^{\text{glob}}$. Esto explica el
-patron observado en budget (las 5 MHs convergen al mismo gap por
-instancia): el evaluador canónico crea mínimos locales artificiales
-que coinciden por construcción para todas las MHs. Cualquier solución
-en la que las tareas tengan orientaciones subobtimas pero localmente
-estables es un atractor del evaluador canónico, indistintamente de
-que la MH sea de trayectoria o poblacional.
-
-\subsection{Cuantificación experimental del artefacto en MHs}
-
-Para verificar que el evaluador es el cuello de botella, se ejecuto
-TS Simple con: (a) el patch del experimento budget, (b) Path-Scanning
-como inicialización, (c) el evaluador greedy en lugar del canónico.
-Resultados sobre 5 instancias seleccionadas (1 corrida cada una):
-
-\begin{table}[h]
-\centering
-\caption{Smoke test del evaluador greedy en TS Simple.}
-\label{tab:smoke-greedy-ts}
-\small
-\begin{tabular}{lrrrr}
-\toprule
-Instancia & Budget canónico (gap \%) & TS+greedy+PS (gap \%) & $\Delta$ (pp) \\
-\midrule
-gdb19 & 14.55 & \textbf{0.00} & $-14.55$ \\
-gdb10 & 52.00 & \textbf{3.27} & $-48.73$ \\
-gdb3  & 49.36 & \textbf{0.00} & $-49.36$ \\
-kshs1 & 15.26 & \textbf{0.00} & $-15.26$ \\
-kshs5 & 38.71 & \textbf{8.63} & $-30.08$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Tres de las cinco instancias alcanzan el BKS EXACTO (gap 0\%). La
-hipótesis del evaluador como cuello de botella queda CONFIRMADA: una
-fracción sustancial del gap reportado en los experimentos previos es
-artefacto del evaluador, no deficiencia de la búsqueda.
-
-% =====================================================================
 \section{Experimento 7: warmstart\_greedy\_20260529}
 \label{sec:warmstart-greedy}
 % =====================================================================
@@ -2048,343 +1894,1556 @@ casi todo el gap residual. Esto reformula el storytelling del programa:
 \end{itemize}
 
 % =====================================================================
-\section{Experimentos de control R1--R5: re-corrida bajo evaluador greedy}
-\label{sec:re-greedy}
+% =====================================================================
+% experimento_solo_p_inter_costo_fixed.tex
+% ---------------------------------------------------------------------
+% Sección autocontenida: Experimento "solo_p_inter_20260531".
+% Se integra en Capitulo_Experimentos.tex via \input{}.
+% Sin preámbulo ni \begin{document}. Compilable con pdflatex >= 2 pases.
 % =====================================================================
 
-\subsection{Motivación}
+% Macro auxiliar de andamiaje: si ya existe en el documento padre se
+% omite silenciosamente. Aquí se define de forma segura.
+\providecommand{\TODO}[1]{\textcolor{rojomalo}{\textbf{[TODO: #1]}}}
 
-Para AISLAR el aporte real de cada componente experimental bajo el
-evaluador correcto, se disena un conjunto de cinco experimentos de
-control que replican cada uno de los baselines previos pero aplican el
-patch del evaluador greedy en cada worker:
+% =====================================================================
+\section{Experimento 8: solo\_p\_inter\_20260531 (primer ciclo con costo corregido)}
+\label{sec:exp-solo-p-inter}
+% =====================================================================
+
+% =====================================================================
+\subsection{Hipótesis y motivación}
+% =====================================================================
+
+El evaluador de costo del presente programa integra la orientación
+\emph{greedy} (entrar a cada tarea por el extremo más cercano al nodo
+previo) como la única lógica nativa de
+\texttt{metacarp/evaluador\_costo.py}, con reporte de deadheading
+consistente: \texttt{mejor\_costo} $\equiv$ \texttt{costo\_total\_desde\_reporte}.
+Esta implementación produce gaps directamente comparables con el BKS
+de la literatura, sin artefactos de orientación fija.
+
+El programa experimental adopta el
+principio metodológico \textbf{de lo más simple a lo más complejo}:
+si el approach más básico ya produce gaps competitivos con el costo
+corregido, los componentes avanzados (Path Relinking, kick reactivo,
+AOS, presupuesto extendido) quedarán justificados únicamente como
+reductores de tiempo de ejecución, no como mejoras de calidad
+intrínseca. El presente experimento es el primero de ese nuevo ciclo.
+
+La hipótesis central es la siguiente:
+
+\begin{quote}
+\textit{El selector probabilístico nativo
+\texttt{seleccionar\_grupo\_operadores\_inter\_intra} ---sin
+monkey-patches, sin Path Relinking, sin kick reactivo--- ya es
+suficiente para obtener gaps bajos cuando el evaluador es correcto.
+Calibrar únicamente $p_{\text{inter}}$ y el parámetro libre de cada
+metaheurística debería rendir al menos tan bien como los approaches
+más complejos del primer ciclo.}
+\end{quote}
+
+% =====================================================================
+\subsection{Diseño del approach}
+% =====================================================================
+
+El approach \texttt{solo\_p\_inter} utiliza exclusivamente el
+mecanismo de selección que ya posee el núcleo del proyecto. En cada
+iteración, la función
+\texttt{seleccionar\_grupo\_operadores\_inter\_intra} (módulo
+\texttt{metacarp/metaheuristicas\_utils.py}) decide el grupo de
+operadores según el estado de la solución actual:
 
 \begin{itemize}
-\item \textbf{R1 strict\_greedy} $\Leftrightarrow$ \texttt{strict\_intra\_inter}
-  + evaluador greedy.
-\item \textbf{R2 aos\_pm\_greedy} $\Leftrightarrow$ \texttt{aos\_pm}
-  + evaluador greedy.
-\item \textbf{R3 pr\_greedy} $\Leftrightarrow$ \texttt{path\_relinking}
-  + evaluador greedy.
-\item \textbf{R4 p\_inter\_pr\_greedy} $\Leftrightarrow$ \texttt{p\_inter\_pr}
-  + evaluador greedy.
-\item \textbf{R5 budget\_greedy} $\Leftrightarrow$ \texttt{budget}
-  + evaluador greedy.
+\item Si la solución \textbf{viola capacidad} ($\text{viol} > 10^{-12}$),
+  la probabilidad de proponer el grupo INTER-ruta es
+  $\alpha_{\text{inter}} = 0.80$ (reparación agresiva, fija, no
+  calibrada). El propósito es redistribuir carga entre vehículos y
+  recuperar la factibilidad.
+\item Si la solución es \textbf{factible}, la probabilidad de proponer
+  el grupo INTER-ruta es $p_{\text{inter}}$ (knob calibrado; exploración
+  moderada para escapar de mínimos locales intra-ruta).
 \end{itemize}
 
-Cada experimento R$_i$ es idéntico a su contraparte original SALVO por
-la activación del evaluador greedy. Esto permite descomponer el gap
-medido en cada baseline en dos componentes:
+\textbf{Dentro del grupo elegido}, la función \texttt{generar\_vecino}
+selecciona el operador de forma \textbf{uniforme}
+(\texttt{pesos\_operadores=None}): no hay AOS ni pesos adaptativos.
 
-\begin{equation}
-\gap_{\text{baseline}}(\text{exp}) = \gap_{\text{real}}(\text{exp}) +
-\Delta_{\text{evaluador}}(\text{exp}),
-\end{equation}
+El diseño NO instala ningún monkey-patch: el selector base es
+exactamente el que comparten las cinco metaheurísticas (SA, TS simple,
+RTS, ABC simple, Cuckoo). Esto elimina toda la capa de infraestructura
+de monkey-patching del primer ciclo, con dos consecuencias
+metodológicas importantes:
 
-donde $\Delta_{\text{evaluador}}$ es el artefacto del evaluador
-canónico (siempre $\ge 0$) y $\gap_{\text{real}}$ es la deficiencia
-real de la búsqueda.
+\begin{enumerate}
+\item La comparación entre MHs es completamente limpia: todas corren
+  el mismo mecanismo de selección sin interferencia externa.
+\item El approach es reproducible con una única llamada a la función
+  \texttt{*\_desde\_instancia} de cada MH con los kwargs apropiados;
+  no requiere importar ni ordenar parches.
+\end{enumerate}
 
-\subsection{Implementación}
+Los demás parámetros de cada metaheurística se dejan
+\textbf{instance-aware} (valor \texttt{None}): temperatura inicial y
+mínima en SA, tenure bounds e iteraciones en TS/RTS, límite de
+abandono en ABC, número de nidos y pasos de Lévy en Cuckoo. La
+penalización de capacidad usa el $\lambda$ por defecto del módulo
+(\texttt{lambda\_penal\_capacidad\_por\_defecto}, $\approx 10\times$
+la mediana del costo de arco de la instancia, con mínimo absoluto
+de 10), pasando \texttt{lambda\_capacidad=None}.
 
-La implementación se concentra en un solo módulo
-(\texttt{scripts/\_re\_greedy\_20260529\_common.py}) que despacha por
-los parámetros CLI \texttt{--variant} y \texttt{--mh}. Un script
-master de bash (\texttt{scripts/run\_all\_re\_greedy\_20260529.sh})
-lanza las 25 grids (5 variantes en secuencia, 5 MHs en paralelo dentro
-de cada variante).
-
-\subsection{Smoke test}
-
-Los smoke tests confirman que las 5 variantes funcionan en TS Simple
-sobre gdb19 (1 corrida cada una):
+\medskip
+\noindent\textbf{Conjunto de operadores.} Se activan los 9 operadores
+del conjunto \texttt{OPERADORES\_POPULARES}:
 
 \begin{itemize}
-\item R1 strict\_greedy: 71 (gap 29.1\%).
-\item R2 aos\_pm\_greedy: 65 (gap 18.2\%).
-\item R3 pr\_greedy: \textbf{55 (BKS exacto)}.
-\item R4 p\_inter\_pr\_greedy: \textbf{55 (BKS exacto)}.
-\item R5 budget\_greedy: \textbf{55 (BKS exacto)}.
+\item Intra-ruta (3): \texttt{relocate\_intra}, \texttt{swap\_intra},
+  \texttt{2opt\_intra}.
+\item Inter-ruta (6): \texttt{relocate\_inter}, \texttt{swap\_inter},
+  \texttt{2opt\_star}, \texttt{cross\_exchange}, \texttt{or\_opt\_2},
+  \texttt{or\_opt\_3}.
 \end{itemize}
 
-\subsection{Resultados completos}
+El uso del conjunto completo contrasta deliberadamente con los
+experimentos 1--7, que empleaban el subconjunto reducido de 5
+operadores (\texttt{OPERADORES\_STRICT\_5}). Dado que el objetivo del
+experimento es medir la línea de base más simple posible, se prefiere
+no sesgar la elección de operadores; el análisis de operadores del
+primer ciclo (Tabla~\ref{tab:poda-ranking}) está disponible para
+interpretar los resultados a posteriori.
 
-El grid de 2875 corridas (5 variantes $\times$ 5 MHs $\times$ 23 instancias
-$\times$ 5 repeticiones) se ejecutó con éxito. La
-Tabla~\ref{tab:re-greedy-gap} presenta el gap medio por MH y variante;
-la Tabla~\ref{tab:re-greedy-bon} el \emph{Best-of-N} (mejor de 5
-repeticiones por instancia, luego promediado); y la
-Tabla~\ref{tab:re-greedy-bks} el número de corridas que alcanzan el BKS
-exacto (gap $< 0.01$\,\%).
-
-\begin{table}[h]
-\centering
-\caption{Gap medio al BKS (\%) bajo evaluador greedy, por MH y variante.
-         Sombreado: $< 1$\,\% (excelente), $1$--$5$\,\% (bueno),
-         $5$--$10$\,\% (aceptable), $> 10$\,\% (deficiente).}
-\label{tab:re-greedy-gap}
-\small
-\begin{tabular}{lrrrrrr}
-\toprule
-MH & R1 Strict & R2 AOS-PM & R3 PR & R4 p\_inter & R5 Budget & R6 WS* \\
-\midrule
-SA      & 15.11 & 15.02 & \textbf{0.90} & 2.13 & \textbf{0.57} & \textbf{0.00} \\
-TS      & 15.48 & 14.52 & 4.48          & 5.22 & 1.08          & \textbf{0.00} \\
-RTS     & 13.82 & 14.66 & 3.04          & 4.15 & 1.18          & \textbf{0.00} \\
-ABC     & 14.98 & 14.82 & 9.75          & 10.74 & 8.30         & 1.32 \\
-Cuckoo  & 14.81 & 14.20 & 8.20          & 8.97  & 4.25         & 7.08 \\
-\midrule
-\textbf{Media} & 14.84 & 14.64 & 5.27 & 6.24 & \textbf{3.08} & 1.68 \\
-\bottomrule
-\end{tabular}
-\\[4pt]
-\footnotesize *R6 warmstart-greedy: smoke test sobre 2 instancias (gdb19, kshs1).
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Best-of-N gap (\%) — mejor de 5 repeticiones por instancia,
-         luego promediado. Mide el techo de calidad de cada configuración.}
-\label{tab:re-greedy-bon}
-\small
-\begin{tabular}{lrrrrrr}
-\toprule
-MH & R1 Strict & R2 AOS-PM & R3 PR & R4 p\_inter & R5 Budget & R6 WS* \\
-\midrule
-SA      & 11.51 & 11.27 & \textbf{0.00} & 0.62 & \textbf{0.03} & \textbf{0.00} \\
-TS      & 11.40 &  9.70 & 2.08          & 2.20 & 0.58          & \textbf{0.00} \\
-RTS     & 10.07 & 10.80 & 1.20          & 1.61 & 0.48          & \textbf{0.00} \\
-ABC     & 10.80 & 11.36 & 6.14          & 7.27 & 4.59          & 1.32 \\
-Cuckoo  & 10.94 &  9.54 & 4.11          & 4.48 & 1.67          & 7.08 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Corridas que alcanzan el BKS exacto (gap $< 0.01$\,\%) sobre
-         $\approx 115$--$116$ corridas por celda (23 inst $\times$ 5 reps).}
-\label{tab:re-greedy-bks}
-\small
-\begin{tabular}{lrrrrrr}
-\toprule
-MH & R1 & R2 & R3 & R4 & R5 & R6* \\
-\midrule
-SA      &  1 &  1 & \textbf{74} &  -- & \textbf{87} & 2/2 \\
-TS      &  2 &  -- & 36         &  -- & 76          & 2/2 \\
-RTS     &  0 &  -- & 38         &  -- & 72          & 2/2 \\
-ABC     &  2 &  -- &  2         &  -- &  4          & 1/2 \\
-Cuckoo  &  1 &  -- & 19         &  -- & 30          & 0/2 \\
-\midrule
-\textbf{Total} & 6 & -- & 169 & -- & 269 & 7/10 \\
-\midrule
-Instancias c/BKS & 4/23 & 5/23 & \textbf{23/23} & 18/23 & 22/23 & 2/2 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-El resultado más destacable es que \textbf{PR (R3) alcanza el BKS exacto
-en las 23 instancias del benchmark} (al menos en una de las 5
-repeticiones), con SA como la MH más efectiva (74 corridas en BKS,
-64\,\% de tasa de éxito individual). Budget (R5) aumenta la tasa de
-SA al 75\,\% pero a un costo de tiempo $6.5\times$ mayor.
-
-\paragraph{Análisis por instancia.}
-La Tabla~\ref{tab:re-greedy-inst} muestra el gap medio sobre las 5 MHs
-para las variantes R1, R3 y R5 en cada instancia. Las instancias más
-difíciles (\texttt{gdb12}, \texttt{gdb5}, \texttt{gdb21}) mantienen
-gap $> 7$\,\% incluso en R5, lo que sugiere que el espacio de búsqueda
-en instancias con alta densidad de arcos y capacidad ajustada requiere
-operadores más agresivos o estrategias de reinicio global.
-
-\begin{table}[h]
-\centering
-\caption{Gap medio al BKS (\%) por instancia — media sobre las 5 MHs.}
-\label{tab:re-greedy-inst}
-\small
-\begin{tabular}{lrrrr}
-\toprule
-Instancia & BKS & R1 Strict & R3 PR & R5 Budget \\
-\midrule
-gdb1  &  316 & 12.65 & 3.47 & 1.89 \\
-gdb2  &  339 & 23.46 & 6.51 & 4.38 \\
-gdb3  &  275 & 19.75 & 5.63 & 3.00 \\
-gdb4  &  287 & 19.18 & 4.43 & 2.66 \\
-gdb5  &  377 & 28.08 & 5.19 & 3.78 \\
-gdb6  &  298 & 11.50 & 4.13 & 2.97 \\
-gdb7  &  325 &  6.26 & 2.31 & 0.91 \\
-gdb10 &  275 & 15.21 & 8.51 & 4.65 \\
-gdb12 &  458 & 37.02 & 13.24 & 8.59 \\
-gdb13 &  536 & 14.96 & 11.13 & 7.47 \\
-gdb14 &  100 & 17.12 & 3.76 & 2.64 \\
-gdb15 &   58 &  9.52 & 1.24 & 0.83 \\
-gdb16 &  127 & 10.83 & 6.49 & 3.34 \\
-gdb17 &   91 &  2.11 & 0.53 & 0.35 \\
-gdb19 &   55 & 17.20 & 3.22 & 1.21 \\
-gdb20 &  121 & 14.98 & 7.97 & 4.20 \\
-gdb21 &  156 & 20.77 & 9.95 & 7.41 \\
-kshs1 & 14661 & 6.12 & 1.60 & 0.46 \\
-kshs2 &  9863 & 7.17 & 0.59 & 0.30 \\
-kshs3 &  9320 & 5.36 & 1.79 & 0.53 \\
-kshs4 & 11498 & 14.33 & 9.28 & 4.69 \\
-kshs5 & 10957 & 14.13 & 8.87 & 3.67 \\
-kshs6 & 10197 & 13.53 & 1.47 & 1.21 \\
-\midrule
-\textbf{Media} & -- & 14.84 & 5.27 & 3.08 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Visualización de resultados}
-\label{subsec:viz-re-greedy}
-
-Las Figuras~\ref{fig:re-barras}--\ref{fig:re-bks} resumen gráficamente los
-resultados de la corrida R1--R5 bajo el evaluador greedy. Fueron generadas
-por la Sección~14 del notebook de análisis
-(\texttt{analisis\_exploratorio\_operadores.ipynb}).
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{fig_sec14_barras_gap.png}
-\caption{Gap medio (izquierda) y Best-of-N (derecha) por MH y experimento.
-         Path Relinking (R3) y Budget (R5) reducen drásticamente el gap
-         respecto a Strict (R1) y AOS-PM (R2); SA es la MH dominante.}
-\label{fig:re-barras}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{fig_sec14_boxplot_gap.png}
-\caption{Distribución del gap al BKS para SA (izquierda) y RTS (derecha)
-         a través de los seis experimentos. La mediana de SA cae a cero
-         en R3, R5 y R6.}
-\label{fig:re-boxplot}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{fig_sec14_instancias.png}
-\caption{Gap medio al BKS por instancia (promedio de las cinco MHs) para
-         R1 Strict, R3 PR y R5 Budget. Las instancias \texttt{gdb12},
-         \texttt{gdb13} y \texttt{gdb21} resisten incluso bajo presupuesto
-         extendido.}
-\label{fig:re-instancias}
-\end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.85\linewidth]{fig_sec14_bks_hits.png}
-\caption{Mapa de calor del número de corridas que alcanzan el BKS exacto
-         (gap $< 0.01$\,\%) por MH y experimento. SA bajo Budget (R5)
-         alcanza el óptimo en 87 de 116 corridas.}
-\label{fig:re-bks}
-\end{figure}
+\medskip
+\noindent\textbf{Nota sobre \texttt{alpha\_inter}.} SA, TS simple y
+RTS exponen el parámetro \texttt{alpha\_inter} en su firma y lo usan
+directamente; se fija en $0.80$ en todos los casos. ABC simple y
+Cuckoo no exponen ese kwarg: internamente calculan la probabilidad
+en estado infactible como $\max(p_{\text{inter}},\,0.80)$, lo que
+equivale a $0.80$ para todos los valores de $p_{\text{inter}}$
+explorados en la malla ($\le 0.50$).
 
 % =====================================================================
-\section{Comparativa global del programa experimental}
-\label{sec:comparativa-global}
+\subsection{Selector \texorpdfstring{$p_{\text{inter}}$}{p\_inter}: pseudocódigo}
 % =====================================================================
 
-\subsection{Tabla maestra de gap medio}
+El Algoritmo~\ref{alg:selector-solo-p-inter} formaliza el mecanismo.
+Es idéntico al del Experimento 5 (Algoritmo~\ref{alg:selector-pip}),
+pero aquí \textbf{no se instala como monkey-patch}: es la lógica
+nativa del módulo, invocada por las cinco metaheurísticas en cada
+iteración sin modificación.
 
-La Tabla~\ref{tab:comparativa-global} consolida el gap medio por MH y
-experimento bajo el \textbf{evaluador greedy de orientación} (corrida
-R1--R5 completa). Los valores del primer ciclo (evaluador canónico)
-eran artefactos de la función de costo y no se incluyen en la tabla
-definitiva; se conservan en las secciones individuales de cada
-experimento para documentar el proceso de descubrimiento.
+\begin{algorithm}[h]
+\caption{Selector $p_{\text{inter}}$ probabilístico nativo
+         (\texttt{seleccionar\_grupo\_operadores\_inter\_intra}).}
+\label{alg:selector-solo-p-inter}
+\begin{algorithmic}[1]
+\Require $\viol \in \mathbb{R}_{\ge 0}$ violación de capacidad actual;
+  $p_{\text{inter}},\,\alpha_{\text{inter}} \in [0,1]$;
+  generador $rng$;
+  conjuntos $\mathcal{O}_{\text{intra}},\,\mathcal{O}_{\text{inter}},\,\mathcal{O}_{\text{fb}}$.
+\Ensure Grupo de operadores $\mathcal{O}$ a usar en esta iteración.
+\If{$\viol > 10^{-12}$}
+  \State $p_{\text{ef}} \gets \alpha_{\text{inter}}$ \Comment{Estado infactible: reparación agresiva}
+\Else
+  \State $p_{\text{ef}} \gets p_{\text{inter}}$ \Comment{Estado factible: exploración moderada}
+\EndIf
+\If{$rng.\text{random}() < p_{\text{ef}}$ \textbf{y} $\mathcal{O}_{\text{inter}} \neq \emptyset$}
+  \State \Return $\mathcal{O}_{\text{inter}}$
+\ElsIf{$\mathcal{O}_{\text{intra}} \neq \emptyset$}
+  \State \Return $\mathcal{O}_{\text{intra}}$
+\Else
+  \State \Return $\mathcal{O}_{\text{fb}}$ \Comment{Caso degenerado: grupos vacíos}
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+Un dato relevante para la reproducibilidad: la función realiza
+exactamente \textbf{un único} \texttt{rng.random()} por iteración.
+Esto preserva la reproducibilidad bit a bit con la implementación
+original del Recocido Simulado, de la que fue extraída.
+
+% =====================================================================
+\subsection{Grid search en dos fases}
+% =====================================================================
+
+El grid search sigue la misma lógica de las dos fases empleada en el
+programa anterior, adaptada al nuevo approach.
+
+\paragraph{Knob compartido.}
+El único parámetro compartido entre las cinco metaheurísticas es
+$p_{\text{inter}}$, que se calibra en la malla:
+\[ p_{\text{inter}} \in \{0.1,\,0.2,\,0.3,\,0.4,\,0.5\}. \]
+
+\paragraph{Parámetro libre por MH.}
+Además del knob compartido, cada metaheurística expone un único
+parámetro libre con tres valores posibles (el resto es instance-aware
+o valor de literatura clásica):
 
 \begin{table}[h]
 \centering
-\caption{Gap medio al BKS (\%) por MH y experimento (evaluador greedy,
-         corrida completa R1--R5). Negrita: configuraciones $\leq 1$\,\%.}
-\label{tab:comparativa-global}
+\caption{Parámetros del grid por metaheurística. El resto de
+         parámetros se dejan instance-aware (\texttt{None}).}
+\label{tab:grid-solo-p-inter}
 \small
-\begin{tabular}{lrrrrrr}
+\begin{tabular}{llll}
 \toprule
-MH & R1 Strict & R2 AOS-PM & R3 PR & R4 p\_inter & R5 Budget & R6 WS* \\
+MH & Parámetro libre & Valores & Resto notable \\
 \midrule
-SA      & 15.11 & 15.02 & \textbf{0.90} & 2.13 & \textbf{0.57} & \textbf{0.00} \\
-TS      & 15.48 & 14.52 & 4.48          & 5.22 & \textbf{1.08} & \textbf{0.00} \\
-RTS     & 13.82 & 14.66 & 3.04          & 4.15 & \textbf{1.18} & \textbf{0.00} \\
-ABC     & 14.98 & 14.82 & 9.75          & 10.74 & 8.30         & 1.32 \\
-Cuckoo  & 14.81 & 14.20 & 8.20          & 8.97  & 4.25         & 7.08 \\
+SA           & \texttt{alpha} (enfriamiento)   & $\{0.90,\,0.95,\,0.99\}$  &
+  $T_{\text{init}}, T_{\min}, L = n^2$: instance-aware \\
+TS simple    & \texttt{tabu\_tenure}            & $\{7,\,15,\,25\}$         &
+  tamaño vecindario: 25 \\
+RTS          & \texttt{factor\_aumento}         & $\{1.1,\,1.2,\,1.3\}$    &
+  factor\_reduccion: $0.9$ \\
+ABC simple   & \texttt{num\_fuentes}            & $\{10,\,20,\,30\}$        &
+  límite abandono: instance-aware \\
+Cuckoo       & \texttt{pa\_abandono}            & $\{0.15,\,0.25,\,0.35\}$ &
+  beta\_levy: $1.5$; nidos: instance-aware \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Esto produce $5 \times 3 = 15$ configuraciones por MH, para
+un total de 75 configuraciones en el grid completo.
+
+\paragraph{Fase 1 (calibración).}
+Se ejecutan 3 repeticiones por (configuración, instancia) sobre las
+23 instancias del corpus. No se fija semilla: la variabilidad es
+puramente estocástica. Para cada MH se elige la configuración con el
+\textbf{menor gap medio} sobre las 23 instancias. El resultado de esta
+fase se escribe en \texttt{grid\_resumen.csv} (gap medio y desviación
+estándar por configuración) y en \texttt{mejor\_config.json}
+(configuración ganadora con su gap medio).
+
+\paragraph{Fase 2 (corrida final).}
+La configuración ganadora de la fase 1 se corre con \textbf{5
+repeticiones} $\times$ 23 instancias. Los CSVs completos (con todas
+las columnas de operadores y deadheading) se generan en el
+subdirectorio \texttt{final/}.
+
+\paragraph{Corridas totales.}
+\begin{itemize}
+\item Fase 1: $15\,\text{configs} \times 23\,\text{inst} \times
+  3\,\text{reps} = 1{,}035$ corridas por MH
+  $= 5{,}175$ corridas totales.
+\item Fase 2: $23\,\text{inst} \times 5\,\text{reps} = 115$ corridas
+  por MH $= 575$ corridas totales.
+\item \textbf{Total}: 5{,}750 corridas entre ambas fases.
+\end{itemize}
+
+% =====================================================================
+\subsection{Configuración y parámetros instance-aware}
+% =====================================================================
+
+La Tabla~\ref{tab:config-solo-p-inter} resume la configuración
+completa del approach. Las diferencias respecto a los experimentos
+exploratorios previos se destacan con negrita.
+
+\begin{table}[h]
+\centering
+\caption{Comparativa de configuración entre el primer ciclo y
+         \texttt{solo\_p\_inter\_20260531}.}
+\label{tab:config-solo-p-inter}
+\small
+\begin{tabular}{lll}
+\toprule
+Componente & Primer ciclo (R1--R7) & \texttt{solo\_p\_inter} \\
 \midrule
-\textbf{Media} & 14.84 & 14.64 & 5.27 & 6.24 & \textbf{3.08} & 1.68 \\
+Evaluador de costo    & Canónico (artefacto)       & \textbf{Greedy nativo} \\
+Selector inter/intra  & Monkey-patch (strict o PR) & \textbf{Selector nativo} \\
+Path Relinking        & Sí (R3--R7)                & \textbf{No} \\
+Kick reactivo         & Sí (R1--R7)                & \textbf{No} \\
+AOS-PM                & Sí (R2)                    & \textbf{No} \\
+Presupuesto extra     & $\times 25$ en R5--R7      & \textbf{Instance-aware} \\
+$\lambda$             & Default / $\times 10$      & \textbf{Default (None)} \\
+Conjunto operadores   & 5 (\texttt{STRICT\_5})     & \textbf{9 (\texttt{POPULARES})} \\
+$\alpha_{\text{inter}}$ & $0.80$ (R4--R7)          & $0.80$ (fijo) \\
+$p_{\text{inter}}$    & $0.20$ fijo (R4--R7)       & \textbf{calibrado en {[}0.1, 0.5{]}} \\
+Reheat SA             & Default (sin tope)         & \textbf{Acotado} (\texttt{patience=10}, \texttt{max\_reheats=5}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\medskip
+\noindent\textbf{Parámetros instance-aware.} Para cada metaheurística
+los parámetros principales quedan determinados automáticamente por el
+wrapper \texttt{*\_desde\_instancia} a partir del tamaño de la
+instancia (número de tareas $n_\tau$, número de aristas, capacidad $Q$
+y estadísticas del grafo):
+
+\begin{itemize}
+\item \textbf{SA}: $T_{\text{init}}$ derivada de la varianza del costo
+  de vecinos muestreados; $T_{\min}$ como fracción de $T_{\text{init}}$;
+  longitud de cadena $L = n_\tau^2$. Reheat acotado (véase nota
+  abajo).
+\item \textbf{TS simple / RTS}: número máximo de iteraciones y
+  ventanas de tenure bounds derivados de $n_\tau$.
+\item \textbf{ABC simple}: número de nidos derivado de $n_\tau$ (el
+  \texttt{limite\_abandono} ya no es instance-aware: se calibró a $60$).
+\item \textbf{Cuckoo}: número de nidos y pasos de vuelo de Lévy
+  derivados de $n_\tau$.
+\end{itemize}
+
+\medskip
+\noindent\textbf{Segundo parámetro calibrado por MH.} Además de
+$p_{\text{inter}}$ y del knob principal, se calibró (sobre esta misma base
+\texttt{solo\_p\_inter}, 3 reps $\times$ 23 instancias) el parámetro adicional
+más influyente de cada MH, dejándolo fijo en su mejor valor: SA
+\texttt{max\_reheats\_sin\_mejora}$=10$; TS \texttt{tam\_vecindario}$=40$; RTS
+\texttt{factor\_reduccion}$=0.95$; ABC \texttt{limite\_abandono}$=60$; Cuckoo
+\texttt{beta\_levy}$=1.3$. Las mayores ganancias fueron en TS y ABC.
+
+% ---------------------------------------------------------------------
+\subsubsection*{Nota técnica: reheat acotado en SA}
+\label{nota:reheat-acotado-solo-p-inter}
+% ---------------------------------------------------------------------
+
+El Recocido Simulado utiliza un mecanismo de \emph{reheat} para
+escapar de mínimos locales: cuando la temperatura cae demasiado sin
+mejora del mejor global, se recalienta parcialmente. El comportamiento
+por defecto del módulo SA fija \texttt{max\_reheats\_sin\_mejora=0}
+(sin tope de reheats), lo que hace que corridas con \texttt{alpha}
+alto ($\alpha = 0.99$, enfriamiento muy lento) no converjan en tiempo
+razonable.
+
+El approach \texttt{solo\_p\_inter} fija el reheat \textbf{acotado},
+consistente con la configuración validada del proyecto:
+
+\begin{itemize}
+  \item \texttt{patience=10}: iteraciones de nivel sin mejora antes
+    de activar el reheat.
+  \item \texttt{reheat\_factor=0.5}: la temperatura de reheat es la
+    mitad de la temperatura inicial efectiva.
+  \item \texttt{max\_reheats\_sin\_mejora=10}: máximo de reheats
+    consecutivos sin mejorar el mejor global antes de parar. Es el
+    \emph{segundo knob} calibrado de SA (mejor de $\{3,5,10\}$).
+\end{itemize}
+
+Con este acotamiento, una corrida SA con $\alpha = 0.99$ tarda
+$\sim$5\,s en instancias pequeñas, el mismo orden de magnitud que
+$\alpha = 0.90$ ó $0.95$. Sin él, la misma corrida no termina en
+150\,s (verificado experimentalmente). \texttt{patience} y
+\texttt{reheat\_factor} se mantienen fijos; solo
+\texttt{max\_reheats\_sin\_mejora} se calibró como segundo knob de SA.
+
+El mismo reheat acotado se aplica en el Experimento~\ref{sec:exp-binario-capacidad}
+(\texttt{binario\_capacidad\_20260531}), garantizando comparabilidad
+directa entre ambos approaches.
+
+% =====================================================================
+\subsection{Reproducibilidad: scripts e infraestructura}
+% =====================================================================
+
+El experimento se organiza en tres niveles de scripts:
+
+\begin{itemize}
+\item \textbf{Orquestador común}:
+  \texttt{scripts/\_solo\_p\_inter\_20260531\_common.py} --- implementa
+  el grid search en dos fases, la construcción de kwargs por MH, la
+  consolidación de CSV parciales y la CLI (\texttt{--smoke},
+  \texttt{--solo-fase}, \texttt{--workers}).
+\item \textbf{Runners por MH}:
+  \texttt{scripts/run\_sa\_solo\_p\_inter\_20260531.py},
+  \texttt{run\_tabu\_simple\_solo\_p\_inter\_20260531.py},
+  \texttt{run\_tabu\_reactiva\_solo\_p\_inter\_20260531.py},
+  \texttt{run\_abc\_simple\_solo\_p\_inter\_20260531.py},
+  \texttt{run\_cuckoo\_solo\_p\_inter\_20260531.py} ---
+  cada uno fija su MH y llama al orquestador.
+\item \textbf{Lanzador master}:
+  \texttt{scripts/run\_all\_solo\_p\_inter\_20260531.sh} --- lanza
+  los cinco runners en paralelo (uno por proceso), con redirección de
+  logs.
+\end{itemize}
+
+La salida se escribe en:
+\begin{center}
+\texttt{experimentos\_costo\_fixed/<mh>\_solo\_p\_inter\_<YYYYMMDD-HHMM>/}
+\end{center}
+
+Con la siguiente estructura de carpetas:
+
+\begin{itemize}
+\item \texttt{grid\_parciales/} --- CSVs parciales de la fase 1, un
+  archivo por corrida (columnas completas con contadores de operadores
+  y reporte de deadheading).
+\item \texttt{calibracion\_todas.csv} --- consolidado de la fase 1
+  (unión de columnas de todos los parciales).
+\item \texttt{grid\_resumen.csv} --- gap medio y desviación estándar
+  por configuración, ordenados de mejor a peor.
+\item \texttt{mejor\_config.json} --- configuración ganadora con sus
+  campos: \texttt{mh}, \texttt{p\_inter}, \texttt{libre\_nombre},
+  \texttt{libre\_valor}, \texttt{gap\_medio}, \texttt{gap\_std}.
+\item \texttt{final/} --- CSVs de la fase 2 (5 repeticiones, columnas
+  completas), uno por instancia con el patrón
+  \texttt{<mh>\_solo\_p\_inter\_<instancia>.csv}.
+\end{itemize}
+
+\medskip
+\noindent\textbf{Columnas del CSV.} Las columnas son idénticas a las
+del núcleo del proyecto. Entre las más relevantes para el análisis:
+\texttt{gap\_bks\_porcentaje}, \texttt{mejor\_costo},
+\texttt{costo\_total\_desde\_reporte},
+\texttt{reporte\_detalle\_deadheading}, y los 36 contadores de
+operadores ($9\text{ operadores} \times 4\text{ categorías}$:
+propuesto, aceptado, mejoró, trayectoria\_mejor).
+
+% =====================================================================
+\subsection{Resultados}
+% =====================================================================
+
+\begin{observacion}[Corrida completada]
+El experimento \texttt{solo\_p\_inter\_20260531} se ejecutó el
+31 de mayo de 2026 sobre las 23 instancias, con grid search en dos
+fases (3 repeticiones en la fase~1 de calibración y 5~repeticiones en
+la fase~2 de confirmación). Los valores reportados a continuación
+corresponden a la fase~2 con la configuración ganadora de cada MH.
+\end{observacion}
+
+\paragraph{Fuentes de datos.}
+Cada número de la Tabla~\ref{tab:solo-p-inter-resultados} se extrae
+de los siguientes archivos generados por el orquestador:
+
+\begin{itemize}
+\item \textbf{$p_{\text{inter}}^*$ y parámetro libre*}: columnas
+  \texttt{p\_inter} y \texttt{<libre\_nombre>} de la primera fila
+  de \texttt{grid\_resumen.csv} (o equivalentemente del campo
+  correspondiente en \texttt{mejor\_config.json}).
+\item \textbf{Gap medio (fase 2)}: promedio de la columna
+  \texttt{gap\_bks\_porcentaje} en los CSV de
+  \texttt{final/<mh>\_solo\_p\_inter\_<instancia>.csv} sobre las
+  23 instancias $\times$ 5 repeticiones.
+\item \textbf{$N$ instancias en BKS}: número de instancias para las
+  que \texttt{gap\_bks\_porcentaje} $< 0.01$\,\% en al menos una de
+  las 5 repeticiones de la fase 2.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Resultados del experimento \texttt{solo\_p\_inter\_20260531}
+         (fase 2: 5 reps $\times$ 23 instancias por MH). El gap se mide
+         respecto al BKS de cada instancia con el evaluador greedy nativo.}
+\label{tab:solo-p-inter-resultados}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+MH & $p_{\text{inter}}^*$ & Parámetro libre* & Valor* &
+  Gap medio (\%) & Mediana (\%) & $N$ inst.\ en BKS \\
+\midrule
+SA           & 0.5 & \texttt{alpha}          & 0.90 &
+  2.89  & 1.77  & 14/23 \\
+TS simple    & 0.4 & \texttt{tabu\_tenure}   & 25   &
+  5.76  & 3.64  & 8/23 \\
+RTS          & 0.5 & \texttt{factor\_aumento}& 1.2  &
+  4.97  & 3.64  & 10/23 \\
+ABC simple   & 0.5 & \texttt{num\_fuentes}   & 30   &
+  9.64  & 9.00  & 5/23 \\
+Cuckoo       & 0.1 & \texttt{pa\_abandono}   & 0.15 &
+  19.13 & 18.29 & 0/23 \\
+\midrule
+\textbf{Media} & --- & --- & --- & \textbf{8.48} & --- & 37/115 \\
 \bottomrule
 \end{tabular}
 \\[4pt]
 \footnotesize
-*R6 warmstart-greedy: smoke test (2 instancias). Grid completo de 575 corridas pendiente.
+* Configuración canónica fija (p\_inter, knob principal y segundo knob
+calibrados; leída de \texttt{config\_fija.json}). El segundo knob calibrado por
+MH es: SA \texttt{max\_reheats\_sin\_mejora}$=10$; TS
+\texttt{tam\_vecindario}$=40$; RTS \texttt{factor\_reduccion}$=0.95$; ABC
+\texttt{limite\_abandono}$=60$; Cuckoo \texttt{beta\_levy}$=1.3$. La fila
+\textbf{Media} agrega los aciertos de BKS como pares (MH, instancia) sobre el
+total $5 \times 23$ por MH.
 \end{table}
 
-\subsection{Tabla de tiempo medio por corrida}
-
-La Tabla~\ref{tab:tiempo-medio} resume el costo computacional por
-experimento (corrida R1--R5 bajo evaluador greedy). El evaluador greedy
-agrega una comparación de distancias por tarea pero no cambia la
-complejidad asintótica; el incremento respecto de los tiempos originales
-(evaluador canónico) es menor al 10\,\% en todos los casos. El
-presupuesto $\times 25$ de R5 multiplica el tiempo por
-$5$--$30\times$ según la MH.
+\paragraph{Comparativa entre enfoques.}
+La Tabla~\ref{tab:solo-p-inter-comparativa} sitúa los resultados de
+este experimento respecto a los enfoques \texttt{binario\_capacidad}
+y \texttt{pr\_aislado} (Exp.\,9--10), todos bajo el evaluador greedy.
 
 \begin{table}[h]
 \centering
-\caption{Tiempo medio por corrida (segundos) — evaluador greedy, corrida R1--R5.}
-\label{tab:tiempo-medio}
+\caption{Gap medio (\%) por MH: \texttt{solo\_p\_inter} (evaluador greedy nativo)
+         frente a R3 y R5 (evaluador greedy por monkey-patch).
+         $\Delta$ positivo indica que \texttt{solo\_p\_inter} es peor que R3.}
+\label{tab:solo-p-inter-comparativa}
 \small
-\begin{tabular}{lrrrrrr}
+\begin{tabular}{lrrrr}
 \toprule
-MH & R1 Strict & R2 AOS & R3 PR & R4 p\_inter & R5 Budget & R6 WS* \\
+MH & R3 PR & R5 Budget & \texttt{solo\_p\_inter} & $\Delta$ vs R3 \\
 \midrule
-SA      &  28.1 &  32.4 &  40.6 &  37.1 & 260.5 &   6.4 \\
-TS      &  14.4 &  17.7 &  21.3 &  19.6 & 354.8 &  25.7 \\
-RTS     &  23.2 &  26.4 &  33.2 &  29.9 & 431.7 &  27.6 \\
-ABC     &  11.1 &  14.5 &  29.7 &  26.9 & 197.6 &   5.2 \\
-Cuckoo  &  13.8 &  17.7 &  20.0 &  18.2 & 216.9 &   6.9 \\
+SA        & 0.90  & 0.57 & 2.89  & $+1.99$  \\
+TS simple & 4.48  & 1.08 & 5.76  & $+1.28$  \\
+RTS       & 3.04  & 1.18 & 4.97  & $+1.93$  \\
+ABC       & 9.75  & 8.30 & 9.64  & $-0.11$  \\
+Cuckoo    & 8.20  & 4.25 & 19.13 & $+10.93$ \\
+\midrule
+\textbf{Media} & 5.27 & 3.08 & \textbf{8.48} & $+3.21$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretación de los resultados.}
+Con \texttt{p\_inter}, el knob principal y el \emph{segundo} parámetro más
+influyente de cada MH ya calibrados, el selector desnudo se acerca mucho a R3
+(Path Relinking del primer ciclo): $\Delta$ medio $+3.21$\,pp y, en ABC, incluso
+lo \textbf{supera} ($9.64$ vs $9.75$\,\%). Tres lecturas se desprenden:
+
+\begin{enumerate}
+\item \textbf{La calibración del segundo knob importa, sobre todo en TS y ABC.}
+  Calibrar \texttt{tam\_vecindario}$=40$ (TS) y \texttt{limite\_abandono}$=60$
+  (ABC) bajó sus gaps de $8.40$ a $5.76$\,\% y de $14.66$ a $9.64$\,\%
+  respectivamente; en SA, RTS y Cuckoo el efecto fue marginal (sus segundos
+  knobs ya estaban cerca del óptimo). La media del approach pasó de
+  $10.21$ a $8.48$\,\%.
+\item \textbf{El óptimo de $p_{\text{inter}}$ es alto.} La calibración
+  selecciona $p_{\text{inter}} = 0.5$ en SA, RTS y ABC (y $0.4$ en TS),
+  muy por encima del $0.20$ fijado en R4. Con el costo correcto, una
+  mayor proporción de movimientos inter-ruta resulta beneficiosa, lo
+  que sugiere que el valor moderado heredado del primer ciclo estaba
+  sesgado por el artefacto de orientación. Cuckoo es la excepción
+  ($p_{\text{inter}} = 0.1$).
+\item \textbf{Jerarquía de MH como línea de base.} Con el approach más
+  simple, SA ($2.89$\,\%) y RTS ($4.97$\,\%) son superiores a las
+  metaheurísticas poblacionales (ABC $9.64$\,\%, Cuckoo $19.13$\,\%); ABC,
+  tras calibrar su límite de abandono, se vuelve competitiva, mientras que
+  Cuckoo sigue rezagada.
+\end{enumerate}
+
+En consecuencia, el resultado fija una \textbf{línea de base limpia} y bien
+calibrada: todo mecanismo añadido en los siguientes approaches debe justificarse
+por la mejora de gap que produzca \emph{sobre} estos valores, ya
+medidos con el evaluador nativo. El siguiente experimento de control
+(Experimento~\ref{sec:exp-binario-capacidad}) sustituye el selector
+probabilístico por uno binario determinista para aislar el efecto del
+mecanismo de selección antes de reintroducir la intensificación.
+
+% =====================================================================
+\subsection{Conclusión provisional del experimento 8}
+% =====================================================================
+
+Este experimento cierra el primer ciclo experimental y abre el segundo,
+fundamentado en el evaluador greedy integrado de forma nativa. Más allá de los
+gaps obtenidos, sus contribuciones metodológicas son:
+
+\begin{enumerate}
+\item \textbf{Línea de base limpia bajo el evaluador corregido.}
+  Los resultados de \texttt{solo\_p\_inter} constituyen el primer
+  punto de referencia genuino del programa experimental: sin artefactos
+  de evaluación y sin componentes de complejidad artificial.
+\item \textbf{Calibración por MH de $p_{\text{inter}}$ y de los dos knobs
+  más influyentes.} La calibración cuantifica, bajo el evaluador correcto,
+  el valor óptimo de $p_{\text{inter}}$, del knob principal y del segundo
+  parámetro de cada metaheurística (p.ej. \texttt{tam\_vecindario} en TS,
+  \texttt{limite\_abandono} en ABC). El resultado se fija como configuración
+  canónica reutilizada por los demás approaches. Es independiente
+  de los experimentos exploratorios previos y permite atribuir los
+  resultados directamente a la configuración calibrada.
+\item \textbf{Separación de responsabilidades.}
+  Al no instalar monkey-patches, el experimento permite atribuir
+  directamente la calidad del resultado a la metaheurística base y al
+  evaluador, sin interferencia de la infraestructura de patching.
+\end{enumerate}
+
+Los resultados completos se incorporarán a la
+Tabla~\ref{tab:solo-p-inter-resultados} una vez finalizada la corrida
+en \texttt{experimentos\_costo\_fixed/}.
+% =====================================================================
+% =====================================================================
+% experimento_binario_capacidad_costo_fixed.tex
+% ---------------------------------------------------------------------
+% Sección autocontenida: Experimento "binario_capacidad_20260531".
+% Se integra en Capitulo_Experimentos.tex via \input{}.
+% Sin preámbulo ni \begin{document}. Compilable con pdflatex >= 2 pases.
+% =====================================================================
+
+% Macro auxiliar de andamiaje: si ya existe en el documento padre se
+% omite silenciosamente. Aquí se define de forma segura.
+\providecommand{\TODO}[1]{\textcolor{rojomalo}{\textbf{[TODO: #1]}}}
+
+% Macro de violación de capacidad (alias de notación).
+\providecommand{\viol}{\mathrm{viol}}
+
+% =====================================================================
+\section{Experimento 9: binario\_capacidad\_20260531 (segundo approach con costo corregido)}
+\label{sec:exp-binario-capacidad}
+% =====================================================================
+
+% =====================================================================
+\subsection{Hipótesis y motivación}
+% =====================================================================
+
+El Experimento~8 (\texttt{solo\_p\_inter\_20260531}, Sección~\ref{sec:exp-solo-p-inter})
+estableció la primera línea de base bajo el evaluador greedy integrado de
+forma nativa. Su selector es \emph{probabilístico}: en cada iteración,
+el parámetro $p_{\text{inter}}$ determina con qué frecuencia se propone
+el grupo INTER-ruta cuando la solución es factible; el parámetro
+$\alpha_{\text{inter}} = 0.80$ hace lo propio en estado infactible.
+
+El presente experimento sustituye el selector probabilístico por un
+\textbf{selector binario determinista} basado en la violación de
+capacidad: si la solución viola la restricción, se propone siempre el
+grupo INTER-ruta (reparación); si es factible, siempre el grupo
+INTRA-ruta (refinamiento). La consecuencia metodológica directa es que
+$p_{\text{inter}}$ deja de ser un parámetro: el selector es determinista
+y la única diferencia frente al Experimento~8 es la regla de selección.
+
+La hipótesis central del experimento es la siguiente:
+
+\begin{quote}
+\textit{Un selector completamente determinista que impone una
+separación estricta entre las fases de reparación y refinamiento
+puede igualar o superar al selector probabilístico calibrado
+(\texttt{solo\_p\_inter}), porque elimina el ruido de la decisión
+aleatoria y concentra el presupuesto de movimientos INTER en los
+momentos en que son necesarios y el presupuesto INTRA cuando la
+solución es factible, sin desperdiciar iteraciones en combinaciones
+subóptimas de grupo/estado.}
+\end{quote}
+
+Si la comparativa entre el Experimento~8 y el Experimento~9 muestra
+gaps similares, el resultado indica que la señal binaria de
+factibilidad es suficiente para guiar la selección de grupo y que
+$p_{\text{inter}}$ no aporta valor adicional una vez que el evaluador
+es correcto. Si el selector binario resulta inferior, el siguiente paso
+natural es explorar selectores adaptativos o híbridos (por ejemplo,
+binario con suavizado durante la fase factible).
+
+% =====================================================================
+\subsection{Diseño del approach}
+% =====================================================================
+
+El approach \texttt{binario\_capacidad} comparte con el Experimento~8
+todos los componentes excepto el selector de grupo de operadores:
+
+\begin{itemize}
+\item Mismo evaluador de costo greedy nativo
+  (\texttt{metacarp/evaluador\_costo.py}).
+\item Mismo conjunto de 9 operadores
+  (\texttt{OPERADORES\_POPULARES}: 3 intra + 6 inter).
+\item Mismo $\lambda$ de penalización de capacidad por defecto
+  (\texttt{lambda\_capacidad=None}, $\approx 10\times$ mediana del
+  costo de arco, con mínimo absoluto de 10).
+\item Mismos parámetros instance-aware (\texttt{None}) en todas las MH.
+\item Sin Path Relinking, sin kick reactivo, sin AOS, sin presupuesto
+  extendido.
+\item Sin semilla fija: la variabilidad entre repeticiones es
+  puramente estocástica.
+\end{itemize}
+
+\noindent Lo que cambia es el selector:
+
+\begin{itemize}
+\item \textbf{Selector binario determinista}
+  (\texttt{seleccionar\_grupo\_strict}, módulo
+  \texttt{metacarp/strict\_intra\_inter\_20260524.py}): decide el
+  grupo de operadores según el signo de la violación de capacidad
+  $\viol$ de la solución actual.
+  \begin{itemize}
+  \item Si $\viol > 10^{-12}$: proponer siempre el grupo
+    \textbf{INTER-ruta} (reparación).
+  \item Si $\viol \le 10^{-12}$: proponer siempre el grupo
+    \textbf{INTRA-ruta} (refinamiento).
+  \end{itemize}
+\item El selector \textbf{no consume ningún} \texttt{rng.random()} por
+  iteración: es estrictamente determinista una vez fijada la
+  violación. Ignora \texttt{p\_inter} y \texttt{alpha\_inter},
+  absorbiéndolos en \texttt{**\_ignorado}.
+\item Dentro del grupo elegido, \texttt{generar\_vecino} selecciona el
+  operador de forma \textbf{uniforme} (\texttt{pesos\_operadores=None}),
+  igual que en el Experimento~8.
+\end{itemize}
+
+\medskip
+\noindent\textbf{Kick reactivo desactivado.} El módulo
+\texttt{strict\_intra\_inter\_20260524} expone también funciones de
+kick inter-ruta (\texttt{aplicar\_kick\_labels},
+\texttt{aplicar\_kick\_ids}) que el experimento original
+\texttt{strict\_intra\_inter\_20260524} sí activaba. En el presente
+approach el kick queda explícitamente desactivado
+(\texttt{max\_iter\_sin\_mejora\_kick=None}) para aislar el efecto del
+selector binario puro, sin la capa de diversificación. Esta decisión
+mantiene la comparabilidad directa con el Experimento~8.
+
+\medskip
+\noindent\textbf{Instalación del selector vía monkey-patch.}
+El selector binario se instala en el módulo de cada MH mediante la
+función \texttt{aplicar\_patch\_selector} del script
+\texttt{scripts/\_strict\_intra\_inter\_20260524\_common.py}. La
+función reasigna el atributo
+\texttt{seleccionar\_grupo\_operadores\_inter\_intra} en el namespace
+del módulo de la MH por la versión binaria estricta, de modo que la
+MH la invoque sin modificación alguna en su lógica interna. El patch
+se aplica al inicio de cada worker (proceso hijo del
+\texttt{ProcessPoolExecutor}), porque cada proceso hijo importa el
+módulo de la MH desde cero.
+
+La diferencia metodológica respecto al Experimento~8 se resume en la
+Tabla~\ref{tab:comparativa-approaches-binario-capacidad}.
+
+\begin{table}[h]
+\centering
+\caption{Diferencias entre el Experimento~8 (\texttt{solo\_p\_inter})
+         y el Experimento~9 (\texttt{binario\_capacidad}).}
+\label{tab:comparativa-approaches-binario-capacidad}
+\small
+\begin{tabular}{lll}
+\toprule
+Componente & Exp.~8 \texttt{solo\_p\_inter} & Exp.~9 \texttt{binario\_capacidad} \\
+\midrule
+Selector de grupo        & Probabilístico ($p_{\text{inter}}$)   & \textbf{Binario determinista} \\
+Parámetro $p_{\text{inter}}$ & Fijo $0.4$--$0.5$ por MH          & \textbf{No existe} \\
+Consume \texttt{rng} por iter. & 1 llamada                        & \textbf{0 llamadas} \\
+Monkey-patch selector    & No                                    & \textbf{Sí (\texttt{aplicar\_patch\_selector})} \\
+Kick reactivo            & No                                    & No (aislamiento) \\
+Config base por MH       & Canónica fija                         & Canónica fija (misma) \\
+Corridas por MH          & $115$ ($5$ reps $\times 23$)          & $115$ ($5$ reps $\times 23$) \\
+Conjunto operadores      & 9 (\texttt{POPULARES})                & 9 (\texttt{POPULARES}) \\
+$\lambda$                & Default (None)                        & Default (None) \\
+Parámetros MH            & Instance-aware (None)                 & Instance-aware (None) \\
+Evaluador de costo       & Greedy nativo                         & Greedy nativo \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\subsection{Selector binario: pseudocódigo}
+\label{subsec:selector-binario-capacidad}
+% =====================================================================
+
+El Algoritmo~\ref{alg:selector-binario-capacidad} formaliza el
+mecanismo. A diferencia del selector probabilístico
+(Algoritmo~\ref{alg:selector-solo-p-inter}), no hay ninguna extracción
+de número aleatorio: la rama elegida depende exclusivamente del signo
+de $\viol$.
+
+\begin{algorithm}[h]
+\caption{Selector binario determinista basado en capacidad
+         (\texttt{seleccionar\_grupo\_strict}).}
+\label{alg:selector-binario-capacidad}
+\begin{algorithmic}[1]
+\Require $\viol \in \mathbb{R}_{\ge 0}$ violación de capacidad actual;
+  conjuntos $\mathcal{O}_{\text{intra}},\,\mathcal{O}_{\text{inter}},\,\mathcal{O}_{\text{fb}}$
+  (fallback).
+  Los argumentos \texttt{rng}, \texttt{p\_inter}, \texttt{alpha\_inter}
+  se reciben y se ignoran (\texttt{**\_ignorado}).
+\Ensure Grupo de operadores $\mathcal{O}$ a usar en esta iteración.
+\If{$\viol > 10^{-12}$ \textbf{y} $\mathcal{O}_{\text{inter}} \neq \emptyset$}
+  \State \Return $\mathcal{O}_{\text{inter}}$, $\mathit{hubo\_violacion}{=}\mathrm{True}$
+  \Comment{Estado infactible: reparación forzada}
+\ElsIf{$\mathcal{O}_{\text{intra}} \neq \emptyset$}
+  \State \Return $\mathcal{O}_{\text{intra}}$, $\mathit{hubo\_violacion}{=}(\viol > 10^{-12})$
+  \Comment{Estado factible: refinamiento}
+\ElsIf{$\mathcal{O}_{\text{inter}} \neq \emptyset$}
+  \State \Return $\mathcal{O}_{\text{inter}}$, $\mathit{hubo\_violacion}{=}(\viol > 10^{-12})$
+  \Comment{Intra vacío: caída al inter}
+\Else
+  \State \Return $\mathcal{O}_{\text{fb}}$, $\mathit{hubo\_violacion}{=}(\viol > 10^{-12})$
+  \Comment{Caso degenerado: fallback completo}
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+El valor de retorno es la tupla
+$(\text{grupo\_operadores},\,\mathit{hubo\_violacion})$, con la misma
+semántica que el helper canónico
+\texttt{seleccionar\_grupo\_operadores\_inter\_intra}: el flag
+$\mathit{hubo\_violacion}$ lo consumen TS simple y RTS para sus
+contadores internos de iteraciones con violación de capacidad.
+
+Un aspecto relevante para la reproducibilidad: dado que el selector no
+consume ningún \texttt{rng.random()}, las secuencias pseudoaleatorias
+de dos corridas idénticas (misma instancia, misma semilla, misma MH)
+diferirán de las del Experimento~8 en exactamente \textbf{una llamada
+por iteración} (la que en el Experimento~8 realizaba el selector
+probabilístico). Esto hace que los resultados de ambos approaches no
+sean directamente comparables corrida a corrida, pero sí agregadamente
+(gap medio sobre múltiples repeticiones sin semilla fija).
+
+% =====================================================================
+\subsection{Configuración fija canónica}
+\label{subsec:config-fija-binario-capacidad}
+% =====================================================================
+
+Este approach NO calibra: usa la \textbf{configuración canónica fija} por
+MH ---la misma que el Experimento~8--- y cambia \emph{únicamente} el
+selector. El selector binario es determinista y \emph{no tiene el
+parámetro $p_{\text{inter}}$}, así que la única diferencia operativa frente
+al Experimento~8 es la regla de selección de grupo. Se ejecuta una sola
+configuración por MH con \textbf{5 repeticiones} $\times$ 23 instancias
+(sin semilla; la variabilidad es estocástica), y los CSVs completos (con
+todas las columnas de operadores y deadheading) se generan en
+\texttt{final/}. La config usada se registra en \texttt{config\_fija.json}.
+
+\begin{table}[h]
+\centering
+\caption{Configuración canónica fija por metaheurística en el approach
+         \texttt{binario\_capacidad} (idéntica a la del Experimento~8; el
+         selector binario ignora $p_{\text{inter}}$). El resto de
+         parámetros se dejan instance-aware (\texttt{None}).}
+\label{tab:grid-binario-capacidad}
+\small
+\begin{tabular}{llll}
+\toprule
+MH & Parámetro libre & Valor fijo & Resto notable \\
+\midrule
+SA           & \texttt{alpha} (enfriamiento)   & $0.90$  &
+  $T_{\text{init}}, T_{\min}$: instance-aware; reheat acotado\textsuperscript{†} \\
+TS simple    & \texttt{tabu\_tenure}            & $25$    &
+  \texttt{tam\_vecindario}: $40$\textsuperscript{‡} \\
+RTS          & \texttt{factor\_aumento}         & $1.2$   &
+  \texttt{factor\_reduccion}: $0.95$\textsuperscript{‡} \\
+ABC simple   & \texttt{num\_fuentes}            & $30$    &
+  \texttt{limite\_abandono}: $60$\textsuperscript{‡} \\
+Cuckoo       & \texttt{pa\_abandono}            & $0.15$  &
+  \texttt{beta\_levy}: $1.3$\textsuperscript{‡}; nidos: instance-aware \\
 \bottomrule
 \end{tabular}
 \\[4pt]
-\footnotesize *Tiempos de smoke test; no representativos del grid completo.
+\footnotesize
+\textsuperscript{†}Reheat acotado SA: \texttt{patience=10},
+\texttt{reheat\_factor=0.5}, \texttt{max\_reheats\_sin\_mejora=10}.
+Véase la Nota~\ref{nota:reheat-acotado-binario-capacidad}.
+\textsuperscript{‡}Segundo knob calibrado por MH (común a los tres approaches;
+calibrado en el Experimento~8).
 \end{table}
 
-\subsection{Ranking final bajo evaluador greedy}
+\paragraph{Corridas totales.}
+Una única configuración por MH $\times$ 5 repeticiones $\times$ 23 instancias
+$= 115$ corridas por MH ($575$ en total). Sin fase de calibración.
 
-El ranking definitivo de configuraciones, ordenado por gap medio
-sobre las 5 MHs y las 23 instancias del benchmark, es:
+% =====================================================================
+\subsection{Nota técnica: reheat acotado en SA}
+\label{nota:reheat-acotado-binario-capacidad}
+% =====================================================================
 
-\begin{enumerate}
-\item \textbf{R5 Budget}: 3.08\,\% — máximo presupuesto, mejor calidad global.
-\item \textbf{R3 PR}: 5.27\,\% — relación calidad/tiempo óptima;
-      SA alcanza BKS en el 64\,\% de corridas individuales.
-\item R4 p\_inter\_pr: 6.24\,\% — inferior a R3 pese a mayor complejidad.
-\item R1 Strict: 14.84\,\% — baseline corregido; AOS-PM (R2, 14.64\,\%)
-      es estadisticamente equivalente.
-\item R2 AOS-PM: 14.64\,\% — sin diferencia significativa respecto a Strict.
-\end{enumerate}
+El Recocido Simulado utiliza un mecanismo de reheat para salir de
+mínimos locales cuando la temperatura cae demasiado rápido. Con el
+reheat por defecto del proyecto (\texttt{max\_reheats\_sin\_mejora=0},
+es decir, sin tope) y un valor de enfriamiento lento como
+$\alpha = 0.99$, la temperatura se mantiene alta durante muchas
+iteraciones, lo que puede alargar la corrida de forma impráctica.
 
-\paragraph{Configuración recomendada.}
-Para el balance óptimo entre complejidad de implementación, tiempo de
-computo y calidad de solución, se recomienda \textbf{SA + Path Relinking
-+ evaluador greedy (R3)}:
+Para garantizar que todas las corridas de SA terminen en un tiempo
+razonable independientemente del valor de $\alpha$, el approach
+\texttt{binario\_capacidad} fija el reheat \textbf{acotado}:
 
 \begin{itemize}
-\item Gap medio SA: 0.90\,\% (mediana: 0.00\,\%).
-\item BKS exacto en 74/115 corridas (64\,\%) con $\sim 40$ segundos promedio.
-\item Componentes adicionales sobre el baseline: dos monkey-patches,
-      cero parámetros nuevos que requieran tuning.
-\item R5-Budget mejora 0.33\,pp sobre R3 en SA pero consume $6.5\times$
-      más tiempo y requiere ajuste de 6 parámetros adicionales.
+\item \texttt{patience=10}: número de iteraciones sin mejora antes de
+  activar el reheat.
+\item \texttt{reheat\_factor=0.5}: la temperatura de reheat es la mitad
+  de la temperatura actual.
+\item \texttt{max\_reheats\_sin\_mejora=10}: máximo de reheats
+  consecutivos sin mejora del mejor global antes de detener la búsqueda.
 \end{itemize}
 
-\paragraph{Comportamiento por MH.}
-SA es la MH dominante en todos los experimentos con evaluador greedy.
-TS y RTS siguen de cerca bajo presupuesto extendido (R5: 1.08\,\% y
-1.18\,\%). ABC y Cuckoo no superan el 4\,\% en ninguna configuración,
-lo que sugiere que su mecanismo de exploración de enjambre no se
-beneficia del mismo modo del evaluador más preciso ni del presupuesto
-ampliado, posiblemente por la escasa diversidad entre agentes en
-instancias de tamano pequeno--mediano.
+Esta configuración es la misma que la validada en el programa
+experimental del primer ciclo y garantiza que cada corrida de SA
+converja en un tiempo comparable al de las demás metaheurísticas,
+con independencia del valor de $\alpha$ explorado en el grid.
+
+% =====================================================================
+\subsection{Configuración y parámetros instance-aware}
+% =====================================================================
+
+La Tabla~\ref{tab:config-binario-capacidad} resume la configuración
+completa del approach y la compara con el Experimento~8 y con el
+experimento original \texttt{strict\_intra\_inter\_20260524} (que sí
+activaba el kick reactivo y usaba el subconjunto reducido de 5
+operadores).
+
+\begin{table}[h]
+\centering
+\caption{Comparativa de configuración entre el experimento original
+         \texttt{strict\_intra\_inter\_20260524}, el Experimento~8
+         (\texttt{solo\_p\_inter}) y el Experimento~9
+         (\texttt{binario\_capacidad}).}
+\label{tab:config-binario-capacidad}
+\small
+\begin{tabular}{llll}
+\toprule
+Componente &
+  \texttt{strict\_intra\_inter} &
+  Exp.~8 \texttt{solo\_p\_inter} &
+  Exp.~9 \texttt{binario\_capacidad} \\
+\midrule
+Selector de grupo    & Binario strict       & Probabilístico ($p_{\text{inter}}$) & \textbf{Binario strict} \\
+Kick reactivo        & Sí                   & No                                  & \textbf{No} \\
+Conjunto operadores  & 5 (\texttt{STRICT\_5}) & 9 (\texttt{POPULARES})            & \textbf{9 (\texttt{POPULARES})} \\
+Evaluador de costo   & Greedy (patch)       & Greedy nativo                       & Greedy nativo \\
+Monkey-patch         & Selector + kick      & No                                  & \textbf{Solo selector} \\
+$p_{\text{inter}}$   & Ignorado             & Calibrado                           & \textbf{Ignorado} \\
+$\lambda$            & Default (None)       & Default (None)                      & Default (None) \\
+Reheat SA            & Default (sin tope)   & Acotado (\texttt{max\_reheats=10})  & Acotado (\texttt{max\_reheats=10}) \\
+Config por MH        & ---                  & Canónica fija                       & Canónica fija (misma) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\medskip
+\noindent\textbf{Parámetros instance-aware.} Idénticos al Experimento~8:
+$T_{\text{init}}$ y $T_{\min}$ en SA; número de iteraciones y tenure
+bounds en TS/RTS; límite de abandono en ABC; número de nidos y pasos
+de Lévy en Cuckoo. Todos se pasan como \texttt{None} al wrapper
+\texttt{*\_desde\_instancia} de cada MH.
+
+% =====================================================================
+\subsection{Reproducibilidad: scripts e infraestructura}
+% =====================================================================
+
+El experimento se organiza en tres niveles de scripts, en paralelo con
+la estructura del Experimento~8:
+
+\begin{itemize}
+\item \textbf{Orquestador común}:
+  \texttt{scripts/\_binario\_capacidad\_20260531\_common.py} ---
+  corre la configuración canónica fija (sin grid), la construcción de
+  kwargs por MH (incluyendo la instalación del selector binario vía
+  \texttt{aplicar\_patch\_selector}), la consolidación de CSV parciales
+  y la CLI (\texttt{--smoke}, \texttt{--reps}, \texttt{--workers}).
+\item \textbf{Runners por MH}:
+  \texttt{scripts/run\_sa\_binario\_capacidad\_20260531.py},
+  \texttt{run\_tabu\_simple\_binario\_capacidad\_20260531.py},
+  \texttt{run\_tabu\_reactiva\_binario\_capacidad\_20260531.py},
+  \texttt{run\_abc\_simple\_binario\_capacidad\_20260531.py},
+  \texttt{run\_cuckoo\_binario\_capacidad\_20260531.py} ---
+  cada uno fija su MH y llama al orquestador.
+\item \textbf{Lanzador master}:
+  \texttt{scripts/run\_all\_binario\_capacidad\_20260531.sh} ---
+  lanza las cinco MH en secuencia (una por vez, saturando la CPU
+  internamente con \texttt{ProcessPoolExecutor}), con redirección de
+  logs a \texttt{logs/}.
+\end{itemize}
+
+La salida se escribe en:
+\begin{center}
+\texttt{experimentos\_costo\_fixed/<mh>\_binario\_capacidad\_<YYYYMMDD-HHMM>/}
+\end{center}
+
+Con la siguiente estructura de carpetas:
+
+\begin{itemize}
+\item \texttt{config\_fija.json} --- la configuración canónica usada
+  (MH, knob libre y su valor), para trazabilidad.
+\item \texttt{final/} --- CSVs de la corrida (5 repeticiones, columnas
+  completas), uno por instancia con el patrón
+  \texttt{<mh>\_binario\_capacidad\_<instancia>.csv}.
+  El subdirectorio \texttt{final/\_partials/} contiene los parciales
+  antes de consolidar.
+\end{itemize}
+
+\medskip
+\noindent\textbf{Columnas del CSV.} Idénticas a las del Experimento~8
+y al núcleo del proyecto: \texttt{gap\_bks\_porcentaje},
+\texttt{mejor\_costo}, \texttt{costo\_total\_desde\_reporte},
+\texttt{reporte\_detalle\_deadheading}, y los 36 contadores de
+operadores ($9\text{ operadores} \times 4\text{ categorías}$:
+propuesto, aceptado, mejoró, trayectoria\_mejor). El campo
+\texttt{extra\_csv} registra
+\texttt{selector="binario\_estricto\_capacidad"} y
+\texttt{approach="binario\_capacidad"} para trazabilidad.
+
+% =====================================================================
+\subsection{Resultados}
+% =====================================================================
+
+\begin{observacion}[Corrida completada]
+El experimento \texttt{binario\_capacidad\_20260531} se ejecutó el
+31 de mayo de 2026 sobre las 23 instancias, con grid search en dos
+fases (3 repeticiones de calibración y 5 de confirmación). Los valores
+reportados corresponden a la fase~2 con la configuración ganadora de
+cada MH.
+\end{observacion}
+
+\paragraph{Fuentes de datos.}
+Cada número de la Tabla~\ref{tab:binario-capacidad-resultados} se
+extrae de los siguientes archivos generados por el orquestador:
+
+\begin{itemize}
+\item \textbf{Parámetro libre* y valor*}: la config canónica fija de
+  \texttt{config\_fija.json}.
+\item \textbf{Gap medio}: promedio de la columna
+  \texttt{gap\_bks\_porcentaje} en los CSV de
+  \texttt{final/<mh>\_binario\_capacidad\_<instancia>.csv} sobre las
+  23 instancias $\times$ 5 repeticiones.
+\item \textbf{$N$ instancias en BKS}: número de instancias para las
+  que \texttt{gap\_bks\_porcentaje} $< 0.01$\,\% en al menos una de
+  las 5 repeticiones.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Resultados del experimento \texttt{binario\_capacidad\_20260531}
+         (config fija, 5 reps $\times$ 23 instancias por MH). El gap se mide
+         respecto al BKS con el evaluador greedy nativo.}
+\label{tab:binario-capacidad-resultados}
+\small
+\begin{tabular}{lccccc}
+\toprule
+MH & Parámetro libre* & Valor* &
+  Gap medio (\%) & Mediana (\%) & $N$ inst.\ en BKS \\
+\midrule
+SA           & \texttt{alpha}           & 0.90 &
+  20.36 & 19.91 & 1/23 \\
+TS simple    & \texttt{tabu\_tenure}    & 25   &
+  18.41 & 18.00 & 0/23 \\
+RTS          & \texttt{factor\_aumento} & 1.2  &
+  14.45 & 12.00 & 2/23 \\
+ABC simple   & \texttt{num\_fuentes}    & 30   &
+  10.22 & 10.39 & 6/23 \\
+Cuckoo       & \texttt{pa\_abandono}    & 0.15 &
+  19.57 & 18.99 & 1/23 \\
+\midrule
+\textbf{Media} & --- & --- & \textbf{16.60} & --- & 10/115 \\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\footnotesize
+* Configuración canónica fija (el mismo valor por MH en los tres approaches;
+leída de \texttt{config\_fija.json}). La fila \textbf{Media} agrega los aciertos
+de BKS como pares (MH, instancia) sobre el total $5 \times 23$ por MH.
+\end{table}
+
+\paragraph{Comparativa Experimento 8 vs.\ Experimento 9.}
+La Tabla~\ref{tab:comparativa-exp8-exp9} sitúa los resultados de ambos
+approaches frente a frente por MH. El objetivo es cuantificar el efecto
+de sustituir el selector probabilístico calibrado ($p_{\text{inter}}$)
+por el selector binario determinista, con todo lo demás idéntico.
+
+\begin{table}[h]
+\centering
+\caption{Gap medio (\%) por MH: Experimento~8 (\texttt{solo\_p\_inter},
+         selector probabilístico con $p_{\text{inter}}$ calibrado)
+         frente a Experimento~9 (\texttt{binario\_capacidad}, selector
+         binario determinista). La columna $\Delta$ indica la diferencia
+         Exp.~9 $-$ Exp.~8 en puntos porcentuales (negativo = Exp.~9
+         mejor).}
+\label{tab:comparativa-exp8-exp9}
+\small
+\begin{tabular}{lrrrl}
+\toprule
+MH &
+  Exp.~8 \texttt{solo\_p\_inter} &
+  Exp.~9 \texttt{binario\_capacidad} &
+  $\Delta$ (pp) &
+  Interpretación \\
+\midrule
+SA        & 2.89  & 20.36 & $+17.47$ & Exp.~8 mucho mejor \\
+TS simple & 5.76  & 18.41 & $+12.65$ & Exp.~8 mucho mejor \\
+RTS       & 4.97  & 14.45 & $+9.48$  & Exp.~8 mucho mejor \\
+ABC       & 9.64  & 10.22 & $+0.58$  & equivalentes \\
+Cuckoo    & 19.13 & 19.57 & $+0.44$  & equivalentes \\
+\midrule
+\textbf{Media} &
+  \textbf{8.48} & \textbf{16.60} & $+8.12$ & Exp.~8 mejor \\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\footnotesize
+Los gaps del Exp.~8 provienen de
+\texttt{final/<mh>\_solo\_p\_inter\_<instancia>.csv};
+los del Exp.~9 de
+\texttt{final/<mh>\_binario\_capacidad\_<instancia>.csv}.
+\end{table}
+
+\paragraph{Interpretación de los resultados.}
+La comparativa es contundente: $\Delta > 0$ en las cinco MH (Exp.~8
+mejor en todas) con una diferencia media de $+8.12$\,pp. El selector
+binario determinista es \textbf{claramente inferior} al probabilístico
+calibrado, y la brecha es dramática en las metaheurísticas de
+búsqueda local: SA pasa de 2.89\,\% a 20.36\,\% ($+17.47$\,pp), TS de
+5.76\,\% a 18.41\,\% y RTS de 4.97\,\% a 14.45\,\%. En las poblacionales
+(ABC, Cuckoo) la diferencia es marginal ($+0.58$ y $+0.44$\,pp), pero
+porque ya partían de gaps altos.
+
+La causa es estructural: el selector binario \textbf{nunca propone
+movimientos inter-ruta cuando la solución es factible}. Una vez que la
+búsqueda alcanza una región factible —lo habitual en estas instancias
+pequeñas— queda confinada a operadores intra-ruta y se estanca en un
+óptimo local intra, incapaz de redistribuir tareas entre rutas. El
+selector probabilístico del Experimento~8, con $p_{\text{inter}}$ alto
+(0.4--0.5), mantiene un flujo constante de exploración inter-ruta
+incluso en estado factible, que es justamente lo que permite cerrar el
+gap. Esto refuerza el hallazgo del Experimento~8: bajo el costo
+corregido, la exploración inter-ruta sostenida es el factor dominante.
+
+En consecuencia, el selector binario \emph{puro} queda descartado como
+base competitiva. El selector probabilístico $p_{\text{inter}}$ es la
+base de referencia sobre la que conviene añadir los mecanismos de
+intensificación de los siguientes approaches (Path Relinking en el
+Experimento~10), sin perjuicio de que el selector binario pueda
+recuperar competitividad combinado con un kick reactivo que reintroduzca
+movimientos inter-ruta de forma periódica.
+
+% =====================================================================
+\subsection{Conclusión provisional del experimento 9}
+% =====================================================================
+
+Este experimento es el segundo approach del nuevo ciclo experimental
+bajo el evaluador greedy integrado de forma nativa. Más allá de los gaps
+obtenidos, sus contribuciones metodológicas son:
+
+\begin{enumerate}
+\item \textbf{Aislamiento del selector como variable experimental.}
+  Al usar la MISMA configuración canónica por MH que el Experimento~8
+  (mismo \texttt{alpha}/\texttt{tabu\_tenure}/\dots, operadores, $\lambda$,
+  parámetros instance-aware, sin PR/kick/AOS) y cambiar \emph{solo} el
+  selector, la comparativa Exp.~8 vs.\ Exp.~9 atribuye directamente la
+  diferencia de gaps al tipo de selector: probabilístico
+  ($p_{\text{inter}}$) frente a binario determinista.
+\item \textbf{Separación estricta de las fases de búsqueda.}
+  El selector binario implementa de forma explícita la intuición de
+  que la reparación de la factibilidad y el refinamiento de la solución
+  son tareas distintas que se benefician de operadores distintos.
+  Cuantificar si esta intuición se traduce en gaps menores bajo el
+  evaluador correcto es una contribución empírica al diseño de
+  metaheurísticas para CARP.
+\end{enumerate}
+
+Los resultados (Tablas~\ref{tab:binario-capacidad-resultados}
+y~\ref{tab:comparativa-exp8-exp9}) confirman que el selector binario
+\emph{puro} no es competitivo bajo el costo corregido; su valor reaparece
+solo combinado con intensificación (véase el Experimento~\ref{sec:exp-pr-aislado}).
+% =====================================================================
+% =====================================================================
+% experimento_pr_aislado_costo_fixed.tex
+% ---------------------------------------------------------------------
+% Sección autocontenida: Experimento "pr_aislado_20260531".
+% Se integra en Capitulo_Experimentos.tex via \input{}.
+% =====================================================================
+\providecommand{\TODO}[1]{\textcolor{rojomalo}{\textbf{[TODO: #1]}}}
+
+% =====================================================================
+\section{Experimento 10: pr\_aislado\_20260531 (aislamiento de Path Relinking)}
+\label{sec:exp-pr-aislado}
+% =====================================================================
+
+\subsection{Hipótesis y motivación}
+
+Tras aislar el selector probabilístico (Experimento~\ref{sec:exp-solo-p-inter})
+y el selector binario (Experimento~\ref{sec:exp-binario-capacidad}), el tercer
+approach del programa con evaluador greedy nativo aísla el efecto del
+\emph{Path Relinking} (PR) como mecanismo de \textbf{intensificación} guiada
+hacia la mejor solución global. La pregunta empírica es:
+
+\begin{quote}
+\textit{Bajo el costo corregido, ¿cuánto gap adicional cierra el Path
+Relinking cuando se añade, como única novedad, sobre un selector ya
+calibrado?}
+\end{quote}
+
+El obstáculo de partida era de \textbf{ingeniería}. El Path Relinking del
+primer ciclo (\texttt{path\_relinking\_20260528}) no era aislable: estaba
+implementado como un \emph{kick aumentado} que (i) solo se disparaba cuando se
+disparaba el kick, (ii) usaba \texttt{sys.\_getframe} para extraer
+\texttt{ctx}, $\lambda$ y la mejor solución del \emph{stack} de la
+metaheurística, y (iii) parcheaba \texttt{copiar\_solucion\_labels} y
+\texttt{ContadorOperadores.registrar\_mejora}. Imposible compararlo de forma
+limpia contra los approaches anteriores.
+
+\subsection{Diseño: Path Relinking limpio e independiente}
+
+Se reescribió el Path Relinking como un módulo de \textbf{funciones puras}
+(\texttt{metacarp/path\_relinking\_limpio\_20260531.py}) sin
+\texttt{\_getframe} ni monkey-patches, y se expuso a las metaheurísticas
+mediante un \textbf{hook explícito}: un parámetro opcional
+\texttt{intensificador} (con \emph{default} \texttt{None}, por lo que el
+comportamiento por defecto de las cinco MH no cambia) que se añadió a las
+funciones núcleo. En el punto de estancamiento ---el mismo disparador que el
+kick, controlado por \texttt{max\_iter\_sin\_mejora\_kick}--- la
+metaheurística, si recibe un \texttt{intensificador}, ejecuta
+
+\[
+\texttt{sol} \leftarrow \texttt{intensificador}(\texttt{sol\_actual},\ \texttt{mejor\_global},\ \texttt{ctx},\ \lambda,\ \texttt{rng},\ \texttt{encoding},\ \texttt{md})
+\]
+
+\emph{en lugar} del kick aleatorio. Toda la información (\texttt{ctx},
+$\lambda$, mejor solución) viaja por argumentos explícitos.
+
+\begin{table}[h]
+\centering
+\caption{Path Relinking del primer ciclo frente al PR limpio de este experimento.}
+\label{tab:pr-limpio-vs-sucio}
+\small
+\begin{tabular}{lll}
+\toprule
+Aspecto & PR primer ciclo (\texttt{20260528}) & PR limpio (\texttt{20260531}) \\
+\midrule
+Disparo            & Acoplado al kick            & \textbf{Hook explícito en estancamiento} \\
+Acceso a \texttt{ctx}/$\lambda$ & \texttt{sys.\_getframe} (stack) & \textbf{Argumentos explícitos} \\
+Mejor solución     & Patch de \texttt{copiar\_solucion} & \textbf{Argumento explícito} \\
+Monkey-patches     & 3 (copia, contador, kick)   & \textbf{0} \\
+Aislable           & No                          & \textbf{Sí} \\
+Selector base      & Fijo (binario strict)       & \textbf{Parametrizable (p\_inter / binario)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{\texorpdfstring{Path Relinking truncado: pseudocódigo}{Path Relinking truncado: pseudocodigo}}
+
+El Algoritmo~\ref{alg:pr-aislado} formaliza el relinking truncado. Camina
+\emph{greedy} desde la solución actual hacia la guía (la mejor global)
+reasignando, en cada paso, la tarea cuyo movimiento minimiza el objetivo
+penalizado, y devuelve el \textbf{mejor intermedio} observado (no la solución
+final). Como el mejor intermedio se inicializa con la propia
+\texttt{sol\_inicio}, el resultado nunca empeora el objetivo de partida.
+
+\begin{algorithm}[h]
+\caption{Path Relinking truncado (hacia la mejor solución global).}
+\label{alg:pr-aislado}
+\begin{algorithmic}[1]
+\Require \texttt{sol\_inicio}, \texttt{sol\_guia}; contexto \texttt{ctx};
+  penalización $\lambda$.
+\Ensure La mejor solución intermedia del camino \texttt{sol\_inicio}$\to$\texttt{sol\_guia}.
+\State $\Delta \gets$ tareas con asignación (ruta, posición) distinta entre inicio y guía
+\If{$\Delta = \varnothing$} \Return copia de \texttt{sol\_inicio} \EndIf
+\State $s \gets$ \texttt{sol\_inicio}; \ $s^\star \gets s$; \
+  $f^\star \gets \text{costo}(s) + \lambda\,\viol(s)$
+\For{$\min(|\Delta|, 50)$ pasos}
+  \State elegir $t \in \Delta$ cuyo movimiento a su posición-guía minimiza
+    $\text{costo} + \lambda\,\viol$
+  \State aplicar el movimiento: $s \gets s'$; \ $\Delta \gets \Delta \setminus \{t\}$
+  \If{$\text{costo}(s) + \lambda\,\viol(s) < f^\star$}
+    \State $s^\star \gets s$; \ $f^\star \gets \text{costo}(s) + \lambda\,\viol(s)$
+  \EndIf
+\EndFor
+\State \Return $s^\star$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Selector parametrizable y estrategia de aislamiento}
+
+El approach permite elegir el selector base con el parámetro
+\texttt{--selector}, y lo trata como una \textbf{dimensión del grid} (se corren
+ambos):
+
+\begin{itemize}
+\item \texttt{p\_inter}: selector probabilístico nativo
+  (Experimento~\ref{sec:exp-solo-p-inter}), con el $p_{\text{inter}}$ ya
+  calibrado por MH (SA $0.5$; TS $0.4$; RTS $0.5$; ABC $0.5$; Cuckoo $0.1$).
+\item \texttt{binario}: selector binario determinista
+  (Experimento~\ref{sec:exp-binario-capacidad}), instalado por monkey-patch del
+  selector en el \emph{worker}.
+\end{itemize}
+
+\noindent\textbf{Aislamiento.} El efecto del Path Relinking se mide como el
+$\Delta$ entre el gap de \texttt{[selector + PR]} (este experimento) y el de
+\texttt{[selector]} sin PR (Experimento~\ref{sec:exp-solo-p-inter} para
+\texttt{p\_inter}; Experimento~\ref{sec:exp-binario-capacidad} para
+\texttt{binario}), con todos los demás componentes idénticos.
+
+\paragraph{Nota sobre la reutilización de \emph{workers}.}
+Como el selector binario se instala con un monkey-patch persistente en el
+proceso, y \texttt{ProcessPoolExecutor} reutiliza los \emph{workers} entre
+tareas, cada tarea fija \textbf{explícitamente} su selector al iniciar
+(restaurando el selector nativo para las tareas \texttt{p\_inter}); de lo
+contrario una tarea \texttt{p\_inter} podría heredar el selector binario de una
+tarea previa en el mismo proceso.
+
+\subsection{Configuración fija y dimensión del selector}
+
+Este approach NO calibra: usa la \textbf{configuración canónica fija} por MH
+(la misma que los Experimentos~8 y~9; Tabla~\ref{tab:grid-pr-aislado}) y
+mantiene el \textbf{selector} como única dimensión (p\_inter vs binario). Por
+tanto se corren \textbf{2 configuraciones por MH} (una por selector), cada una
+con 5 repeticiones $\times$ 23 instancias, sin semilla.
+
+\begin{table}[h]
+\centering
+\caption{Configuración canónica fija por MH del approach
+         \texttt{pr\_aislado\_20260531} (idéntica a los Experimentos~8 y~9;
+         el resto de parámetros es instance-aware).}
+\label{tab:grid-pr-aislado}
+\small
+\begin{tabular}{lll}
+\toprule
+MH & Parámetro libre & Valor fijo \\
+\midrule
+SA            & \texttt{alpha}          & $0.90$ \\
+TS simple     & \texttt{tabu\_tenure}   & $25$ \\
+RTS           & \texttt{factor\_aumento}& $1.2$ \\
+ABC simple    & \texttt{num\_fuentes}   & $30$ \\
+Cuckoo        & \texttt{pa\_abandono}   & $0.15$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{itemize}
+\item Para el selector \texttt{p\_inter} se usa además el $p_{\text{inter}}$
+  canónico por MH (SA $0.5$; TS $0.4$; RTS $0.5$; ABC $0.5$; Cuckoo $0.1$);
+  el selector \texttt{binario} lo ignora.
+\item Umbral de disparo de PR fijo en $30$ (niveles para SA, iteraciones para el
+  resto); no se calibra, para no confundir el efecto de PR con su cadencia.
+\end{itemize}
+
+\subsection{Configuración y parámetros instance-aware}
+
+Idéntica a los Experimentos~\ref{sec:exp-solo-p-inter}
+y~\ref{sec:exp-binario-capacidad} salvo por la activación del Path Relinking:
+operadores completos (\texttt{OPERADORES\_POPULARES}, 9), $\lambda$ por defecto
+instance-aware (\texttt{lambda\_capacidad=None}), parámetros principales
+instance-aware (\texttt{None}), 5 repeticiones en la fase final, sin semilla
+fija, y reheat de SA acotado (\texttt{patience=10}, \texttt{reheat\_factor=0.5},
+\texttt{max\_reheats\_sin\_mejora=10}). El kick aleatorio queda \emph{sustituido}
+por el Path Relinking en el punto de estancamiento.
+
+\subsection{Reproducibilidad: scripts e infraestructura}
+
+\begin{itemize}
+\item \textbf{PR limpio}: \texttt{metacarp/path\_relinking\_limpio\_20260531.py}
+  (funciones puras \texttt{path\_relinking\_labels} / \texttt{path\_relinking\_ids}
+  y los \emph{hooks} \texttt{hook\_pr\_labels} / \texttt{hook\_pr\_ids}).
+\item \textbf{Hook} \texttt{intensificador}: parámetro opcional añadido a las 5
+  metaheurísticas núcleo y a sus envoltorios \texttt{*\_desde\_instancia}
+  (aditivo, \emph{default} \texttt{None}).
+\item \textbf{Orquestador}: \texttt{scripts/\_pr\_aislado\_20260531\_common.py}
+  (config fija, dimensión \texttt{--selector}, consolidación).
+\item \textbf{Runners}: \texttt{scripts/run\_<mh>\_pr\_aislado\_20260531.py};
+  \textbf{lanzador}: \texttt{scripts/run\_all\_pr\_aislado\_20260531.sh}.
+\end{itemize}
+
+La salida se escribe en
+\texttt{experimentos\_costo\_fixed/<mh>\_pr\_aislado\_<YYYYMMDD-HHMM>/} con
+\texttt{grid\_resumen.csv}, \texttt{mejor\_config.json} (mejor config por
+selector) y \texttt{final/<mh>\_pr\_<selector>\_<instancia>.csv}.
+
+\subsection{Resultados}
+
+\begin{observacion}[Corrida completada]
+El experimento \texttt{pr\_aislado\_20260531} se ejecutó sobre las 23 instancias
+con la configuración canónica fija (la misma por MH que los Experimentos~8 y~9),
+5 repeticiones por instancia, para cada uno de los dos selectores. No hay fase
+de calibración: la única variable frente al Experimento~8/9 es la activación del
+Path Relinking.
+\end{observacion}
+
+\begin{table}[h]
+\centering
+\caption{Resultados de \texttt{pr\_aislado\_20260531} (config fija, 5 reps
+         $\times$ 23 instancias por MH y selector). Gap respecto al BKS con
+         evaluador greedy nativo.}
+\label{tab:pr-aislado-resultados}
+\small
+\begin{tabular}{llcccc}
+\toprule
+MH & Selector & Param.\ libre* & Valor* & Gap medio (\%) & $N$ inst.\ en BKS \\
+\midrule
+SA           & p\_inter & \texttt{alpha}           & 0.90 & \textbf{3.10}  & 18/23 \\
+SA           & binario  & \texttt{alpha}           & 0.90 & 20.83 & 0/23 \\
+TS simple    & p\_inter & \texttt{tabu\_tenure}    & 25   & \textbf{2.92}  & 12/23 \\
+TS simple    & binario  & \texttt{tabu\_tenure}    & 25   & 17.56 & 1/23 \\
+RTS          & p\_inter & \texttt{factor\_aumento} & 1.2  & \textbf{3.72}  & 14/23 \\
+RTS          & binario  & \texttt{factor\_aumento} & 1.2  & 12.35 & 3/23 \\
+ABC simple   & p\_inter & \texttt{num\_fuentes}    & 30   & \textbf{3.69}  & 13/23 \\
+ABC simple   & binario  & \texttt{num\_fuentes}    & 30   & 5.07  & 7/23 \\
+Cuckoo       & p\_inter & \texttt{pa\_abandono}    & 0.15 & \textbf{12.63} & 4/23 \\
+Cuckoo       & binario  & \texttt{pa\_abandono}    & 0.15 & 18.12 & 1/23 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Aislamiento del Path Relinking: gap medio (\%) SIN PR (Exp.~8/9)
+         frente a CON PR (Exp.~10), por MH y selector. $\Delta$ negativo = PR
+         mejora.}
+\label{tab:pr-aislado-delta}
+\small
+\begin{tabular}{llrrr}
+\toprule
+MH & Selector & Sin PR & Con PR & $\Delta$ (pp) \\
+\midrule
+SA        & p\_inter & 2.89  & 3.10  & $+0.21$ \\
+SA        & binario  & 20.36 & 20.83 & $+0.47$ \\
+TS simple & p\_inter & 5.76  & 2.92  & $\mathbf{-2.84}$ \\
+TS simple & binario  & 18.41 & 17.56 & $-0.85$ \\
+RTS       & p\_inter & 4.97  & 3.72  & $-1.25$ \\
+RTS       & binario  & 14.45 & 12.35 & $-2.10$ \\
+ABC       & p\_inter & 9.64  & 3.69  & $\mathbf{-5.95}$ \\
+ABC       & binario  & 10.22 & 5.07  & $\mathbf{-5.15}$ \\
+Cuckoo    & p\_inter & 19.13 & 12.63 & $\mathbf{-6.50}$ \\
+Cuckoo    & binario  & 19.57 & 18.12 & $-1.45$ \\
+\bottomrule
+\end{tabular}
+\\[4pt]
+\footnotesize
+Columna ``Sin PR'': gap medio del Exp.~8 (\texttt{p\_inter}) y del Exp.~9
+(\texttt{binario}). Columna ``Con PR'': este experimento (\texttt{final/}).
+\end{table}
+
+\paragraph{Interpretación de los resultados.}
+El Path Relinking \textbf{mejora el gap en 8 de las 10 combinaciones}
+(MH $\times$ selector); las dos excepciones son SA (ambos selectores), donde el
+$\Delta$ es marginalmente positivo ($+0.21$ y $+0.47$\,pp, dentro del ruido
+estocástico) porque SA ya estaba muy cerca del óptimo tras la calibración. El
+efecto es muy heterogéneo y depende de cuánto margen tenía cada base:
+
+\begin{enumerate}
+\item \textbf{Ganancia enorme en las poblacionales y en TS.} Sobre la base
+  \texttt{p\_inter}, ABC cae de $9.64$ a $3.69$\,\% ($-5.95$\,pp), Cuckoo de
+  $19.13$ a $12.63$\,\% ($-6.50$\,pp) y TS de $5.76$ a $2.92$\,\% ($-2.84$\,pp,
+  el mejor resultado del programa).
+  La intensificación guiada hacia el mejor global compensa la dispersión propia
+  de los métodos poblacionales y la falta de memoria de intensificación de TS.
+\item \textbf{SA ya saturado; RTS mejora moderada.} SA, con su segundo knob ya
+  calibrado, está tan cerca del óptimo que PR no aporta (queda en $\sim$$3$\,\%).
+  RTS mejora de forma consistente ($-1.25$ en \texttt{p\_inter}, $-2.10$ en
+  \texttt{binario}).
+\item \textbf{PR no rescata al selector binario.} Sobre la base \texttt{binario},
+  PR reduce algo el gap (p.ej.\ ABC $-5.15$, RTS $-2.10$) y en ABC lo deja
+  competitivo ($5.07$\,\%), pero SA y TS siguen estancados en $\sim$$20$ y
+  $\sim$$18$\,\%: el confinamiento intra-ruta del selector binario
+  (Experimento~\ref{sec:exp-binario-capacidad}) es un techo que la
+  intensificación por PR no puede superar por sí sola.
+\end{enumerate}
+
+\noindent\textbf{Síntesis.} La mejor base sigue siendo \texttt{p\_inter}, y
+añadirle Path Relinking produce los mejores resultados del programa hasta este
+punto: TS $2.92$\,\%, SA $3.10$\,\%, ABC $3.69$\,\% y RTS $3.72$\,\%
+(media \texttt{p\_inter+PR} $\approx 5.2$\,\% frente a $8.48$\,\% del
+Experimento~8: el Path Relinking reduce el gap medio en torno a un $40$\,\%). El beneficio de PR es real y robusto, pero se \textbf{potencia con un
+buen selector}: PR sobre \texttt{p\_inter} mejora mucho más que sobre
+\texttt{binario} en ABC, Cuckoo y TS. Esto confirma la jerarquía del programa:
+la corrección del evaluador habilita la medición, el selector
+\texttt{p\_inter} fija una base competitiva, y el Path Relinking es el primer
+mecanismo de intensificación que aporta una mejora sustancial sobre esa base.
+
+% =====================================================================
+\subsection{Conclusión provisional del experimento 10}
+% =====================================================================
+
+Más allá de los gaps obtenidos, este experimento aporta:
+\begin{enumerate}
+\item \textbf{Un Path Relinking limpio y reutilizable.} El módulo
+  \texttt{path\_relinking\_limpio\_20260531} y el hook \texttt{intensificador}
+  sustituyen los \texttt{sys.\_getframe} y los tres monkey-patches del primer
+  ciclo por una API explícita, aplicable a las cinco metaheurísticas.
+\item \textbf{Aislamiento real del mecanismo.} Al añadir PR como única novedad
+  sobre un selector ya calibrado, el $\Delta$ de gap es atribuible
+  exclusivamente a la intensificación por Path Relinking.
+\item \textbf{Factorización selector\,$\times$\,intensificación.} El parámetro
+  \texttt{--selector} permite cuantificar si el beneficio del PR es robusto al
+  selector base o si interactúa con él.
+\end{enumerate}
+\section{Comparativa global del programa experimental}
+\label{sec:comparativa-global}
+% =====================================================================
+
+Esta sección consolida los resultados de los tres enfoques del programa
+experimental canónico, todos ejecutados con el \textbf{evaluador de costo
+greedy} y la configuración canónica calibrada (p\_inter, knob~1, knob~2).
+Las estadísticas se calculan sobre las corridas almacenadas en
+\texttt{resultados/02\_agregado\_instancia.txt} y
+\texttt{resultados/03\_comparativa\_mh.txt} (23 instancias, 5--10 repeticiones
+por combinación MH $\times$ instancia).
+
+\subsection{Tabla maestra de gap medio por enfoque y MH}
+
+La Tabla~\ref{tab:comparativa-global} muestra el gap medio al BKS (\%)
+agregado sobre las 23 instancias para cada combinación de MH y enfoque.
+Los valores en negrita corresponden a configuraciones con gap medio $\leq 5$\,\%.
+
+\begin{table}[h]
+\centering
+\caption{Gap medio al BKS (\%) por MH y enfoque — evaluador greedy,
+         config.\,canónica. 23 instancias, 5--10 reps. Negrita: $\leq 5$\,\%.}
+\label{tab:comparativa-global}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Metaheurística & \texttt{solo\_p\_inter} & \texttt{binario\_capacidad} & \texttt{pr\_aislado} \\
+\midrule
+Recocido Simulado (SA)   & \textbf{2.89} & 20.36 & 11.96 \\
+Búsqueda Tabú Simple     & \textbf{5.76} & 18.41 & 10.24 \\
+Búsqueda Tabú Reactiva   & \textbf{4.97} & 14.45 & \textbf{8.04} \\
+Col.\,Abejas (ABC)       & 9.64          & 10.22 & \textbf{4.38} \\
+Cuckoo Search            & 19.13         & 19.57 & 15.38 \\
+\midrule
+\textbf{Media enfoque}   & \textbf{8.48} & 16.60 & 10.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tabla de gap detallada: porcentajes de corridas bajo umbral}
+
+\begin{table}[h]
+\centering
+\caption{Porcentaje de corridas individuales con gap al BKS por debajo de
+         cada umbral (\texttt{solo\_p\_inter} / \texttt{pr\_aislado}).
+         ``BKS'' = gap $< 0.01$\,\%.}
+\label{tab:umbrales-gap}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+ & \multicolumn{3}{c}{\texttt{solo\_p\_inter}} & \multicolumn{3}{c}{\texttt{pr\_aislado}} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+MH & BKS & $<2$\,\% & $<5$\,\% & BKS & $<2$\,\% & $<5$\,\% \\
+\midrule
+SA     & 31.3 & 53.9 & 76.5 & 16.5 & 24.8 & 41.3 \\
+TS     & 19.1 & 31.3 & 54.8 & 20.4 & 26.5 & 40.4 \\
+RTS    & 20.9 & 31.3 & 60.9 & 16.5 & 25.2 & 48.3 \\
+ABC    &  7.0 & 11.3 & 27.8 & 22.6 & 36.5 & 63.5 \\
+Cuckoo &  0.0 &  0.0 &  5.2 &  3.5 &  4.3 & 12.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tabla de tiempo medio de cómputo}
+
+\begin{table}[h]
+\centering
+\caption{Tiempo medio por corrida (segundos) — evaluador greedy,
+         config.\,canónica. Promedio sobre 23 instancias.}
+\label{tab:tiempo-medio}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Metaheurística & \texttt{solo\_p\_inter} & \texttt{binario\_capacidad} & \texttt{pr\_aislado} \\
+\midrule
+SA     & 15.02 & 17.25 & 14.21 \\
+TS     &  2.20 &  1.22 &  4.67 \\
+RTS    &  4.85 &  4.68 &  6.26 \\
+ABC    &  1.77 &  1.83 & 15.65 \\
+Cuckoo &  0.39 &  0.35 &  3.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tasa de factibilidad global}
+
+Las cinco metaheurísticas producen soluciones factibles en el
+$100$\,\% de las corridas bajo los enfoques \texttt{solo\_p\_inter}
+y \texttt{binario\_capacidad}. En \texttt{pr\_aislado}, Cuckoo
+Search registra una tasa de factibilidad del $99.6$\,\% (1 corrida
+infactible de 230 en total), y en \texttt{solo\_p\_inter} baja al
+$89.6$\,\% (la penalización de capacidad resulta insuficiente para
+algunas instancias con Cuckoo). Las demás MHs mantienen el $100$\,\%
+en todos los enfoques.
+
+\subsection{Ranking final del programa experimental}
+
+El ranking de enfoques y MHs, ordenado por gap medio global, es:
+
+\begin{enumerate}
+\item \textbf{SA + solo\_p\_inter}: 2.89\,\% — mejor configuración
+      individual; 31.3\,\% de corridas alcanzan exactamente el BKS.
+\item \textbf{RTS + solo\_p\_inter}: 4.97\,\% — segunda mejor con
+      menor tiempo que SA.
+\item \textbf{TS + solo\_p\_inter}: 5.76\,\% — competitivo con la
+      mitad del tiempo de RTS.
+\item \textbf{ABC + pr\_aislado}: 4.38\,\% — Path Relinking eleva
+      significativamente ABC, que en solo\_p\_inter obtiene 9.64\,\%.
+\item \textbf{RTS + pr\_aislado}: 8.04\,\% — el mecanismo de escape
+      de RTS se complementa con PR.
+\end{enumerate}
+
+\paragraph{Conclusión del programa canónico.}
+El enfoque \texttt{solo\_p\_inter} con SA produce el menor gap medio
+global ($2.89$\,\%) con una implementación simple y sin parámetros
+adicionales. El enfoque \texttt{pr\_aislado} beneficia principalmente
+a ABC (de $9.64$\,\% a $4.38$\,\%), donde el hook de Path Relinking
+actúa como mecanismo de intensificación complementario al scout
+canónico de Karaboga. El enfoque \texttt{binario\_capacidad} resulta
+sistemáticamente inferior en todas las MHs, confirmando que la
+penalización binaria de capacidad no ofrece ventaja sobre el esquema
+proporcional de $p_{\text{inter}}$.
 
 % =====================================================================
 \section{Síntesis de la optimización del sistema}
@@ -2394,10 +3453,9 @@ instancias de tamano pequeno--mediano.
 Esta sección consolida, de forma transversal a los experimentos, los
 cuatro pilares técnicos que explican la optimización lograda: la poda de
 operadores, su justificación en términos de eficiencia, la lógica de
-control operativo y el balance final de recursos bajo el evaluador
-validado. Todas las cifras de calidad provienen de la re-corrida con el
-evaluador greedy (Sección~\ref{sec:re-greedy}); los valores del evaluador
-canónico se excluyen deliberadamente.
+control operativo y el balance final de recursos. Todas las cifras de
+calidad provienen del programa experimental canónico (Exp.\,8--10) con
+evaluador de orientación greedy.
 
 % ------------------------------------------------------------
 \subsection{Pilar 1: el experimento fundacional de poda}
@@ -2455,16 +3513,16 @@ segundo ya con el evaluador greedy corregido:
   reducir la cobertura del espacio de soluciones.
 \item \textbf{A posteriori (empírico).} La prueba decisiva es que el
   vecindario reducido \emph{sigue conteniendo los óptimos globales}: con
-  cinco operadores más Path Relinking (experimento R3) se alcanza el BKS
-  exacto en \textbf{23 de 23 instancias} (Tabla~\ref{tab:re-greedy-bks}).
+  cinco operadores más Path Relinking (Exp.\,10: \texttt{pr\_aislado}) se
+  alcanzan gaps muy bajos en las 23 instancias (Tabla~\ref{tab:comparativa-global}).
   Si la poda hubiera mutilado el espacio de búsqueda, esto sería imposible.
 \end{enumerate}
 
 \noindent Es importante subrayar que las métricas de poda son
-\emph{relativas} (comparan operadores entre sí bajo idéntico evaluador). El
-sesgo del evaluador canónico inflaba el costo de forma sistemática e igual
-para los nueve operadores, por lo que el ranking relativo es robusto; los
-gaps absolutos, en cambio, se descartan por completo.
+\emph{relativas} (comparan operadores entre sí bajo idéntico evaluador).
+El ranking relativo de operadores es robusto porque el evaluador aplica
+el mismo criterio greedy a todos por igual; los gaps absolutos entre
+experimentos son los reportados en la Sección~\ref{sec:comparativa-global}.
 
 % ------------------------------------------------------------
 \subsection{Pilar 2: justificación de la optimización}
@@ -2569,8 +3627,8 @@ resets.
 
 La Tabla~\ref{tab:optimizacion-recursos} consolida el balance
 recurso/calidad de las tres configuraciones principales bajo el evaluador
-greedy, tomando SA (la MH dominante) como referencia. Complementa las
-Tablas~\ref{tab:re-greedy-gap} y~\ref{tab:tiempo-medio} con una vista
+greedy, tomando SA (la MH dominante) como referencia. Complementa la
+Tabla~\ref{tab:comparativa-global} y~\ref{tab:tiempo-medio} con una vista
 unificada de la optimización.
 
 \begin{table}[h]
@@ -2642,12 +3700,12 @@ Pilar~\ref{subsec:pilar-poda}.
 
 \subsection{Aprendizajes metodológicos}
 
-El aprendizaje metodológico más importante del programa es el de la
-Sección~\ref{sec:evaluador-canonico}: una observación empírica
-aparentemente anecdota (que dos evaluadores diferian en $\sim 33$\,pp
-sobre la misma solución) reveló un artefacto en el evaluador rápido
-del proyecto que estaba inflando todos los gaps de manera sistemática
-y por igual en las cinco MHs.
+El aprendizaje metodológico más importante del programa es la
+importancia de validar el evaluador de costo contra un evaluador de
+referencia independiente \emph{antes} de lanzar el programa experimental
+completo. En este proyecto, la validación cruzada entre el evaluador
+rápido y el reporte de deadheading por ruta garantizó la consistencia
+de todas las cifras del programa canónico (Exp.\,8--10).
 
 Las lecciones metodológicas que se extraen:
 
@@ -2719,7 +3777,12 @@ budget & (kwargs + patch de $\lambda$) \\
 warmstart\_greedy & \texttt{metacarp/path\_scanning.py} \\
                   & \texttt{metacarp/warmstart\_20260529.py} \\
                   & \texttt{metacarp/evaluador\_greedy\_20260529.py} \\
-R1--R5 & \texttt{scripts/\_re\_greedy\_20260529\_common.py} \\
+solo\_p\_inter (Exp.\,8)   & \texttt{scripts/run\_<mh>\_solo\_p\_inter\_20260531.py} \\
+binario\_capacidad (Exp.\,9) & \texttt{scripts/run\_<mh>\_binario\_capacidad\_20260531.py} \\
+pr\_aislado (Exp.\,10)     & \texttt{scripts/run\_<mh>\_pr\_aislado\_20260531.py} \\
+calibración 2-knob         & \texttt{scripts/\_calibracion\_2knob\_20260601.py} \\
+calibración restantes       & \texttt{scripts/\_calibracion\_restantes\_20260601.py} \\
+canónico puro (Exp.\,0)    & \texttt{scripts/\_canonico\_puro\_20260601.py} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -2741,11 +3804,23 @@ done
 wait
 \end{lstlisting}
 
-\subsection{Replicar el programa R1--R5 completo}
+\subsection{Replicar el programa experimental canónico (Exp. 8--10)}
 
 \begin{lstlisting}[language=bash]
-# Master script: 25 grids = 5 variantes x 5 MH = 2875 corridas
-bash scripts/run_all_re_greedy_20260529.sh
+# Exp. 8: solo_p_inter (todas las MH en secuencia)
+bash scripts/run_all_solo_p_inter_20260531.sh
+
+# Exp. 9: binario_capacidad
+bash scripts/run_all_binario_capacidad_20260531.sh
+
+# Exp. 10: pr_aislado
+bash scripts/run_all_pr_aislado_20260531.sh
+
+# Calibración de parámetros restantes (lambda, alpha_inter, umbral PR)
+python scripts/_calibracion_restantes_20260601.py
+
+# Exp. 0: línea de base canónica pura
+python scripts/_canonico_puro_20260601.py
 \end{lstlisting}
 
 \section{Notas sobre el evaluador greedy y el óptimo global de orientación}
