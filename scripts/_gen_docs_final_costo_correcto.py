@@ -1,52 +1,52 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Generador del documento ``docs_final_costo_correcto_con_resultados.txt``.
+Generador del documento LaTeX ``docs_final_costo_correcto_con_resultados.tex``.
 
 Recorre TODOS los experimentos lanzados DESPUES de eliminar el calculador de
 costo incorrecto (commit dab620b, "orientacion greedy como unica logica del
-evaluador") y produce un unico .txt que:
+evaluador") y produce un unico .tex AUTOCONTENIDO y compilable en Overleaf
+(pdflatex, >=2 pases) que:
 
   1. Narra el proceso experimental completo (correccion del costo, hook
      intensificador, calibracion de parametros, los 3 approaches).
-  2. Vuelca los RESULTADOS EXTENSOS de cada corrida leidos directamente de los
-     CSV en ``experimentos_costo_fixed/`` (per-instancia, per-repeticion y
-     resumenes agregados).
+  2. Vuelca los RESULTADOS EXTENSOS de cada corrida leidos de los CSV en
+     ``experimentos_costo_fixed/``: nombres de los CSV de origen, tabla resumen
+     por instancia (longtable), detalle por repeticion y la MEJOR solucion por
+     instancia (rutas + desglose de deadheading).
+  3. Embebe VERBATIM (como LaTeX real) los capitulos ya redactados de cada
+     approach (docs/experimento_*_costo_fixed.tex): tablas booktabs extensas,
+     pseudocodigos en entorno algorithm y conclusiones.
 
-No depende de pandas: usa unicamente la biblioteca estandar (csv, glob, ...).
-Es idempotente: re-ejecutarlo regenera el .txt desde los CSV actuales.
+No depende de pandas: usa unicamente la biblioteca estandar.
 """
 from __future__ import annotations
 
 import csv
 import glob
-import json
 import os
+import json
 import statistics
-from collections import defaultdict
+import unicodedata
 
 # Raiz del proyecto = un nivel arriba de scripts/
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(RAIZ, "experimentos_costo_fixed")
-SALIDA = os.path.join(RAIZ, "docs_final_costo_correcto_con_resultados.txt")
+SALIDA = os.path.join(RAIZ, "docs_final_costo_correcto_con_resultados.tex")
 
-# Fuente LaTeX (capitulo de tesis) ya redactada para cada approach. Se embebe
-# VERBATIM en el documento para no perder las tablas extensas, los pseudocodigos
-# (algorithm) y las conclusiones ya escritas.
+# Capitulos LaTeX (fragmentos sin preambulo) ya redactados por approach.
 TEX_POR_APPROACH = {
     "solo_p_inter": os.path.join(RAIZ, "docs", "experimento_solo_p_inter_costo_fixed.tex"),
     "binario_capacidad": os.path.join(RAIZ, "docs", "experimento_binario_capacidad_costo_fixed.tex"),
     "pr_aislado": os.path.join(RAIZ, "docs", "experimento_pr_aislado_costo_fixed.tex"),
 }
 
-# Orden canonico de instancias (mismo que config_fija.json).
 ORDEN_INST = [
     "gdb19", "kshs1", "kshs2", "kshs3", "kshs4", "kshs5", "kshs6",
     "gdb4", "gdb14", "gdb15", "gdb1", "gdb20", "gdb3", "gdb6", "gdb7",
     "gdb12", "gdb10", "gdb2", "gdb5", "gdb13", "gdb16", "gdb17", "gdb21",
 ]
 
-# Nombre legible de cada metaheuristica.
 NOMBRE_MH = {
     "sa": "Recocido Simulado (SA)",
     "tabu_simple": "Busqueda Tabu Simple (TS)",
@@ -54,24 +54,65 @@ NOMBRE_MH = {
     "abc_simple": "Colonia Artificial de Abejas (ABC)",
     "cuckoo": "Cuckoo Search (CS)",
 }
-
-# Orden de presentacion de las MH.
 ORDEN_MH = ["sa", "tabu_simple", "tabu_reactiva", "abc_simple", "cuckoo"]
 
 
+# ============================================================
+# Utilidades LaTeX
+# ============================================================
+
+_ESC = {
+    "\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "$": r"\$",
+    "#": r"\#", "_": r"\_", "{": r"\{", "}": r"\}",
+    "~": r"\textasciitilde{}", "^": r"\textasciicircum{}",
+}
+
+
+def T(s: str) -> str:
+    """Escapa una cadena para texto normal LaTeX."""
+    return "".join(_ESC.get(c, c) for c in str(s))
+
+
+def fold(s: str) -> str:
+    """Pliega a ASCII (quita acentos y caracteres no ASCII) para verbatim.
+
+    El contenido verbatim (rutas, deadheading) procede de la salida del
+    programa; plegarlo a ASCII garantiza que ``lstlisting`` compile en Overleaf
+    sin depender de la configuracion de inputenc/fontenc.
+    """
+    nf = unicodedata.normalize("NFKD", str(s))
+    sin_acentos = "".join(c for c in nf if not unicodedata.combining(c))
+    return sin_acentos.encode("ascii", "ignore").decode("ascii")
+
+
+def slug(s: str) -> str:
+    """Etiqueta (\\label) segura a partir de un titulo."""
+    base = fold(s).lower()
+    return "".join(c if c.isalnum() else "-" for c in base).strip("-")
+
+
+def lst(lineas: list[str]) -> list[str]:
+    """Envuelve lineas en un entorno lstlisting (verbatim, ASCII)."""
+    out = [r"\begin{lstlisting}[style=dump]"]
+    out.extend(fold(l) for l in lineas)
+    out.append(r"\end{lstlisting}")
+    return out
+
+
+# ============================================================
+# Lectura de datos
+# ============================================================
+
 def _orden_inst_key(inst: str) -> int:
-    """Indice de una instancia en el orden canonico (al final si no esta)."""
     return ORDEN_INST.index(inst) if inst in ORDEN_INST else len(ORDEN_INST)
 
 
 def leer_csv_instancia(path: str) -> list[dict]:
-    """Lee un CSV de resultados (maneja campos multilinea entre comillas)."""
     with open(path, newline="", encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
 
 
 def _f(x: str) -> float | None:
-    """Convierte a float tolerando vacios/None."""
     try:
         return float(x)
     except (TypeError, ValueError):
@@ -79,59 +120,71 @@ def _f(x: str) -> float | None:
 
 
 def archivos_instancia(carpeta_final: str, prefijo: str) -> dict[str, str]:
-    """Mapea instancia -> ruta de su CSV para un prefijo dado.
-
-    El prefijo identifica la variante (p.ej. ``sa_solo_p_inter`` o
-    ``sa_pr_binario``). Solo se toman ficheros con sufijo de instancia
-    (``_gdbN`` / ``_kshsN``); se descartan los agregados sin instancia.
-    """
     res: dict[str, str] = {}
     for path in glob.glob(os.path.join(carpeta_final, prefijo + "_*.csv")):
-        base = os.path.basename(path)[:-4]  # sin .csv
-        inst = base[len(prefijo) + 1:]      # tras "prefijo_"
-        # Solo nombres de instancia validos (gdbN / kshsN).
+        base = os.path.basename(path)[:-4]
+        inst = base[len(prefijo) + 1:]
         if inst.startswith("gdb") or inst.startswith("kshs"):
             res[inst] = path
     return res
 
 
-def bloque_variante(titulo: str, mapa_inst: dict[str, str]) -> list[str]:
-    """Construye el bloque de texto extenso para una variante (MH x approach).
+def cargar_json(path: str) -> dict | None:
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    return None
 
-    Incluye: tabla resumen por instancia + detalle por repeticion + resumen
-    global de la variante.
-    """
+
+def dir_por_mh_approach(approach_token: str) -> dict[str, str]:
+    res: dict[str, str] = {}
+    for d in sorted(glob.glob(os.path.join(BASE, "*_" + approach_token + "_*"))):
+        nombre = os.path.basename(d)
+        mh = nombre.split("_" + approach_token + "_")[0]
+        res[mh] = d
+    return res
+
+
+# ============================================================
+# Bloque LaTeX por variante (MH x approach)
+# ============================================================
+
+def bloque_variante(titulo: str, mapa_inst: dict[str, str]) -> list[str]:
     out: list[str] = []
-    out.append("-" * 92)
-    out.append(titulo)
-    out.append("-" * 92)
+    out.append(r"\subsection{%s}" % T(titulo))
 
     instancias = sorted(mapa_inst, key=_orden_inst_key)
     if not instancias:
-        out.append("  (sin datos)")
-        out.append("")
+        out.append(r"\emph{(sin datos)}")
         return out
 
-    # --- Procedencia: archivos CSV que alimentan este bloque ---
-    # Carpeta comun (relativa a la raiz del proyecto) y los nombres de fichero
-    # por instancia, para que cada cifra sea trazable a su CSV de origen.
+    # --- Procedencia: CSV de origen ---
     carpeta_rel = os.path.relpath(os.path.dirname(next(iter(mapa_inst.values()))), RAIZ)
-    out.append("")
-    out.append("  ARCHIVOS CSV DE ORIGEN  (carpeta: {}/)".format(carpeta_rel))
-    for inst in instancias:
-        out.append("    {:<8} -> {}".format(inst, os.path.basename(mapa_inst[inst])))
+    out.append(r"\paragraph{Archivos CSV de origen.} Carpeta \texttt{%s/}:" % T(carpeta_rel))
+    out.extend(lst(["{:<8} -> {}".format(inst, os.path.basename(mapa_inst[inst]))
+                    for inst in instancias]))
 
-    # --- Tabla resumen por instancia ---
-    out.append("")
-    out.append("  RESUMEN POR INSTANCIA")
-    out.append("  {:<8} {:>7} {:>9} {:>9} {:>9} {:>8} {:>8} {:>8} {:>9}".format(
-        "inst", "BKS", "best", "media", "peor", "gap_b%", "gap_m%", "t_med(s)", "n_reset"))
-    out.append("  " + "." * 86)
+    # --- Tabla resumen por instancia (longtable) ---
+    etiqueta = slug(titulo)
+    out.append(r"\paragraph{Resumen por instancia.}")
+    out.append(r"\begingroup\footnotesize")
+    out.append(r"\begin{longtable}{l r r r r r r r r}")
+    out.append(r"\caption{Resumen por instancia --- %s. best/media/peor sobre 5 reps; "
+               r"gap\_b/gap\_m vs BKS; t\_med tiempo medio; n\_reset reinicios medios.}"
+               r"\label{tab:res-%s}\\" % (T(titulo), etiqueta))
+    cab = (r"\toprule inst & BKS & best & media & peor & gap\_b\% & gap\_m\% & "
+           r"t\_med(s) & n\_reset \\ \midrule")
+    out.append(cab)
+    out.append(r"\endfirsthead")
+    out.append(r"\multicolumn{9}{l}{\footnotesize\itshape continuacion tabla \ref{tab:res-%s}}\\"
+               % etiqueta)
+    out.append(cab)
+    out.append(r"\endhead")
+    out.append(r"\bottomrule \endlastfoot")
 
     gaps_best_var: list[float] = []
     gaps_media_var: list[float] = []
-    n_opt = 0  # cuantas instancias alcanzan gap 0 en su mejor repeticion
-
+    n_opt = 0
     detalle: list[tuple[str, list[dict]]] = []
 
     for inst in instancias:
@@ -143,393 +196,382 @@ def bloque_variante(titulo: str, mapa_inst: dict[str, str]) -> list[str]:
         resets = [_f(r.get("n_resets_kick", "")) for r in filas]
         resets = [r for r in resets if r is not None]
         bks = _f(filas[0]["bks_referencia"]) if filas else None
-
         if not costos:
             continue
-        best = min(costos)
-        media = statistics.mean(costos)
-        peor = max(costos)
+        best = min(costos); media = statistics.mean(costos); peor = max(costos)
         gap_b = min(gaps) if gaps else float("nan")
         gap_m = statistics.mean(gaps) if gaps else float("nan")
         t_med = statistics.mean(tiempos) if tiempos else float("nan")
         n_reset_med = statistics.mean(resets) if resets else 0.0
-
-        gaps_best_var.append(gap_b)
-        gaps_media_var.append(gap_m)
+        gaps_best_var.append(gap_b); gaps_media_var.append(gap_m)
         if gap_b <= 1e-9:
             n_opt += 1
+        out.append(r"%s & %s & %s & %.1f & %s & %.3f & %.3f & %.2f & %.1f \\" % (
+            T(inst), f"{bks:.0f}" if bks is not None else "-",
+            f"{best:.0f}", media, f"{peor:.0f}", gap_b, gap_m, t_med, n_reset_med))
+    out.append(r"\end{longtable}\endgroup")
 
-        out.append("  {:<8} {:>7} {:>9} {:>9} {:>9} {:>8.3f} {:>8.3f} {:>8.2f} {:>9.1f}".format(
-            inst,
-            f"{bks:.0f}" if bks is not None else "-",
-            f"{best:.0f}", f"{media:.1f}", f"{peor:.0f}",
-            gap_b, gap_m, t_med, n_reset_med))
-
-    # --- Resumen global de la variante ---
-    out.append("  " + "." * 86)
     if gaps_best_var:
-        out.append("  GLOBAL  gap_best medio = {:.3f}%   gap_media medio = {:.3f}%   "
-                   "optimos(best) = {}/{}".format(
-                       statistics.mean(gaps_best_var),
-                       statistics.mean(gaps_media_var),
+        out.append(r"\noindent\textbf{Global:} gap\_best medio = %.3f\%%, "
+                   r"gap\_media medio = %.3f\%%, optimos (best) = %d/%d." % (
+                       statistics.mean(gaps_best_var), statistics.mean(gaps_media_var),
                        n_opt, len(instancias)))
 
-    # --- Detalle por repeticion (extenso) ---
-    out.append("")
-    out.append("  DETALLE POR REPETICION  (rep | costo_ini -> mejor_costo | gap% | tiempo s | n_reset)")
+    # --- Detalle por repeticion (verbatim) ---
+    out.append(r"\paragraph{Detalle por repeticion.} "
+               r"(rep $\mid$ costo\_ini $\to$ mejor\_costo $\mid$ gap\% $\mid$ tiempo s $\mid$ n\_reset)")
+    det_lineas: list[str] = []
     for inst, filas in detalle:
         bks = _f(filas[0]["bks_referencia"]) if filas else None
-        out.append("    [{}]  BKS={}".format(inst, f"{bks:.0f}" if bks is not None else "-"))
+        det_lineas.append("[{}]  BKS={}".format(inst, f"{bks:.0f}" if bks is not None else "-"))
         for r in sorted(filas, key=lambda x: int(x["repeticion"])):
-            ci = _f(r["costo_solucion_inicial"])
-            mc = _f(r["mejor_costo"])
-            gp = _f(r["gap_bks_porcentaje"])
-            tt = _f(r["tiempo_segundos"])
+            ci = _f(r["costo_solucion_inicial"]); mc = _f(r["mejor_costo"])
+            gp = _f(r["gap_bks_porcentaje"]); tt = _f(r["tiempo_segundos"])
             nr = _f(r.get("n_resets_kick", ""))
-            out.append("      rep {:>1} | {:>7} -> {:>7} | {:>7.3f}% | {:>8.2f} | {:>4}".format(
+            det_lineas.append("  rep {:>1} | {:>7} -> {:>7} | {:>7.3f}% | {:>8.2f} | {:>4}".format(
                 r["repeticion"],
                 f"{ci:.0f}" if ci is not None else "-",
                 f"{mc:.0f}" if mc is not None else "-",
                 gp if gp is not None else float("nan"),
                 tt if tt is not None else float("nan"),
                 f"{nr:.0f}" if nr is not None else "-"))
-    out.append("")
+    out.extend(lst(det_lineas))
 
-    # --- Mejor solucion por instancia (rutas + desglose de deadheading) ---
-    # Para cada instancia se toma la repeticion de MENOR mejor_costo y se vuelca
-    # su solucion legible (cadena de rutas) y el reporte detallado de
-    # deadheading, cuyo total coincide con mejor_costo bajo el evaluador greedy.
-    out.append("  MEJOR SOLUCION POR INSTANCIA  (rep de menor costo: rutas + desglose de deadheading)")
+    # --- Mejor solucion por instancia (rutas + deadheading, verbatim) ---
+    out.append(r"\paragraph{Mejor solucion por instancia.} "
+               r"Repeticion de menor costo: rutas y desglose de deadheading "
+               r"(el total coincide con mejor\_costo bajo el evaluador greedy).")
     for inst, filas in detalle:
         bks = _f(filas[0]["bks_referencia"]) if filas else None
-        # Repeticion con el menor mejor_costo (desempate: la primera).
-        mejor_fila = min(
-            filas,
-            key=lambda r: (_f(r["mejor_costo"]) if _f(r["mejor_costo"]) is not None else float("inf")),
-        )
-        mc = _f(mejor_fila["mejor_costo"])
-        gp = _f(mejor_fila["gap_bks_porcentaje"])
-        out.append("")
-        out.append("    ==== [{}]  BKS={}  mejor_costo={}  gap={:.3f}%  (rep {}) ====".format(
-            inst,
-            f"{bks:.0f}" if bks is not None else "-",
+        mejor_fila = min(filas, key=lambda r: (_f(r["mejor_costo"])
+                                               if _f(r["mejor_costo"]) is not None else float("inf")))
+        mc = _f(mejor_fila["mejor_costo"]); gp = _f(mejor_fila["gap_bks_porcentaje"])
+        cuerpo: list[str] = []
+        cuerpo.append("==== [{}]  BKS={}  mejor_costo={}  gap={:.3f}%  (rep {}) ====".format(
+            inst, f"{bks:.0f}" if bks is not None else "-",
             f"{mc:.0f}" if mc is not None else "-",
             gp if gp is not None else float("nan"),
             mejor_fila.get("repeticion", "?")))
-        # Cadena compacta de rutas (R1: D -> TRx -> ... -> D || R2: ...).
         rutas = (mejor_fila.get("mejor_solucion_tr_legible") or "").strip()
         if rutas:
-            out.append("    RUTAS:")
+            cuerpo.append("RUTAS:")
             for linea in rutas.replace(" || ", "\n").splitlines():
-                out.append("      " + linea.strip())
-        # Reporte detallado de deadheading (multilinea; total == mejor_costo).
+                cuerpo.append("  " + linea.strip())
         reporte = (mejor_fila.get("reporte_detalle_deadheading") or "").strip()
         if reporte:
-            out.append("    DESGLOSE DE DEADHEADING:")
+            cuerpo.append("DESGLOSE DE DEADHEADING:")
             for linea in reporte.splitlines():
-                out.append("      " + linea.rstrip())
-    out.append("")
+                cuerpo.append("  " + linea.rstrip())
+        out.extend(lst(cuerpo))
     return out
 
 
-def cargar_json(path: str) -> dict | None:
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as fh:
-            return json.load(fh)
-    return None
-
-
-def dir_por_mh_approach(approach_token: str) -> dict[str, str]:
-    """Mapea mh -> carpeta del experimento para un token de approach.
-
-    ``approach_token`` es el fragmento que aparece en el nombre de carpeta:
-    ``solo_p_inter``, ``binario_capacidad`` o ``pr_aislado``.
-    """
-    res: dict[str, str] = {}
-    for d in sorted(glob.glob(os.path.join(BASE, "*_" + approach_token + "_*"))):
-        nombre = os.path.basename(d)
-        # mh = lo que precede a "_<approach_token>_"
-        mh = nombre.split("_" + approach_token + "_")[0]
-        res[mh] = d
-    return res
-
-
 def embeber_tex(token: str) -> list[str]:
-    """Devuelve el contenido LaTeX del capitulo del approach, embebido verbatim.
-
-    Incluye TODO el .tex (motivacion, diseno, pseudocodigos en entorno
-    ``algorithm``, tablas ``table`` extensas, resultados y conclusiones), entre
-    marcadores claros para que sea facil localizarlo y copiarlo a la tesis.
-    """
+    """Inserta el capitulo LaTeX del approach como fuente real (compila)."""
     path = TEX_POR_APPROACH.get(token)
     if not path or not os.path.exists(path):
         return []
     with open(path, encoding="utf-8") as fh:
         contenido = fh.read().rstrip("\n")
     rel = os.path.relpath(path, RAIZ)
-    out: list[str] = []
-    out.append("")
-    out.append("." * 92)
-    out.append("  FUENTE LaTeX DEL CAPITULO (tablas extensas + pseudocodigos), VERBATIM")
-    out.append("  archivo: {}".format(rel))
-    out.append("  >>> INICIO LaTeX >>>")
-    out.append("." * 92)
-    out.extend(contenido.splitlines())
-    out.append("." * 92)
-    out.append("  <<< FIN LaTeX <<<  ({})".format(rel))
-    out.append("." * 92)
-    out.append("")
+    out = [r"\clearpage",
+           r"%% ===== Capitulo embebido (verbatim LaTeX): %s =====" % rel,
+           contenido,
+           r"%% ===== Fin capitulo embebido: %s =====" % rel]
     return out
 
 
-def main() -> None:
+# ============================================================
+# Preambulo
+# ============================================================
+
+PREAMBULO = r"""\documentclass[11pt,a4paper]{article}
+
+% ----- Codificacion e idioma -----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+
+% ----- Matematicas y teoremas (necesarios para los capitulos embebidos) -----
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\newtheorem{teorema}{Teorema}[section]
+\newtheorem{lema}[teorema]{Lema}
+\newtheorem{proposicion}[teorema]{Proposicion}
+\theoremstyle{definition}
+\newtheorem{definicion}[teorema]{Definicion}
+\newtheorem{ejemplo}[teorema]{Ejemplo}
+\theoremstyle{remark}
+\newtheorem{observacion}[teorema]{Observacion}
+
+% ----- Tablas profesionales -----
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+
+% ----- Figuras -----
+\usepackage{graphicx}
+\graphicspath{{docs/figuras/}{figuras/}{./}}
+
+% ----- Pseudocodigo (capitulos embebidos) -----
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\algrenewcommand\algorithmicrequire{\textbf{Entradas:}}
+\algrenewcommand\algorithmicensure{\textbf{Devuelve:}}
+\algrenewcommand\algorithmicif{\textbf{si}}
+\algrenewcommand\algorithmicthen{\textbf{entonces}}
+\algrenewcommand\algorithmicelse{\textbf{si no}}
+\algrenewcommand\algorithmicend{\textbf{fin}}
+\algrenewcommand\algorithmicwhile{\textbf{mientras}}
+\algrenewcommand\algorithmicfor{\textbf{para}}
+\algrenewcommand\algorithmicdo{\textbf{hacer}}
+\algrenewcommand\algorithmicreturn{\textbf{devolver}}
+\algrenewcommand\algorithmicrepeat{\textbf{repetir}}
+\algrenewcommand\algorithmicuntil{\textbf{hasta}}
+
+% ----- Color e hipervinculos -----
+\usepackage{xcolor}
+\definecolor{verdebueno}{RGB}{0,128,0}
+\definecolor{rojomalo}{RGB}{200,0,0}
+\definecolor{azulneutro}{RGB}{0,60,140}
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% ----- Margenes -----
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+
+% ----- Volcados verbatim (CSV, rutas, deadheading) -----
+\usepackage{listings}
+\lstdefinestyle{dump}{%
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    columns=fullflexible,
+    keepspaces=true,
+    showstringspaces=false,
+    frame=single,
+    framesep=2pt,
+    xleftmargin=2pt,
+    aboveskip=4pt, belowskip=4pt,
+}
+
+\title{Proceso experimental y resultados extensos bajo el evaluador de costo
+corregido\\[2pt]\large Proyecto MetaCARP --- Capacitated Arc Routing Problem}
+\author{Generado automaticamente desde \texttt{experimentos\_costo\_fixed/}}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\clearpage
+"""
+
+
+# ============================================================
+# Narrativa (LaTeX)
+# ============================================================
+
+def seccion_narrativa() -> list[str]:
     L: list[str] = []
+    L.append(r"\section{El cambio raiz: eliminacion del calculador de costo incorrecto}")
+    L.append(r"\textbf{Commit pivote:} \texttt{dab620b} --- "
+             r"\emph{``refactor: integrar orientacion greedy como unica logica del "
+             r"evaluador''} (30-may-2026).")
+    L.append(r"\paragraph{Problema.} El evaluador de costo previo forzaba una "
+             r"orientacion \emph{canonica} fija: cada tarea (arco) se recorria siempre "
+             r"por su extremo $u\to v$, sin importar por donde llegaba el vehiculo. Eso "
+             r"inflaba artificialmente el dead-heading (los traslados sin servicio) y, "
+             r"por tanto, el costo total y el gap respecto al BKS. Con gaps inflados era "
+             r"imposible aislar el efecto real de cada mejora.")
+    L.append(r"\paragraph{Correccion.} La orientacion \emph{greedy} pasa a ser la unica "
+             r"logica nativa del evaluador (\texttt{metacarp.evaluador\_costo}): cada "
+             r"tarea se entra por el extremo mas cercano al nodo previo, minimizando el "
+             r"dead-heading. Antes esto se aplicaba como \emph{monkey-patch} en tiempo de "
+             r"ejecucion; ahora es el comportamiento base.")
+    L.append(r"\begin{itemize}")
+    L.append(r"\item \texttt{evaluador\_costo.py}: \texttt{costo\_rapido\_ids} y "
+             r"\texttt{\_empaquetar\_lote\_ids} reescritos con orientacion greedy por "
+             r"tarea (bucle secuencial prev$\to$orientacion).")
+    L.append(r"\item \texttt{reporte\_solucion.py} y \texttt{metaheuristicas\_utils.py}: "
+             r"se elimino el parametro \texttt{orientacion\_greedy} y el branch canonico; "
+             r"el reporte usa siempre la regla greedy, de modo que \texttt{costo\_total} "
+             r"coincide con \texttt{mejor\_costo} del CSV.")
+    L.append(r"\item Se \textbf{elimino} el modulo \texttt{evaluador\_greedy\_20260529.py} "
+             r"(patch ya redundante) y se limpiaron sus llamadas en los 3 scripts.")
+    L.append(r"\end{itemize}")
+    L.append(r"\emph{Verificacion:} import limpio, cero vestigios del patch, y "
+             r"\texttt{costo\_rapido\_ids} $=$ \texttt{costo\_lote\_ids} sobre la misma "
+             r"solucion, eligiendo la orientacion de minimo dead-heading (invierte la "
+             r"tarea cuando conviene).")
 
-    def add(*lineas: str) -> None:
-        L.extend(lineas)
+    L.append(r"\section{Cambio funcional posterior: el hook \texttt{intensificador}}")
+    L.append(r"Sobre la base ya corregida se introdujo un unico cambio funcional en las "
+             r"5 metaheuristicas (commit \texttt{93cf736}): el parametro opcional "
+             r"\texttt{intensificador: Callable | None = None}. Cuando se provee, en el "
+             r"punto de estancamiento (mismo disparador que el kick) la metaheuristica "
+             r"ejecuta Path Relinking \textbf{hacia} la mejor solucion global "
+             r"\textbf{en lugar} del kick aleatorio, con la firma fija:")
+    L.append(r"\begin{center}\ttfamily intensificador(sol\_actual, mejor\_global, ctx, "
+             r"lam, rng, encoding, md)\end{center}")
+    L.append(r"Reemplaza los \emph{frame-hacks} del PR del primer ciclo por una API "
+             r"limpia. El nuevo modulo \texttt{metacarp/path\_relinking\_limpio\_20260531.py} "
+             r"provee dos \emph{hooks} listos (\texttt{hook\_pr\_labels} para "
+             r"SA/TS/RTS/Cuckoo y \texttt{hook\_pr\_ids} para ABC). PR es una funcion "
+             r"\emph{pura}: recibe \texttt{ctx}/$\lambda$/mejor-solucion por argumentos "
+             r"explicitos, sin robar nada del stack ni parchear nada, y devuelve siempre "
+             r"una solucion con objetivo penalizado $\le$ al de partida (PR truncado "
+             r"guarda el mejor intermedio). Afecta a las 5 MH (funcion principal y "
+             r"\texttt{\_desde\_instancia}). En SA, Cuckoo y ABC la guia del PR es la "
+             r"mejor solucion factible si existe; si no, la mejor sin restriccion.")
 
-    # ================================================================
-    # PORTADA Y NARRATIVA
-    # ================================================================
-    add(
-        "=" * 92,
-        "  PROCESO EXPERIMENTAL Y RESULTADOS EXTENSOS BAJO EL EVALUADOR DE COSTO CORREGIDO",
-        "  Proyecto MetaCARP  --  Capacitated Arc Routing Problem",
-        "=" * 92,
-        "",
-        "Este documento reune, en un solo lugar, (a) el proceso experimental completo",
-        "ejecutado DESPUES de eliminar el calculador de costo incorrecto y (b) los",
-        "resultados extensos -- corrida por corrida -- de cada experimento posterior a",
-        "ese cambio. Se genera automaticamente desde los CSV en experimentos_costo_fixed/",
-        "con scripts/_gen_docs_final_costo_correcto.py.",
-        "",
-        "Para maxima trazabilidad y detalle, cada bloque de resultados lista los NOMBRES",
-        "EXACTOS de los CSV que lo alimentan, y al final de cada approach se embebe",
-        "VERBATIM el capitulo LaTeX ya redactado (tablas extensas, pseudocodigos en",
-        "entorno algorithm, y conclusiones) listo para copiar a la tesis.",
-        "",
-        "INDICE:",
-        "  1. El cambio raiz (eliminacion del costo incorrecto)",
-        "  2. El hook 'intensificador' (Path Relinking limpio)",
-        "  3. El programa experimental (3 approaches)",
-        "  4. Calibracion de parametros",
-        "  5. Resultados + LaTeX -- Approach 1 (solo_p_inter)",
-        "  6. Resultados + LaTeX -- Approach 2 (binario_capacidad)",
-        "  7. Resultados + LaTeX -- Approach 3 (pr_aislado)",
-        "  8. Nota final",
-        "",
-        "-" * 92,
-        "1. EL CAMBIO RAIZ: ELIMINACION DEL CALCULADOR DE COSTO INCORRECTO",
-        "-" * 92,
-        "",
-        "Commit pivote: dab620b -- 'refactor: integrar orientacion greedy como unica",
-        "logica del evaluador' (30-may-2026).",
-        "",
-        "PROBLEMA. El evaluador de costo previo forzaba una orientacion CANONICA fija:",
-        "cada tarea (arco) se recorria siempre por su extremo u->v, sin importar por",
-        "donde llegaba el vehiculo. Eso inflaba artificialmente el dead-heading (los",
-        "traslados sin servicio) y, por tanto, el costo total y el gap respecto al BKS.",
-        "Con gaps inflados era imposible aislar el efecto real de cada mejora.",
-        "",
-        "CORRECCION. La orientacion GREEDY pasa a ser la unica logica NATIVA del",
-        "evaluador (metacarp.evaluador_costo): cada tarea se entra por el extremo mas",
-        "cercano al nodo previo, minimizando el dead-heading. Antes esto se aplicaba",
-        "como monkey-patch en tiempo de ejecucion; ahora es el comportamiento base.",
-        "",
-        "Cambios concretos de ese commit:",
-        "  - evaluador_costo.py: costo_rapido_ids y _empaquetar_lote_ids reescritos con",
-        "    orientacion greedy por tarea (bucle secuencial prev->orientacion).",
-        "  - reporte_solucion.py y metaheuristicas_utils.py: se elimino el parametro",
-        "    orientacion_greedy y el branch canonico; el reporte usa siempre la regla",
-        "    greedy, de modo que costo_total coincide con mejor_costo del CSV.",
-        "  - Se ELIMINO el modulo evaluador_greedy_20260529.py (patch ya redundante).",
-        "  - Se limpiaron las llamadas al patch en los 3 scripts de corrida.",
-        "",
-        "Verificacion: import limpio, cero vestigios del patch, y costo_rapido_ids ==",
-        "costo_lote_ids sobre la misma solucion, eligiendo la orientacion de minimo",
-        "dead-heading (invierte la tarea cuando conviene).",
-        "",
-        "-" * 92,
-        "2. CAMBIO FUNCIONAL POSTERIOR: EL HOOK 'intensificador'",
-        "-" * 92,
-        "",
-        "Sobre la base ya corregida se introdujo un unico cambio funcional en las 5",
-        "metaheuristicas (commit 93cf736): el parametro opcional",
-        "",
-        "    intensificador: Callable | None = None",
-        "",
-        "Cuando se provee, en el punto de estancamiento (mismo disparador que el kick)",
-        "la MH ejecuta Path Relinking HACIA la mejor solucion global EN LUGAR del kick",
-        "aleatorio, con la firma fija:",
-        "",
-        "    intensificador(sol_actual, mejor_global, ctx, lam, rng, encoding, md)",
-        "",
-        "Reemplaza los frame-hacks del PR del primer ciclo por una API limpia. El nuevo",
-        "modulo metacarp/path_relinking_limpio_20260531.py provee dos hooks listos",
-        "(hook_pr_labels para SA/TS/RTS/Cuckoo y hook_pr_ids para ABC). PR es una",
-        "funcion PURA: recibe ctx/lambda/mejor-solucion por argumentos explicitos, sin",
-        "robar nada del stack ni parchear nada. Devuelve siempre una solucion con",
-        "objetivo penalizado <= al de partida (PR truncado guarda el mejor intermedio).",
-        "",
-        "Las 5 MH afectadas (funcion principal + _desde_instancia, en ambas se propaga",
-        "el parametro): recocido_simulado, busqueda_tabu_simple, busqueda_tabu_reactiva,",
-        "cuckoo_search y busqueda_abejas_simple. En SA, Cuckoo y ABC la guia del PR es",
-        "la mejor solucion factible si existe; si no, la mejor sin restriccion.",
-        "",
-        "-" * 92,
-        "3. PROGRAMA EXPERIMENTAL: DE LO MAS SIMPLE A LO MAS COMPLEJO",
-        "-" * 92,
-        "",
-        "Filosofia metodologica: con el costo ya corregido se parte de la configuracion",
-        "MAS SIMPLE y se anaden mecanismos uno a uno, para que cada uno se justifique",
-        "por si mismo. Si el approach simple ya da buen gap, los demas (PR, kick, AOS,",
-        "budget) solo se justificarian por reducir tiempo, no por mejorar calidad.",
-        "",
-        "Comun a los 3 approaches:",
-        "  - Operadores: conjunto COMPLETO (9 = 3 intra + 6 inter).",
-        "  - lambda (penalizador de capacidad): default instance-aware (~10x la mediana",
-        "    del costo de arco).",
-        "  - Parametros instance-aware automaticos (T_init/T_min/L en SA, etc.).",
-        "  - 23 instancias (gdb/kshs) x 5 repeticiones.",
-        "  - Una sola configuracion canonica fija por MH (sin grid).",
-        "",
-        "APPROACH 1 -- solo_p_inter (el mas simple).",
-        "  Selector PROBABILISTICO: con probabilidad p_inter se propone el grupo INTER,",
-        "  si no el grupo INTRA; dentro del grupo, operador UNIFORME. En estado",
-        "  infactible la probabilidad sube a alpha_inter (reparacion). Sin PR, sin kick,",
-        "  sin AOS, sin budget. Es la MH base con kwargs especificos.",
-        "",
-        "APPROACH 2 -- binario_capacidad (selector determinista).",
-        "  Igual que el 1 salvo el selector: BINARIO DETERMINISTA por capacidad. Si la",
-        "  solucion viola capacidad -> grupo INTER (reparacion); si es factible -> grupo",
-        "  INTRA (refinamiento). No consume rng ni mira p_inter. Sin kick reactivo.",
-        "",
-        "APPROACH 3 -- pr_aislado (aislar Path Relinking).",
-        "  Mide el efecto de anadir Path Relinking (via el hook intensificador) sobre la",
-        "  base desnuda de un selector, SIN kick aleatorio/AOS/budget. El selector es una",
-        "  DIMENSION: se corre con base p_inter y con base binario. El aislamiento se",
-        "  obtiene comparando [selector + PR] (este) contra [selector] (approach 1 / 2).",
-        "",
-    )
+    L.append(r"\section{Programa experimental: de lo mas simple a lo mas complejo}")
+    L.append(r"Filosofia metodologica: con el costo ya corregido se parte de la "
+             r"configuracion \textbf{mas simple} y se anaden mecanismos uno a uno, para "
+             r"que cada uno se justifique por si mismo. Si el approach simple ya da buen "
+             r"gap, los demas (PR, kick, AOS, budget) solo se justificarian por reducir "
+             r"tiempo, no por mejorar calidad.")
+    L.append(r"\paragraph{Comun a los 3 approaches.}")
+    L.append(r"\begin{itemize}")
+    L.append(r"\item Operadores: conjunto \textbf{completo} (9 = 3 intra + 6 inter).")
+    L.append(r"\item $\lambda$ (penalizador de capacidad): default instance-aware "
+             r"($\sim 10\times$ la mediana del costo de arco).")
+    L.append(r"\item Parametros instance-aware automaticos (T\_init/T\_min/L en SA, etc.).")
+    L.append(r"\item 23 instancias (gdb/kshs) $\times$ 5 repeticiones.")
+    L.append(r"\item Una sola configuracion canonica fija por MH (sin grid).")
+    L.append(r"\end{itemize}")
+    L.append(r"\paragraph{Approach 1 --- \texttt{solo\_p\_inter} (el mas simple).} "
+             r"Selector \emph{probabilistico}: con probabilidad $p_{\text{inter}}$ se "
+             r"propone el grupo inter-ruta, si no el grupo intra-ruta; dentro del grupo, "
+             r"operador \emph{uniforme}. En estado infactible la probabilidad sube a "
+             r"$\alpha_{\text{inter}}$ (reparacion agresiva). Sin PR, kick, AOS ni budget.")
+    L.append(r"\paragraph{Approach 2 --- \texttt{binario\_capacidad} (determinista).} "
+             r"Igual que el 1 salvo el selector: \emph{binario determinista} por "
+             r"capacidad. Si la solucion viola capacidad $\to$ grupo inter (reparar); si "
+             r"es factible $\to$ grupo intra (refinar). No consume el \texttt{rng} ni mira "
+             r"$p_{\text{inter}}$. Sin kick reactivo.")
+    L.append(r"\paragraph{Approach 3 --- \texttt{pr\_aislado} (aislar Path Relinking).} "
+             r"Mide el efecto de anadir Path Relinking (via el hook "
+             r"\texttt{intensificador}) sobre la base desnuda de un selector, sin kick "
+             r"aleatorio/AOS/budget. El selector es una \emph{dimension}: se corre con "
+             r"base \texttt{p\_inter} y con base \texttt{binario}. El aislamiento se "
+             r"obtiene comparando [selector + PR] (este) contra [selector] (approach 1/2).")
+    return L
 
-    # ================================================================
-    # CALIBRACION DE PARAMETROS
-    # ================================================================
-    add(
-        "-" * 92,
-        "4. CALIBRACION DE PARAMETROS (previa a la config canonica)",
-        "-" * 92,
-        "",
-        "Antes de fijar la config canonica se calibro, por metaheuristica, el segundo",
-        "parametro mas influyente (2-knob) y los parametros restantes (alpha_inter,",
-        "lambda). El criterio fue el gap medio respecto al BKS. Resultados versionados:",
-        "",
-    )
+
+def seccion_calibracion() -> list[str]:
+    L: list[str] = []
+    L.append(r"\section{Calibracion de parametros (previa a la config canonica)}")
+    L.append(r"Antes de fijar la config canonica se calibro, por metaheuristica, el "
+             r"segundo parametro mas influyente (2-knob) y los parametros restantes "
+             r"($\alpha_{\text{inter}}$, $\lambda$). El criterio fue el gap medio "
+             r"respecto al BKS. Resultados versionados:")
 
     cal2 = cargar_json(os.path.join(BASE, "_calibracion_2knob", "mejor_2knob.json"))
     if cal2:
-        add("  CALIBRACION 2-KNOB (mejor_2knob.json) -- 2o parametro mas influyente por MH:")
+        L.append(r"\paragraph{Calibracion 2-knob (segundo parametro mas influyente).}")
+        L.append(r"\begin{center}\footnotesize\begin{tabular}{l l r l}")
+        L.append(r"\toprule MH & parametro & mejor & gap medio (\%) [todos] \\ \midrule")
         for mh in ORDEN_MH:
             if mh in cal2:
                 c = cal2[mh]
-                todos = "  ".join(f"{k}:{v}" for k, v in c.get("todos", {}).items())
-                add("    {:<14} {} = {}  (gap_medio={}%)   [{}]".format(
-                    mh, c["knob2_nombre"], c["knob2_valor"], c["gap_medio"], todos))
-        add("")
+                todos = ", ".join(f"{k}:{v}" for k, v in c.get("todos", {}).items())
+                L.append(r"%s & %s & %s & %s~[%s] \\" % (
+                    T(mh), T(c["knob2_nombre"]), T(c["knob2_valor"]),
+                    T(c["gap_medio"]), T(todos)))
+        L.append(r"\bottomrule\end{tabular}\end{center}")
 
     calA = cargar_json(os.path.join(BASE, "_calibracion_restantes", "mejor_alpha_inter.json"))
     if calA:
-        add("  CALIBRACION alpha_inter (mejor_alpha_inter.json) -- prob. INTER en infactible:")
+        L.append(r"\paragraph{Calibracion $\alpha_{\text{inter}}$ "
+                 r"(prob. inter en infactible).}")
+        L.append(r"\begin{center}\footnotesize\begin{tabular}{l r l}")
+        L.append(r"\toprule MH & mejor & gap medio (\%) [todos] \\ \midrule")
         for mh in ORDEN_MH:
             if mh in calA:
                 c = calA[mh]
-                todos = "  ".join(f"{k}:{v}" for k, v in c.get("todos", {}).items())
-                add("    {:<14} mejor = {}  (gap_medio={:.3f}%)   [{}]".format(
-                    mh, c["mejor_valor"], c["gap_medio"], todos))
-        add("")
+                todos = ", ".join(f"{k}:{v}" for k, v in c.get("todos", {}).items())
+                L.append(r"%s & %s & %.3f~[%s] \\" % (
+                    T(mh), T(c["mejor_valor"]), c["gap_medio"], T(todos)))
+        L.append(r"\bottomrule\end{tabular}\end{center}")
 
     calL = cargar_json(os.path.join(BASE, "_calibracion_restantes", "mejor_lambda.json"))
     if calL:
-        todos = "  ".join(f"{k}:{v}" for k, v in calL.get("todos", {}).items())
-        add("  CALIBRACION lambda (mejor_lambda.json) -- factor del penalizador de capacidad:",
-            "    {} (ref {}): mejor = {}  (gap_medio={:.3f}%)   [{}]".format(
-                calL["param"], calL["mh_ref"], calL["mejor_valor"], calL["gap_medio"], todos),
-            "")
+        todos = ", ".join(f"{k}:{v}" for k, v in calL.get("todos", {}).items())
+        L.append(r"\paragraph{Calibracion $\lambda$ (factor del penalizador de capacidad).} "
+                 r"\texttt{%s} (ref \texttt{%s}): mejor = %s, gap medio = %.3f\%% [%s]." % (
+                     T(calL["param"]), T(calL["mh_ref"]), T(calL["mejor_valor"]),
+                     calL["gap_medio"], T(todos)))
+    return L
 
-    # ================================================================
-    # RESULTADOS EXTENSOS POR APPROACH
-    # ================================================================
+
+# ============================================================
+# Main
+# ============================================================
+
+def main() -> None:
+    L: list[str] = [PREAMBULO]
+    L.extend(seccion_narrativa())
+    L.extend(seccion_calibracion())
+
     approaches = [
-        ("solo_p_inter", "APPROACH 1 -- solo_p_inter",
+        ("solo_p_inter", "Resultados extensos --- Approach 1 (solo\\_p\\_inter)",
          lambda mh: f"{mh}_solo_p_inter"),
-        ("binario_capacidad", "APPROACH 2 -- binario_capacidad",
+        ("binario_capacidad", "Resultados extensos --- Approach 2 (binario\\_capacidad)",
          lambda mh: f"{mh}_binario_capacidad"),
-        ("pr_aislado", "APPROACH 3 -- pr_aislado (PR sobre base p_inter y base binario)",
-         None),  # caso especial: dos prefijos
+        ("pr_aislado", "Resultados extensos --- Approach 3 (pr\\_aislado)",
+         None),
     ]
 
-    seccion = 5
     for token, titulo_sec, prefijo_fn in approaches:
-        add(
-            "",
-            "=" * 92,
-            f"  {seccion}. RESULTADOS EXTENSOS -- {titulo_sec}",
-            "=" * 92,
-            "",
-            "Leyenda: best=mejor costo de las 5 reps; media/peor sobre las 5 reps;",
-            "gap_b%=gap del best vs BKS; gap_m%=gap medio; t_med=tiempo medio por corrida;",
-            "n_reset=media de reinicios (kick/PR) por corrida.",
-            "",
-        )
+        L.append(r"\clearpage")
+        L.append(r"\section{%s}" % titulo_sec)
+        L.append(r"\noindent\emph{Leyenda:} best = mejor costo de las 5 reps; "
+                 r"media/peor sobre las 5 reps; gap\_b\% = gap del best vs BKS; "
+                 r"gap\_m\% = gap medio; t\_med = tiempo medio por corrida; "
+                 r"n\_reset = media de reinicios (kick/PR).")
         dirs = dir_por_mh_approach(token)
         for mh in ORDEN_MH:
             if mh not in dirs:
                 continue
             carpeta_final = os.path.join(dirs[mh], "final")
             if token == "pr_aislado":
-                # Dos variantes: PR sobre base binario y PR sobre base p_inter.
                 for sub, etiqueta in [("pr_binario", "PR + base binario"),
                                       ("pr_p_inter", "PR + base p_inter")]:
-                    prefijo = f"{mh}_{sub}"
-                    mapa = archivos_instancia(carpeta_final, prefijo)
-                    titulo = f"{NOMBRE_MH.get(mh, mh)}  >>  {etiqueta}"
-                    add(*bloque_variante(titulo, mapa))
+                    mapa = archivos_instancia(carpeta_final, f"{mh}_{sub}")
+                    titulo = f"{NOMBRE_MH.get(mh, mh)} -- {etiqueta}"
+                    L.extend(bloque_variante(titulo, mapa))
             else:
-                prefijo = prefijo_fn(mh)
-                mapa = archivos_instancia(carpeta_final, prefijo)
-                titulo = f"{NOMBRE_MH.get(mh, mh)}"
-                add(*bloque_variante(titulo, mapa))
-        # Tras los resultados numericos, embebemos el capitulo LaTeX completo de
-        # este approach (tablas extensas, pseudocodigos y conclusiones ya listas).
-        add(*embeber_tex(token))
-        seccion += 1
+                mapa = archivos_instancia(carpeta_final, prefijo_fn(mh))
+                L.extend(bloque_variante(NOMBRE_MH.get(mh, mh), mapa))
+        # Capitulo LaTeX redactado de este approach (tablas + pseudocodigos).
+        L.extend(embeber_tex(token))
 
-    # ================================================================
-    # CIERRE
-    # ================================================================
-    add(
-        "",
-        "=" * 92,
-        f"  {seccion}. NOTA FINAL",
-        "=" * 92,
-        "",
-        "Todos los costos y gaps de este documento se calcularon con el evaluador de",
-        "orientacion greedy (costo corregido). Los CSV historicos previos al commit",
-        "dab620b (p.ej. resultados_lambda_grid_20260525.csv) se eliminaron del repo por",
-        "corresponder al regimen de costo incorrecto y no son comparables con lo de aqui.",
-        "",
-        "Fuente de datos: experimentos_costo_fixed/<mh>_<approach>_<fecha>/final/*.csv",
-        "Capitulos LaTeX embebidos: docs/experimento_{solo_p_inter,binario_capacidad,",
-        "pr_aislado}_costo_fixed.tex",
-        "Regenerar: python3 scripts/_gen_docs_final_costo_correcto.py",
-        "",
-    )
+    # Nota final
+    L.append(r"\clearpage")
+    L.append(r"\section{Nota final}")
+    L.append(r"Todos los costos y gaps se calcularon con el evaluador de orientacion "
+             r"greedy (costo corregido). Los CSV historicos previos al commit "
+             r"\texttt{dab620b} (p.ej. \texttt{resultados\_lambda\_grid\_20260525.csv}) "
+             r"se eliminaron del repo por corresponder al regimen de costo incorrecto y "
+             r"no son comparables con lo de aqui.")
+    L.append(r"\begin{itemize}")
+    L.append(r"\item Fuente de datos: "
+             r"\texttt{experimentos\_costo\_fixed/<mh>\_<approach>\_<fecha>/final/*.csv}")
+    L.append(r"\item Capitulos LaTeX embebidos: "
+             r"\texttt{docs/experimento\_\{solo\_p\_inter,binario\_capacidad,pr\_aislado\}"
+             r"\_costo\_fixed.tex}")
+    L.append(r"\item Regenerar: \texttt{python3 scripts/\_gen\_docs\_final\_costo\_correcto.py}")
+    L.append(r"\end{itemize}")
+    L.append(r"\end{document}")
 
     with open(SALIDA, "w", encoding="utf-8") as fh:
         fh.write("\n".join(L) + "\n")
 
-    print(f"Documento generado: {SALIDA}")
-    print(f"Lineas: {len(L)}")
+    print(f"Documento LaTeX generado: {SALIDA}")
+    print(f"Lineas: {len(chr(10).join(L).splitlines())}")
 
 
 if __name__ == "__main__":
