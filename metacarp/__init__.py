@@ -158,6 +158,17 @@ from .recocido_simulado import (
     recocido_simulado_desde_instancia,
 )
 
+# --- Vibration Damping Optimization (VDO) ---
+# Metaheurística de trayectoria basada en la analogía del amortiguamiento
+# vibratorio: la amplitud A (análoga a la temperatura del SA) decae
+# exponencialmente y regula la probabilidad de aceptar empeoramientos según
+# la CDF de la distribución de Rayleigh.
+from .vibration_damping import (
+    VibrationDampingResult,
+    vibration_damping,
+    vibration_damping_desde_instancia,
+)
+
 # --- Formato de solución por etiquetas ---
 # Convierte entre el formato de etiquetas legibles (ej. "TR1", "D") y el
 # formato interno de listas de tareas que usan los algoritmos.
@@ -270,6 +281,10 @@ __all__ = [
     "RecocidoSimuladoResult",
     "recocido_simulado",
     "recocido_simulado_desde_instancia",
+    # Vibration Damping Optimization (VDO)
+    "VibrationDampingResult",
+    "vibration_damping",
+    "vibration_damping_desde_instancia",
     # Formato de etiquetas
     "construir_mapa_tareas_por_etiqueta",
     "etiquetas_tareas_requeridas",
