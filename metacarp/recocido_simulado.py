@@ -294,6 +294,7 @@ def recocido_simulado(
     extra_csv: dict[str, object] | None = None,  # columnas adicionales para el CSV
     alpha_inter: float = 0.8,  # fracción de prob. asignada a ops inter-ruta cuando hay violación
     p_inter: float = 0.6,  # fracción fija de probabilidad para operadores inter-ruta (activa incluso en soluciones factibles)
+    metodo_seleccion: str = "canonico",  # método de combinación inter/intra: canonico|p_inter|binario|random
     patience: int = 50,    # niveles sin mejora antes de reheat (0 = desactivado)
     reheat_factor: float = 0.5,  # fracción de T_init_eff a la que se recalienta al activar el reheat
     max_reheats_sin_mejora: int = 0,  # reheats consecutivos sin mejorar antes de parar (0 = desactivado)
@@ -584,6 +585,7 @@ def recocido_simulado(
                 _ops_fallback,
                 alpha_inter=alpha_inter,
                 p_inter=p_inter,
+                metodo=metodo_seleccion,
             )
 
             # Generamos un vecino aleatorio de la solución actual.
@@ -915,6 +917,7 @@ def recocido_simulado_desde_instancia(
     extra_csv: dict[str, object] | None = None,
     alpha_inter: float = 0.8,
     p_inter: float = 0.6,  # fracción fija de probabilidad para operadores inter-ruta (activa incluso en soluciones factibles)
+    metodo_seleccion: str = "canonico",  # método de combinación inter/intra: canonico|p_inter|binario|random
     patience: int = 50,    # niveles sin mejora antes de reheat (0 = desactivado)
     reheat_factor: float = 0.5,  # fracción de T_init_eff a la que se recalienta al activar el reheat
     max_reheats_sin_mejora: int = 0,  # reheats consecutivos sin mejorar antes de parar (0 = desactivado)
@@ -961,6 +964,7 @@ def recocido_simulado_desde_instancia(
         extra_csv=extra_csv,
         alpha_inter=alpha_inter,
         p_inter=p_inter,
+        metodo_seleccion=metodo_seleccion,
         patience=patience,
         reheat_factor=reheat_factor,
         max_reheats_sin_mejora=max_reheats_sin_mejora,

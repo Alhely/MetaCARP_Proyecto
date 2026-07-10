@@ -375,6 +375,7 @@ def cuckoo_search(
     # de la curva y el piso 0.8 bajo violación esté garantizado por construcción
     # (misma decisión que en busqueda_abejas_simple).
     p_inter: float = 0.6,
+    metodo_seleccion: str = "canonico",  # método de combinación inter/intra: canonico|p_inter|binario|random
     # --- Kick reactivo (variante experimental strict_intra_inter_20260524) ---
     # Cuando ``iter_sin_mejora`` alcanza este umbral se aplica una perturbacion
     # INTER-RUTA disruptiva a TODOS los nidos y se reinicia el contador.
@@ -729,6 +730,7 @@ def cuckoo_search(
                 ops_fallback_list,
                 alpha_inter=p_efectivo,
                 p_inter=p_efectivo,
+                metodo=metodo_seleccion,
             )
             grupos_por_nido.append(grupo_i)
             cs, movs_seq = _vuelo_levy_discreto(
@@ -847,6 +849,7 @@ def cuckoo_search(
             ops_fallback_list,
             alpha_inter=p_efectivo,
             p_inter=p_efectivo,
+            metodo=metodo_seleccion,
         )
 
         # Generamos nuevas soluciones para reemplazar los peores nidos.
@@ -1138,6 +1141,7 @@ def cuckoo_search_desde_instancia(
     # ``alpha_inter`` fue ELIMINADO: el algoritmo eleva automáticamente P(inter)
     # a max(p_inter, 0.8) cuando hay violación de capacidad.
     p_inter: float = 0.6,
+    metodo_seleccion: str = "canonico",  # método de combinación inter/intra: canonico|p_inter|binario|random
     # Kick reactivo (variante experimental strict_intra_inter_20260524).
     max_iter_sin_mejora_kick: int | None = None,
     max_resets: int | None = None,
@@ -1187,6 +1191,7 @@ def cuckoo_search_desde_instancia(
         # ``alpha_inter`` eliminado: el piso 0.8 bajo violación se garantiza
         # internamente a partir de p_inter.
         p_inter=p_inter,
+        metodo_seleccion=metodo_seleccion,
         # Propagamos el mecanismo de kick (variante experimental).
         max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
         max_resets=max_resets,

@@ -771,10 +771,43 @@ def seleccionar_grupo_operadores_inter_intra(
     *,
     alpha_inter: float = 0.8,
     p_inter: float = 0.6,
+    metodo: str = "canonico",
 ) -> tuple[list[str], bool]:
     """Decide el grupo de operadores (inter vs intra) para una iteración.
 
-    Replica la lógica EXACTA del Recocido Simulado del proyecto:
+    DISPATCHER del MÉTODO DE COMBINACIÓN inter/intra. El parámetro ``metodo``
+    selecciona entre las estrategias de baseline del proyecto sin necesidad de
+    monkey-patchear el símbolo en el módulo de la MH. Todas comparten la MISMA
+    firma y devuelven la MISMA tupla ``(grupo_operadores, hubo_violacion)``, de
+    modo que los consumidores (SA, TS, RTS, ABC, Cuckoo) son agnósticos al
+    método elegido: solo pasan el grupo resultante a ``generar_vecino`` con
+    ``pesos_operadores=None`` (selección uniforme dentro del grupo).
+
+    Métodos soportados (valor de ``metodo``):
+
+    - ``"canonico"`` (default): sesgo Bernoulli probabilístico. Es la lógica
+      ORIGINAL del SA (ver más abajo). Consume EXACTAMENTE UN ``rng.random()``.
+    - ``"p_inter"``: ALIAS de ``"canonico"``. El experimento p_inter es
+      simplemente el sesgo canónico con ``alpha_inter``/``p_inter`` fijados a
+      valores experimentales por el llamador; no cambia la mecánica, solo los
+      umbrales. Se acepta como nombre propio por claridad en los scripts.
+    - ``"binario"``: selector BINARIO DETERMINISTA. Si hay violación devuelve
+      el grupo INTER (reparación); si es factible, el grupo INTRA
+      (refinamiento). IGNORA ``alpha_inter``/``p_inter`` y NO consume ningún
+      ``rng.random()`` (equivalente a ``strict_intra_inter_20260524``).
+    - ``"random"``: BASELINE de operador completamente aleatorio. IGNORA la
+      distinción inter/intra y la violación: devuelve la UNIÓN de ambos grupos
+      (``ops_intra + ops_inter``) para que ``generar_vecino`` elija un operador
+      UNIFORME entre TODO el repertorio disponible. NO consume ningún
+      ``rng.random()`` en esta capa (el muestreo uniforme lo hace
+      ``generar_vecino`` aguas abajo).
+
+    IMPORTANTE sobre reproducibilidad: el número de ``rng.random()`` consumidos
+    DIFIERE entre métodos (1 en canónico/p_inter, 0 en binario/random). Esto es
+    intencional y esperado: cada baseline define su propia trayectoria
+    estocástica. Dentro de un mismo ``metodo``, la secuencia es estable.
+
+    Lógica del método ``"canonico"`` (sesgo del Recocido Simulado original):
 
     - ``p_efectiva = alpha_inter`` si la solución actual viola capacidad
       (``violacion > 1e-12``), si no ``p_efectiva = p_inter``.
@@ -811,6 +844,10 @@ def seleccionar_grupo_operadores_inter_intra(
         p_inter: probabilidad de elegir el grupo inter-ruta cuando la solución
             actual es factible. Default 0.6 (igual al SA). Mantiene una dosis
             constante de exploración inter-ruta incluso sin violación.
+        metodo: método de combinación inter/intra. Uno de ``"canonico"``
+            (default), ``"p_inter"`` (alias de canónico), ``"binario"`` o
+            ``"random"``. Ver la descripción de arriba para la semántica de
+            cada uno. Un valor desconocido lanza ``ValueError``.
 
     Returns:
         Tupla ``(grupo_operadores, hubo_violacion)``:
@@ -825,6 +862,50 @@ def seleccionar_grupo_operadores_inter_intra(
     # violación "real" siempre será al menos del orden de 1, las violaciones
     # cercanas a cero son ruido numérico.
     hubo_violacion = violacion > 1e-12
+
+    # Normalizamos el nombre del método para tolerar mayúsculas/espacios en los
+    # scripts experimentales que lo pasan como cadena.
+    metodo_norm = metodo.strip().lower()
+
+    # ---------------------------------------------------------------
+    # MÉTODO "random": operador completamente aleatorio (baseline).
+    # ---------------------------------------------------------------
+    # No distingue inter de intra ni mira la violación: fusiona ambos grupos
+    # y deja que generar_vecino elija UNIFORME entre todos los operadores
+    # disponibles. NO consume rng aquí (el muestreo uniforme es aguas abajo).
+    if metodo_norm == "random":
+        combinados = list(ops_intra) + list(ops_inter)
+        if combinados:
+            return combinados, hubo_violacion
+        # Caso degenerado: ningún operador en ninguno de los dos grupos.
+        return list(operadores_fallback), hubo_violacion
+
+    # ---------------------------------------------------------------
+    # MÉTODO "binario": selector determinista por violación (strict).
+    # ---------------------------------------------------------------
+    # Inter cuando viola (reparación), intra cuando es factible (refinamiento).
+    # Ignora alpha_inter/p_inter y NO consume rng. Equivale exactamente a
+    # ``strict_intra_inter_20260524.seleccionar_grupo_strict``.
+    if metodo_norm == "binario":
+        if hubo_violacion and ops_inter:
+            return list(ops_inter), hubo_violacion
+        if ops_intra:
+            return list(ops_intra), hubo_violacion
+        if ops_inter:
+            return list(ops_inter), hubo_violacion
+        return list(operadores_fallback), hubo_violacion
+
+    # ---------------------------------------------------------------
+    # MÉTODO "canonico" / "p_inter": sesgo Bernoulli probabilístico.
+    # ---------------------------------------------------------------
+    # "p_inter" es el mismo sesgo canónico con alpha_inter/p_inter fijados por
+    # el llamador; por eso comparte rama. Cualquier otro valor es un typo.
+    if metodo_norm not in ("canonico", "p_inter"):
+        raise ValueError(
+            f"metodo desconocido: {metodo!r}. "
+            "Esperado uno de: 'canonico', 'p_inter', 'binario', 'random'."
+        )
+
     # Probabilidad efectiva de elegir el grupo inter-ruta en esta iteración.
     # Cuando hay violación se usa alpha_inter (típicamente mayor, para forzar
     # reparación); cuando es factible se usa p_inter (sesgo más suave para

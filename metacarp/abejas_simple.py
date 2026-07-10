@@ -306,6 +306,7 @@ def _generar_vecinos_lote_simple(
     alpha_inter: float,
     p_inter: float,
     ctx: ContextoEvaluacion,
+    metodo: str = "canonico",
 ) -> tuple[list[list[list[int]]], list[MovimientoVecindario]]:
     """
     Genera un lote de vecinos en representación de IDs, uno por cada solución
@@ -336,6 +337,7 @@ def _generar_vecinos_lote_simple(
             ops_fallback,
             alpha_inter=alpha_inter,
             p_inter=p_inter,
+            metodo=metodo,
         )
         # Generamos UN vecino con el grupo elegido (uniforme dentro del grupo).
         # NOTA: generar_vecino_ids puede fallar si la solución es tan pequeña
@@ -396,6 +398,7 @@ def busqueda_abejas_simple(
     # eliminado para que el usuario solo configure UN punto de la curva y el
     # piso 0.8 bajo violación esté garantizado por construcción.
     p_inter: float = 0.6,
+    metodo_seleccion: str = "canonico",  # método de combinación inter/intra: canonico|p_inter|binario|random
     # --- Kick reactivo (variante experimental strict_intra_inter_20260524) ---
     # Cuando ``iter_sin_mejora`` alcanza este umbral se aplica una perturbacion
     # INTER-RUTA disruptiva a TODAS las fuentes y se reinicia el contador.
@@ -755,6 +758,7 @@ def busqueda_abejas_simple(
                 ops_fallback_list,
                 alpha_inter=p_efectivo,
                 p_inter=p_efectivo,
+                metodo=metodo_seleccion,
             )
             # Generamos UN vecino (operador uniforme dentro del grupo).
             vec_ids, mov = generar_vecino_ids(
@@ -847,6 +851,7 @@ def busqueda_abejas_simple(
             violacion_media=viol_media,
             alpha_inter=p_efectivo,
             p_inter=p_efectivo,
+            metodo=metodo_seleccion,
             ctx=ctx,
         )
         # Evaluamos el lote completo en una pasada vectorizada (GPU si disponible).
@@ -1163,6 +1168,7 @@ def busqueda_abejas_simple_desde_instancia(
     # ``alpha_inter`` fue ELIMINADO: el algoritmo eleva automáticamente
     # P(inter) a max(p_inter, 0.8) cuando hay violación de capacidad.
     p_inter: float = 0.6,
+    metodo_seleccion: str = "canonico",  # método de combinación inter/intra: canonico|p_inter|binario|random
     # Kick reactivo (variante experimental strict_intra_inter_20260524).
     max_iter_sin_mejora_kick: int | None = None,
     max_resets: int | None = None,
@@ -1211,6 +1217,7 @@ def busqueda_abejas_simple_desde_instancia(
         # alpha_inter eliminado de la firma: el piso 0.8 bajo violación se
         # garantiza internamente a partir de p_inter.
         p_inter=p_inter,
+        metodo_seleccion=metodo_seleccion,
         # Propagamos el mecanismo de kick (variante experimental).
         max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
         max_resets=max_resets,

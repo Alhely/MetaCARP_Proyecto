@@ -432,6 +432,7 @@ def busqueda_tabu_reactiva(
     # el parámetro en su valor canónico SA sin tener que conocer la constante.
     alpha_inter: float | None = None,          # P(elegir inter) cuando la sol. actual viola capacidad
     p_inter: float | None = None,              # P(elegir inter) cuando la sol. actual es factible
+    metodo_seleccion: str = "canonico",        # método de combinación inter/intra: canonico|p_inter|binario|random
     # --- Kick reactivo (variante experimental strict_intra_inter_20260524) ---
     # Cuando ``iter_sin_mejora`` alcanza este umbral se aplica una perturbacion
     # INTER-RUTA disruptiva (ver ``metacarp.strict_intra_inter_20260524``) y se
@@ -820,6 +821,7 @@ def busqueda_tabu_reactiva(
             ops_fallback_list,
             alpha_inter=alpha_inter_eff,
             p_inter=p_inter_eff,
+            metodo=metodo_seleccion,
         )
         # Si la solución actual viola capacidad en esta iteración, lo contamos.
         if _hubo_viol:
@@ -1266,6 +1268,7 @@ def busqueda_tabu_reactiva_desde_instancia(
     # Parámetros del sesgo inter/intra (mismos defaults que SA: None -> 0.8/0.6).
     alpha_inter: float | None = None,
     p_inter: float | None = None,
+    metodo_seleccion: str = "canonico",  # método de combinación inter/intra: canonico|p_inter|binario|random
     # Kick reactivo (variante experimental strict_intra_inter_20260524).
     max_iter_sin_mejora_kick: int | None = None,
     max_resets: int | None = None,
@@ -1318,6 +1321,7 @@ def busqueda_tabu_reactiva_desde_instancia(
         # Propagamos los parámetros del sesgo inter/intra al núcleo del algoritmo.
         alpha_inter=alpha_inter,
         p_inter=p_inter,
+        metodo_seleccion=metodo_seleccion,
         # Propagamos el mecanismo de kick (variante experimental).
         max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
         max_resets=max_resets,
