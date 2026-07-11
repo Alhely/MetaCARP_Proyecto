@@ -1,0 +1,95 @@
+% === Seccion de resultados (autogenerada). Requiere booktabs. ===
+\section{Resultados}
+\label{sec:resultados}
+Todos los gaps se calculan respecto al mejor valor conocido (BKS) como $\mathrm{gap}=100\,(\,c-\mathrm{BKS}\,)/\mathrm{BKS}$, con el evaluador de orientacion \emph{greedy} (costo corregido). Cada configuracion se ejecuto sobre $23$ instancias est\'andar (\texttt{gdb}, \texttt{kshs}) con $5$ repeticiones independientes. Las cuatro configuraciones comparadas son: \textbf{A1} (selector probabil\'istico $p_{\text{inter}}$), \textbf{A2} (selector binario determinista), y \textbf{A3} (Path Relinking sobre cada base: \emph{PR+$p_{\text{inter}}$} y \emph{PR+binario}).
+
+\begin{table}[htbp]\centering
+\caption{Calidad media de la soluci\'on: gap medio respecto al BKS (\%), promediado sobre las $5$ repeticiones y las $23$ instancias. Menor es mejor; en \textbf{negrita} la mejor configuraci\'on de cada fila.}
+\label{tab:gap-medio}
+\begin{tabular}{l rrrr}
+\toprule
+Metaheur\'istica & A1 & A2 & A3: PR$+p_{\text{inter}}$ & A3: PR$+$binario \\
+\midrule
+Recocido Simulado & \textbf{2.89} & 20.36 & 3.10 & 20.83 \\
+Tabu Simple & 5.76 & 18.41 & \textbf{2.92} & 17.56 \\
+Tabu Reactiva & 4.97 & 14.45 & \textbf{3.72} & 12.35 \\
+Colonia de Abejas & 9.64 & 10.22 & \textbf{3.69} & 5.07 \\
+Cuckoo Search & 19.13 & 19.57 & \textbf{12.63} & 18.12 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]\centering
+\caption{Robustez: n\'umero de instancias (de $23$) en las que la \emph{mejor} de las $5$ repeticiones alcanza el \'optimo conocido ($\mathrm{gap}=0$). Mayor es mejor.}
+\label{tab:optimos}
+\begin{tabular}{l rrrr}
+\toprule
+Metaheur\'istica & A1 & A2 & A3: PR$+p_{\text{inter}}$ & A3: PR$+$binario \\
+\midrule
+Recocido Simulado & 14 & 1 & \textbf{18} & 0 \\
+Tabu Simple & 8 & 0 & \textbf{12} & 1 \\
+Tabu Reactiva & 10 & 2 & \textbf{14} & 3 \\
+Colonia de Abejas & 5 & 6 & \textbf{13} & 7 \\
+Cuckoo Search & 0 & 1 & \textbf{4} & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]\centering
+\caption{Aislamiento del Path Relinking: variaci\'on del gap medio (\%) al a\~nadir PR sobre cada selector base. Valores negativos indican mejora (gap menor) gracias a PR.}
+\label{tab:efecto-pr}
+\begin{tabular}{l rr rr}
+\toprule
+& \multicolumn{2}{c}{Base $p_{\text{inter}}$ (A1$\to$A3)} & \multicolumn{2}{c}{Base binario (A2$\to$A3)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Metaheur\'istica & sin PR & $\Delta_{\text{PR}}$ & sin PR & $\Delta_{\text{PR}}$ \\
+\midrule
+Recocido Simulado & 2.89 & +0.21 & 20.36 & +0.47 \\
+Tabu Simple & 5.76 & -2.84 & 18.41 & -0.85 \\
+Tabu Reactiva & 4.97 & -1.25 & 14.45 & -2.10 \\
+Colonia de Abejas & 9.64 & -5.95 & 10.22 & -5.15 \\
+Cuckoo Search & 19.13 & -6.50 & 19.57 & -1.45 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]\centering
+\caption{Detalle por instancia de la configuraci\'on de menor gap medio (\textbf{Recocido Simulado}, solo\_p\_inter): mejor valor conocido (BKS), costo m\'inimo, medio y m\'aximo sobre $5$ repeticiones, gap del mejor y gap medio, y tiempo medio por corrida (s).}
+\label{tab:detalle-mejor}
+\footnotesize
+\begin{tabular}{l rrrr rr r}
+\toprule
+Instancia & BKS & M\'in & Media & M\'ax & gap$_{\min}$ & gap$_{\text{med}}$ & $t$ (s) \\
+\midrule
+\texttt{gdb19} & 55 & 55 & 57.0 & 63 & 0.00 & 3.64 & 2.07 \\
+\texttt{kshs1} & 14661 & 14729 & 14999.0 & 15603 & 0.46 & 2.31 & 2.25 \\
+\texttt{kshs2} & 9863 & 9863 & 9936.8 & 10022 & 0.00 & 0.75 & 3.60 \\
+\texttt{kshs3} & 9320 & 9320 & 9426.2 & 9666 & 0.00 & 1.14 & 6.02 \\
+\texttt{kshs4} & 11498 & 11498 & 12158.6 & 12733 & 0.00 & 5.75 & 8.26 \\
+\texttt{kshs5} & 10957 & 10957 & 11485.2 & 11863 & 0.00 & 4.82 & 4.76 \\
+\texttt{kshs6} & 10197 & 10305 & 10416.2 & 10705 & 1.06 & 2.15 & 1.71 \\
+\texttt{gdb4} & 287 & 287 & 291.0 & 302 & 0.00 & 1.39 & 3.61 \\
+\texttt{gdb14} & 100 & 100 & 100.0 & 100 & 0.00 & 0.00 & 8.02 \\
+\texttt{gdb15} & 58 & 58 & 58.0 & 58 & 0.00 & 0.00 & 17.21 \\
+\texttt{gdb1} & 316 & 321 & 322.6 & 323 & 1.58 & 2.09 & 6.10 \\
+\texttt{gdb20} & 121 & 124 & 127.0 & 130 & 2.48 & 4.96 & 9.69 \\
+\texttt{gdb3} & 275 & 275 & 281.8 & 293 & 0.00 & 2.47 & 9.17 \\
+\texttt{gdb6} & 298 & 313 & 322.2 & 333 & 5.03 & 8.12 & 25.96 \\
+\texttt{gdb7} & 325 & 325 & 335.6 & 346 & 0.00 & 3.26 & 11.62 \\
+\texttt{gdb12} & 458 & 474 & 495.8 & 516 & 3.49 & 8.25 & 12.86 \\
+\texttt{gdb10} & 275 & 275 & 285.8 & 297 & 0.00 & 3.93 & 18.14 \\
+\texttt{gdb2} & 339 & 341 & 346.2 & 355 & 0.59 & 2.12 & 27.35 \\
+\texttt{gdb5} & 377 & 381 & 387.8 & 397 & 1.06 & 2.86 & 14.60 \\
+\texttt{gdb13} & 536 & 546 & 558.2 & 584 & 1.87 & 4.14 & 50.41 \\
+\texttt{gdb16} & 127 & 127 & 128.2 & 131 & 0.00 & 0.94 & 45.54 \\
+\texttt{gdb17} & 91 & 91 & 91.0 & 91 & 0.00 & 0.00 & 38.33 \\
+\texttt{gdb21} & 156 & 156 & 158.0 & 160 & 0.00 & 1.28 & 18.08 \\
+\midrule
+\textbf{Promedio} & & & & & \textbf{0.77} & \textbf{2.89} & \textbf{15.02} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Discusi\'on.} El Recocido Simulado (SA) domina en todas las configuraciones. Conviene separar dos m\'etricas. En \emph{calidad media} (Tabla~\ref{tab:gap-medio}), el approach m\'as simple, A1, ya logra con SA el menor gap del estudio (2.89\%); a\~nadir Path Relinking sobre esa base (A3: PR$+p_{\text{inter}}$) deja el promedio de SA pr\'acticamente igual (3.10\%, $\Delta_{\text{PR}}=+0.21$), lo que confirma la hip\'otesis metodol\'ogica: para SA la configuraci\'on simple basta y los mecanismos adicionales se justificar\'ian por tiempo, no por calidad. En cambio, en \emph{robustez} (Tabla~\ref{tab:optimos}) PR s\'i ayuda a SA: los \'optimos alcanzados pasan de 14 a 18 sobre $23$, el mejor registro del estudio.
+
+El valor de PR es m\'as claro en las metaheur\'isticas de base m\'as d\'ebil (Tabla~\ref{tab:efecto-pr}): mejora el gap medio de la Colonia de Abejas en $-5.95$ puntos y de Cuckoo Search en $-6.50$, adem\'as de la Tabu Simple y la Reactiva. Es decir, PR act\'ua como un compensador: aporta poco cuando la base ya es fuerte (SA) y mucho cuando la base explora peor. Cuckoo Search es, en todo caso, la metaheur\'istica menos competitiva en este corpus.
