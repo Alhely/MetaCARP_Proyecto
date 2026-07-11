@@ -1,0 +1,79 @@
+% ============================================================================
+% Documentación: Búsqueda Tabú simple (TS) para CARP
+% Generado/actualizado: 2026-07-10. Fuente: metacarp/busqueda_tabu_simple.py,
+% scripts/run_tabu_simple_automatico.py, _calibracion_2knob.
+% ============================================================================
+\section{Búsqueda Tabú simple (TS)}
+\label{sec:mh-ts}
+
+\subsection{Concepto algorítmico}
+La Búsqueda Tabú (Glover, 1986) es una búsqueda local con \textbf{memoria de
+corto plazo}. En cada iteración el algoritmo se mueve al \emph{mejor vecino
+disponible} (best-improvement) aunque sea peor que la solución actual ---
+esto le permite ``subir colinas''. Para no ciclar entre soluciones cercanas,
+los movimientos recién ejecutados se prohíben durante \texttt{tabu\_tenure}
+iteraciones (lista tabú FIFO). El \textbf{criterio de aspiración} clásico
+levanta la prohibición cuando un movimiento tabú produce una solución
+estrictamente mejor que el mejor global conocido.
+
+La versión implementada es deliberadamente minimalista (referencia ``de
+pizarra''): una única lista tabú FIFO de movimientos, sin memoria de
+frecuencias ni lista élite. Como enumerar el vecindario completo es
+prohibitivo en CARP, en cada iteración se \emph{muestrea} un lote de
+\texttt{tam\_vecindario} vecinos aleatorios (práctica estándar en la
+literatura aplicada) y se elige el mejor no-tabú del lote, evaluado de forma
+vectorizada. Doble criterio de parada: \texttt{iteraciones\_max} o
+\texttt{max\_iter\_sin\_mejora} (estancamiento).
+
+\subsection{Parámetros}
+\begin{table}[htbp]
+\centering
+\caption{Parámetros de la TS simple.}
+\begin{tabular}{lll}
+\toprule
+Parámetro & Significado & Valor calibrado \\
+\midrule
+\texttt{tabu\_tenure} & iteraciones que un movimiento es tabú & 25 (grid) \\
+\texttt{tam\_vecindario} & vecinos muestreados por iteración, $|V(s)|$ & 40 (knob 2) \\
+$p_{inter}$ & prob.\ de operadores inter-ruta (factible) & 0.4 (grid) \\
+\texttt{iteraciones\_max} & tope de iteraciones & presupuesto \\
+\texttt{max\_iter\_sin\_mejora} & parada por estancamiento & instance-aware \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Búsqueda de malla (grid search)}
+\begin{itemize}
+  \item \textbf{Grilla principal} (\texttt{run\_tabu\_simple\_automatico.py}):
+    \texttt{tabu\_tenure} $\in \{5, 10, 15, 20, 25, 30\}$ (6 valores)
+    $\times$ 23 instancias $\times$ 2 repeticiones $= 276$ corridas. Es la
+    grilla más pequeña de la campaña: la TS simple tiene un solo knob
+    estructural.
+  \item \textbf{Segundo knob}: con el tenure fijado, se exploró
+    \texttt{tam\_vecindario} $\in \{15, 25, 40\}$; ganó $40$ con gap medio de
+    $5.353\,\%$ (contra $8.841\,\%$ y $13.322\,\%$) --- señal clara de que en
+    TS el tamaño del lote muestreado importa más que el tenure.
+  \item \textbf{$p_{inter}$}: calibrado en $0.4$ dentro del approach
+    \texttt{solo\_p\_inter}.
+  \item \textbf{Configuración fija resultante}: tenure $= 25$, $|V(s)| = 40$,
+    $p_{inter} = 0.4$; corrida con los tres approaches a 5 repeticiones.
+\end{itemize}
+
+\paragraph{Resultado en las 23 pequeñas.} Mejor-por-instancia: gap medio
+$1.38\,\%$, 12/23 BKS. El approach \texttt{pr\_aislado} ganó 22 de 23 celdas,
+consistente con la ausencia de mecanismos propios de diversificación de esta
+versión: el Path Relinking le aporta exactamente lo que le falta.
+
+\subsection{Transferencia a las instancias val/egl}
+Los dos knobs fijos son los que peor escalan con el tamaño: con $\sim$190
+tareas (\texttt{egl}), un tenure de 25 es proporcionalmente gigante y un lote
+de 40 vecinos es minúsculo frente al vecindario real. Se adoptaron reglas
+proporcionales simples y documentables:
+\[
+  \texttt{tabu\_tenure} = \max(25,\ \lfloor n_{tareas}/4 \rceil), \qquad
+  \texttt{tam\_vecindario} = \max(40,\ n_{tareas}),
+\]
+con $p_{inter} = 0.4$ en la clase val y $0.6$ en la clase egl. Presupuesto
+uniforme: $10^6$ evaluaciones ($\texttt{iteraciones\_max} = \lfloor 10^6 /
+\max(40, n_{tareas}) \rfloor$, pues cada iteración evalúa un lote completo) o
+300\,s de pared, lo primero que ocurra. Approach: \texttt{pr\_aislado}.

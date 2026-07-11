@@ -1,0 +1,30 @@
+{
+  "experimento": "cs_minigrid_20260710",
+  "instancias": [
+    "val1A",
+    "val5C",
+    "egl-e1-A"
+  ],
+  "factor_pasos_grid": [
+    0.25,
+    0.5,
+    1.0
+  ],
+  "p_inter_grid": [
+    0.1,
+    0.4,
+    0.6
+  ],
+  "num_nidos_fijo": 25,
+  "pa_abandono_fijo": 0.15,
+  "beta_levy_fijo": 1.3,
+  "warmstart": "path_scanning_mejor_de_5",
+  "umbral_pr": 30,
+  "intensificador": "path_relinking_limpio",
+  "repeticiones": 2,
+  "workers": 11,
+  "cap_evaluaciones": 1000000,
+  "cap_wallclock_segundos": 300.0,
+  "semilla_base": 0,
+  "corridas_totales": 54
+}

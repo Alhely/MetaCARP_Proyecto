@@ -1,0 +1,94 @@
+% ============================================================================
+% Documentación: Vibration Damping Optimization (VDO) para CARP
+% Generado/actualizado: 2026-07-10. Fuente: metacarp/vibration_damping.py,
+% scripts/run_vdo_automatico.py.
+% ============================================================================
+\section{Vibration Damping Optimization (VDO)}
+\label{sec:mh-vdo}
+
+\subsection{Concepto algorítmico}
+El VDO (Mehdizadeh y Tavakkoli-Moghaddam, 2008/2009) es una metaheurística de
+trayectoria inspirada en el \textbf{amortiguamiento de la amplitud
+vibratoria} en sistemas mecánicos: un oscilador que arranca con gran amplitud
+$A_0$ pierde energía por fricción y su amplitud decae exponencialmente. Su
+estructura es prima hermana del SA, pero el parámetro de control no es la
+temperatura sino la \textbf{amplitud} $A$, y la regla de aceptación no es
+Metropolis sino la CDF de una distribución de Rayleigh.
+
+\paragraph{Regla de aceptación (Rayleigh).} Con $\Delta = c_{vecino} -
+c_{actual}$: si $\Delta \le 0$ se acepta siempre; si $\Delta > 0$ se acepta
+con probabilidad
+\[
+  p \;=\; 1 - \exp\!\left(-\frac{A^2}{2\sigma^2}\right),
+\]
+que es la CDF Rayleigh de escala $\sigma$ evaluada en $A$. Cuando $A \gg
+\sigma$ (inicio), $p \approx 1$ (exploración agresiva); cuando $A \ll \sigma$
+(final), $p \approx 0$ (explotación local). A diferencia del Metropolis del
+SA, la regla \textbf{no depende de la magnitud de $\Delta$}: mientras el
+sistema vibra con amplitud $A$, todo empeoramiento se arriesga con la misma
+probabilidad. Esta es la diferencia conceptual clave entre VDO y SA.
+
+\paragraph{Ley de amortiguamiento.} Tras cada nivel de $L$ iteraciones:
+\[
+  A_{t} \;=\; A_0 \cdot \exp\!\left(-\frac{\gamma\, t}{2}\right),
+\]
+la ecuación del oscilador amortiguado clásico evaluada en niveles discretos
+$t = 0, 1, 2, \dots$ Siguiendo la letra del artículo original, el decaimiento
+se recalcula \emph{siempre desde} $A_0$ (no acumulando un factor sobre el
+nivel anterior, como hace el SA con $\alpha \times T$). La búsqueda se
+detiene cuando $A$ cae bajo \texttt{umbral\_amplitud\_minima} o se agota el
+presupuesto.
+
+\subsection{Parámetros instance-aware}
+Sea $n$ el número de arcos requeridos y $d_{\max}$ la distancia máxima de la
+matriz Dijkstra:
+
+\begin{table}[htbp]
+\centering
+\caption{Parámetros del VDO y defaults instance-aware.}
+\begin{tabular}{lll}
+\toprule
+Parámetro & Símbolo & Default \\
+\midrule
+Amplitud inicial & $A_0$ & $20\, d_{\max}/n$ \\
+Umbral de amplitud mínima & $A_{\min}$ & $20\, d_{\max}/n^2$ \\
+Escala de Rayleigh & $\sigma$ & $A_0/2$ \\
+Coef.\ de amortiguamiento & $\gamma$ & 0.05 \\
+Iteraciones por nivel & $L$ & $n^2$ \\
+Prob.\ inter-ruta (factible) & $p_{inter}$ & 0.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+$A_0$ y $A_{\min}$ replican la escala de $T_{init}$/$T_{\min}$ del SA para
+que ambos regímenes exploratorios sean comparables; $\sigma = A_0/2$
+garantiza probabilidad inicial de aceptación $1 - e^{-2} \approx 0.865$;
+$\gamma$ es adimensional (constante del sistema oscilante) y no requiere
+escalado por instancia. La implementación comparte con el resto del proyecto
+los 9 operadores de vecindario, el objetivo penalizado con
+$\lambda = \max(10 \cdot \text{mediana}(d), 10)$ y el sesgo inter/intra con
+piso $0.8$ bajo violación de capacidad. Deliberadamente \emph{no} incluye los
+mecanismos experimentales del SA (reheat, kick): es el VDO canónico.
+
+\subsection{Búsqueda de malla (grid search)}
+\begin{itemize}
+  \item \textbf{Grilla} (\texttt{run\_vdo\_automatico.py}):
+    $\gamma \in \{0.02, 0.05, 0.1, 0.2\}$ (4) $\times$
+    \texttt{factor\_sigma} $\in \{0.25, 0.5, 1.0, 2.0\}$ (4) $\times$
+    $p_{inter} \in \{0.4, 0.5, 0.6, 0.7, 0.8\}$ (5)
+    $= 80$ combinaciones $\times$ 23 instancias $\times$ 5 repeticiones
+    $= 9{,}200$ corridas. \texttt{factor\_sigma} escala $\sigma$
+    proporcionalmente al $A_0$ efectivo de cada instancia (misma filosofía
+    que \texttt{factor\_pasos} del CS), de modo que la grilla es comparable
+    entre instancias de distinto tamaño; $A_0$ y $L$ se dejan en sus valores
+    instance-aware.
+  \item \textbf{Protocolo}: idéntico al resto de la campaña (semillas
+    deterministas por tarea, \texttt{ProcessPoolExecutor}, CSV parciales
+    consolidados por instancia, sin columnas \texttt{id\_corrida} /
+    \texttt{config\_id}).
+  \item \textbf{Estado}: el smoke-test inicial (julio 2026) igualó al SA en
+    \texttt{gdb19} (costo 63 a presupuesto canónico, factibilidad completa
+    c1--c5); la ejecución completa de la grilla y su calibración 2-knob están
+    pendientes de re-ejecución, por lo que VDO aún no aparece en las tablas
+    comparativas de la campaña costo-corregido.
+\end{itemize}

@@ -1,0 +1,90 @@
+% ============================================================================
+% Documentación: Colonia Artificial de Abejas simple (ABC) para CARP
+% Generado/actualizado: 2026-07-10. Fuente: metacarp/abejas_simple.py,
+% scripts/run_abc_simple_automatico.py, _calibracion_2knob.
+% ============================================================================
+\section{Colonia Artificial de Abejas simple (ABC)}
+\label{sec:mh-abc}
+
+\subsection{Concepto algorítmico}
+El ABC (Karaboga, 2005) modela el forrajeo de una colmena. Cada
+\textbf{fuente de alimento} es una solución candidata y su ``néctar'' es la
+calidad (inverso del objetivo penalizado). Cada ciclo tiene tres fases:
+
+\begin{enumerate}
+  \item \textbf{Empleadas}: cada una de las \texttt{num\_fuentes} abejas
+    empleadas genera un vecino de \emph{su} fuente; si mejora, la reemplaza y
+    reinicia su contador de intentos \texttt{trials[i]}; si no,
+    \texttt{trials[i]{+}{+}}.
+  \item \textbf{Observadoras}: eligen fuentes por ruleta proporcional al
+    fitness (las mejores fuentes reciben más intentos de mejora) y aplican el
+    mismo criterio greedy de las empleadas.
+  \item \textbf{Scouts}: toda fuente con $\texttt{trials} \ge
+    \texttt{limite\_abandono}$ se considera agotada y se reemplaza por una
+    solución \emph{aleatoria pura} (barajado de tareas + empacado greedy por
+    capacidad), fiel al espíritu exploratorio del algoritmo original.
+\end{enumerate}
+
+La versión ``simple'' del proyecto es la referencia canónica de Karaboga con
+una única modernización: el sesgo inter/intra-ruta compartido
+($P(\text{inter}) = \max(p_{inter}, 0.8)$ bajo violación de capacidad), para
+que la reparación de capacidad sea consistente con SA/TS/RTS. La fase de
+observadoras se evalúa en lote (vectorizada, GPU opcional).
+
+\subsection{Parámetros}
+\begin{table}[htbp]
+\centering
+\caption{Parámetros del ABC simple.}
+\begin{tabular}{lll}
+\toprule
+Parámetro & Significado & Valor calibrado \\
+\midrule
+\texttt{num\_fuentes} & tamaño de la población de fuentes & 30 (grid) \\
+\texttt{limite\_abandono} & intentos sin mejora antes del scout & 60 (knob 2) \\
+$p_{inter}$ & prob.\ de operadores inter-ruta (factible) & 0.5 (grid) \\
+\texttt{iteraciones} & ciclos ABC (presupuesto) & instance-aware \\
+\texttt{max\_iter\_sin\_mejora} & parada por estancamiento & instance-aware \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Por defecto \texttt{num\_fuentes} $\sim 2\sqrt{n_{tareas}}$ (la población
+crece con la raíz de la dimensión); la grilla lo exploró vía factores de
+escala.
+
+\subsection{Búsqueda de malla (grid search)}
+\begin{itemize}
+  \item \textbf{Grilla principal} (\texttt{run\_abc\_simple\_automatico.py}):
+    \texttt{factor\_fuentes} $\in \{1.5, 2.0, 3.0, 4.0\}$ (4) $\times$
+    \texttt{factor\_abandono} $\in \{0.25, 0.5, 0.75, 1.0\}$ (4) $\times$
+    $p_{inter} \in \{0.4, 0.5, 0.6, 0.7, 0.8\}$ (5) $\times$
+    \texttt{factor\_iter} $\in \{15, 20, 30\}$ (3)
+    $= 240$ combinaciones $\times$ 23 instancias $\times$ 5 repeticiones
+    $= 27{,}600$ corridas. Los factores multiplican los defaults
+    instance-aware, de modo que la grilla es comparable entre instancias de
+    distinto tamaño.
+  \item \textbf{Segundo knob}: \texttt{limite\_abandono} explorado con el
+    resto fijo; ganó $60$ con gap medio de $9.529\,\%$.
+  \item \textbf{Configuración fija resultante}: \texttt{num\_fuentes} $= 30$,
+    \texttt{limite\_abandono} $= 60$, $p_{inter} = 0.5$; corrida con los tres
+    approaches a 5 repeticiones.
+\end{itemize}
+
+\paragraph{Resultado en las 23 pequeñas.} Mejor-por-instancia: gap medio
+$1.32\,\%$, 13/23 BKS, con \texttt{pr\_aislado} ganando 16/23 celdas y
+\texttt{binario\_capacidad} las 7 restantes.
+
+\subsection{Transferencia a las instancias val/egl}
+Se mantiene \texttt{num\_fuentes} $= 30$ (con presupuesto de evaluaciones
+alineado, más población implica menos ciclos; 30 es un buen compromiso). El
+\texttt{limite\_abandono} sí debe crecer con la dimensión --- en el ABC
+canónico el límite es proporcional a $SN \cdot D$ --- pues con 60 fijo las
+fuentes de instancias grandes se abandonarían antes de poder refinarse:
+\[
+  \texttt{limite\_abandono} = \max(60,\ n_{tareas}),
+\]
+con $p_{inter} = 0.5$ (val) / $0.6$ (egl). Presupuesto uniforme: $10^6$
+evaluaciones ($\texttt{iteraciones} = \lfloor 10^6 / (2 \cdot
+\texttt{num\_fuentes}) \rfloor = 16{,}666$, pues cada ciclo evalúa
+$\approx 2\,SN$ vecinos entre empleadas y observadoras) o 300\,s de pared.
+Approach: \texttt{pr\_aislado}.

@@ -1,0 +1,89 @@
+% ============================================================================
+% Documentación: Cuckoo Search (CS) para CARP
+% Generado/actualizado: 2026-07-10. Fuente: metacarp/cuckoo_search.py,
+% scripts/run_cuckoo_automatico.py, _calibracion_2knob,
+% scripts/run_cs_minigrid_20260710.py.
+% ============================================================================
+\section{Cuckoo Search (CS)}
+\label{sec:mh-cs}
+
+\subsection{Concepto algorítmico}
+El Cuckoo Search (Yang y Deb, 2009) se inspira en el parasitismo de
+nidificación del cucú, que pone sus huevos en nidos ajenos. En optimización:
+los \textbf{nidos} son soluciones candidatas; los \textbf{huevos de cucú} son
+nuevas soluciones generadas mediante \emph{vuelo de Lévy}; si el huevo es
+mejor que el nido contra el que compite, lo reemplaza; y con probabilidad
+$p_a$ los peores nidos son abandonados y sustituidos por soluciones nuevas en
+torno al mejor nido.
+
+\paragraph{Vuelo de Lévy discreto.} El vuelo de Lévy combina muchos pasos
+cortos con saltos ocasionales muy largos (distribución de cola pesada con
+exponente $\beta$), ideal para escapar de mínimos locales. En el espacio
+discreto de rutas CARP se aproxima aplicando $k$ perturbaciones locales
+consecutivas, donde $k$ sigue una distribución de Lévy discretizada (paso de
+Mantegna $s = u/|v|^{1/\beta}$) escalada por \texttt{pasos\_levy\_base}.
+
+La versión del proyecto es instance-aware: \texttt{iteraciones},
+\texttt{num\_nidos} y \texttt{pasos\_levy\_base} se calibran automáticamente
+según $n_{tareas}$, con factores de escala (\texttt{factor\_nidos},
+\texttt{factor\_pasos}, \texttt{factor\_iter}) para las grillas. Usa el sesgo
+inter/intra compartido con piso $P(\text{inter}) \ge 0.8$ bajo violación.
+
+\subsection{Parámetros}
+\begin{table}[htbp]
+\centering
+\caption{Parámetros del Cuckoo Search.}
+\begin{tabular}{lll}
+\toprule
+Parámetro & Significado & Valor calibrado \\
+\midrule
+\texttt{num\_nidos} & población de nidos & factor 1.5--4 (grid) \\
+$p_a$ & prob.\ de abandono de peores nidos & 0.15 (grid) \\
+$\beta$ & exponente de Lévy (cola pesada) & 1.3 (knob 2) \\
+\texttt{factor\_pasos} & escala del paso de Lévy discreto & grid \\
+$p_{inter}$ & prob.\ de operadores inter-ruta (factible) & 0.1 (grid) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Búsqueda de malla (grid search)}
+\begin{itemize}
+  \item \textbf{Grilla principal} (\texttt{run\_cuckoo\_automatico.py}):
+    \texttt{factor\_nidos} $\in \{1.5, 2.0, 3.0, 4.0\}$ (4) $\times$
+    \texttt{factor\_pasos} $\in \{0.25, 0.5, 0.75, 1.0\}$ (4) $\times$
+    $p_{inter} \in \{0.4, 0.5, 0.6, 0.7, 0.8\}$ (5) $\times$
+    $p_a \in \{0.15, 0.25, 0.35\}$ (3)
+    $= 240$ combinaciones $\times$ 23 instancias $\times$ 5 repeticiones
+    $= 27{,}600$ corridas.
+  \item \textbf{Segundo knob}: $\beta_{L\acute{e}vy} \in \{1.3, 1.5, 1.9\}$;
+    ganó $1.3$ con gap medio de $19.097\,\%$ --- el gap más alto de todos los
+    segundos knobs de la campaña, primera señal de la debilidad relativa del
+    CS en este corpus.
+  \item \textbf{Configuración fija resultante}: $p_a = 0.15$, $\beta = 1.3$,
+    $p_{inter} = 0.1$; corrida con los tres approaches a 5 repeticiones.
+\end{itemize}
+
+\paragraph{Resultado en las 23 pequeñas.} Mejor-por-instancia: gap medio
+$7.20\,\%$ y solo 5/23 BKS --- la metaheurística más débil de la campaña, aun
+tomando su mejor corrida por instancia.
+
+\subsection{Mini-grid de confirmación con warm-start (julio 2026)}
+Dada su debilidad, el CS \emph{no} se transfirió a ciegas a val/egl. Antes de
+su campaña se corrió un mini-grid de confirmación
+(\texttt{run\_cs\_minigrid\_20260710.py}) con dos cambios:
+
+\begin{itemize}
+  \item \textbf{Warm-start}: los nidos iniciales se generan con Path-Scanning
+    (mejor de 5 construcciones), reutilizando la maquinaria de
+    \texttt{warmstart\_20260529}, en lugar de soluciones aleatorias.
+  \item \textbf{Grilla}: \texttt{factor\_pasos} $\in \{0.25, 0.5, 1.0\}$
+    $\times\ p_{inter} \in \{0.1, 0.4, 0.6\}$, con $p_a = 0.15$ y
+    $\beta = 1.3$ fijos, \texttt{num\_nidos} $= 25$; 3 instancias
+    representativas (\texttt{val1A}, \texttt{val5C}, \texttt{egl-e1-A})
+    $\times$ 2 repeticiones $= 54$ corridas, con el presupuesto uniforme de la
+    campaña ($10^6$ evaluaciones / 300\,s).
+\end{itemize}
+
+La configuración ganadora del mini-grid define los parámetros de la campaña
+del CS sobre las 64 instancias val/egl (misma infraestructura y presupuesto
+que las demás metaheurísticas, approach \texttt{pr\_aislado}).

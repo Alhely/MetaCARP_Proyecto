@@ -1,0 +1,99 @@
+% ============================================================================
+% Documentación: Recocido Simulado (SA) para CARP
+% Generado/actualizado: 2026-07-10. Fuente: metacarp/recocido_simulado.py,
+% scripts/run_sa_automatico.py, experimentos_costo_fixed/_calibracion_2knob.
+% ============================================================================
+\section{Recocido Simulado (SA)}
+\label{sec:mh-sa}
+
+\subsection{Concepto algorítmico}
+El Recocido Simulado (\emph{Simulated Annealing}) se inspira en el recocido de
+metales: al enfriar un metal lentamente, sus átomos se reorganizan en
+estructuras de menor energía. En optimización, la \textbf{temperatura} $T$
+controla cuánto se permite empeorar la solución actual. En cada iteración se
+genera un vecino con costo $c_{vecino}$ y $\Delta = c_{vecino} - c_{actual}$:
+si $\Delta \le 0$ se acepta siempre; si $\Delta > 0$ se acepta con la
+probabilidad de Metropolis $P = \exp(-\Delta / T)$. La temperatura decae
+geométricamente por niveles, $T \leftarrow \alpha\, T$ con $0 < \alpha < 1$,
+ejecutando $L$ iteraciones (cadena de Markov) por nivel.
+
+\paragraph{Recalentamiento (reheat).} Cuando $T$ es casi cero el SA degenera en
+un descenso voraz y queda atrapado en mínimos locales. Si transcurren
+\texttt{patience} niveles consecutivos sin mejorar el mejor global, la
+temperatura se reinicia parcialmente a $T_{init} \cdot \texttt{reheat\_factor}$
+(preservando la mejor solución encontrada). Un segundo criterio de parada
+detiene la búsqueda tras \texttt{max\_reheats\_sin\_mejora} recalentamientos
+consecutivos sin avance del mejor global.
+
+\subsection{Adaptación a CARP y parámetros instance-aware}
+La solución se representa como lista de rutas (secuencias de tareas
+requeridas); los vecinos provienen del repertorio compartido de 9 operadores
+intra/inter-ruta del proyecto, con el sesgo
+$P(\text{inter}) = \max(p_{inter}, 0.8)$ bajo violación de capacidad. El
+objetivo es el costo penalizado $f = \text{costo} + \lambda \cdot
+\text{violación}$ con $\lambda = \max(10 \cdot \text{mediana}(d),\, 10)$.
+Sea $n$ el número de arcos requeridos y $d_{\max}$ la distancia máxima de la
+matriz Dijkstra:
+
+\begin{table}[htbp]
+\centering
+\caption{Parámetros del SA y valores por defecto instance-aware.}
+\begin{tabular}{lll}
+\toprule
+Parámetro & Símbolo & Default \\
+\midrule
+Temperatura inicial & $T_0$ & $20\, d_{\max}/n$ \\
+Temperatura mínima & $T_{\min}$ & $10^{-3}$ \\
+Iteraciones por nivel & $L$ & $n^2$ \\
+Factor de enfriamiento & $\alpha$ & calibrado (grid) \\
+Niveles sin mejora antes de reheat & \texttt{patience} & 10 \\
+Fracción de reheat & \texttt{reheat\_factor} & 0.5 \\
+Reheats sin mejora (parada) & --- & calibrado (knob 2) \\
+Prob.\ inter-ruta en régimen factible & $p_{inter}$ & calibrado (grid) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Búsqueda de malla (grid search)}
+\label{subsec:sa-grid}
+La calibración se realizó sobre las 23 instancias pequeñas
+(\texttt{gdb}/\texttt{kshs}) con el costo corregido:
+
+\begin{itemize}
+  \item \textbf{Grilla principal} (\texttt{run\_sa\_automatico.py}):
+    $\alpha \in \{0.80, 0.82, 0.84, 0.86, 0.88, 0.90, 0.92, 0.94, 0.96,$
+    $0.98, 0.99\}$ (11 valores) $\times\ p_{inter} \in \{0.4, 0.5, 0.6, 0.7,
+    0.8\}$ (5 valores) $= 55$ combinaciones $\times$ 23 instancias $\times$ 2
+    repeticiones $= 2{,}530$ corridas.
+  \item \textbf{Protocolo}: semillas deterministas derivadas de
+    $(\text{semilla base}, \text{instancia}, \alpha, p_{inter},
+    \text{repetición})$, ejecución paralela con \texttt{ProcessPoolExecutor}
+    (CSV parciales por worker consolidados por instancia); reproducible
+    bit-a-bit independientemente del orden de ejecución.
+  \item \textbf{Segundo knob} (calibración fina, \texttt{\_calibracion\_2knob}):
+    con $(\alpha, p_{inter})$ fijados en su mejor valor se exploró
+    \texttt{max\_reheats\_sin\_mejora} $\in \{3, 5, 10\}$, ganando $10$ con gap
+    medio de $2.897\,\%$ (contra $3.08\,\%$ y $3.201\,\%$).
+  \item \textbf{Configuración ganadora}: $\alpha = 0.9$, $p_{inter} = 0.5$,
+    \texttt{max\_reheats\_sin\_mejora} $= 10$. Con esta configuración fija se
+    corrieron los tres \emph{approaches} experimentales
+    (\texttt{solo\_p\_inter}, \texttt{binario\_capacidad},
+    \texttt{pr\_aislado}) a 5 repeticiones.
+\end{itemize}
+
+\paragraph{Resultado en las 23 pequeñas.} Tomando el mejor valor por instancia
+entre los tres approaches, el SA alcanza gap medio de $0.08\,\%$ y 21/23 BKS
+--- la mejor metaheurística de la campaña.
+
+\subsection{Transferencia a las instancias val/egl}
+Para las 64 instancias restantes (34 \texttt{val}, 24 \texttt{egl}, 6
+\texttt{gdb}) se transfirieron los knobs calibrados con dos ajustes motivados
+por el tamaño: en la clase \texttt{egl}, $\alpha = 0.95$ (enfriamiento más
+lento: la cadena $L = n^2$ ya es muy larga y conviene aprovechar más niveles) y
+$p_{inter} = 0.6$ (más rutas $\Rightarrow$ más peso a movimientos inter-ruta).
+Presupuesto uniforme por corrida: $10^6$ evaluaciones de costo o 300\,s de
+pared, lo primero que ocurra; el SA no expone tope por iteraciones, por lo que
+en esta metaheurística el límite vinculante es el de pared
+(\texttt{tiempo\_limite\_segundos}, verificado una vez por nivel de
+temperatura). Approach por defecto: \texttt{pr\_aislado} (Path Relinking con
+umbral de estancamiento 30), ganador en la mayoría de instancias pequeñas.

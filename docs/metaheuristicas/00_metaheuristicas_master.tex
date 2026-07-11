@@ -1,0 +1,45 @@
+% ============================================================================
+% Documentación de metaheurísticas MetaCARP — archivo maestro.
+% Cada sección es autocontenida; puede incluirse individualmente en Overleaf
+% con \input{...} o pegarse directamente. Requiere booktabs.
+% Generado/actualizado: 2026-07-10.
+% ============================================================================
+
+\section*{Protocolo experimental común}
+
+Las seis metaheurísticas comparten infraestructura, lo que hace las
+comparaciones justas por construcción:
+
+\begin{itemize}
+  \item \textbf{Representación y vecindarios}: solución como lista de rutas de
+    tareas requeridas; 9 operadores intra/inter-ruta compartidos
+    (\texttt{OPERADORES\_POPULARES}), con sesgo inter/intra común:
+    $P(\text{inter}) = \max(p_{inter}, 0.8)$ bajo violación de capacidad.
+  \item \textbf{Evaluación}: objetivo penalizado $f = \text{costo} + \lambda
+    \cdot \text{violación}$, con $\lambda = \max(10 \cdot \text{mediana}(d),
+    10)$; evaluación vectorizada por lotes (matriz Dijkstra precomputada).
+  \item \textbf{Grid search en dos etapas} sobre las 23 instancias pequeñas
+    (\texttt{gdb}/\texttt{kshs}): (i) grilla principal por metaheurística
+    (detallada en cada sección) y (ii) calibración fina de un segundo knob
+    con el resto fijo (\texttt{\_calibracion\_2knob}).
+  \item \textbf{Reproducibilidad}: semillas deterministas derivadas de
+    (semilla base, instancia, configuración, repetición); paralelismo por
+    procesos con CSV parciales por worker consolidados por instancia.
+  \item \textbf{Approaches}: cada configuración calibrada se evaluó bajo tres
+    variantes de control inter/intra: \texttt{solo\_p\_inter} (sesgo
+    Bernoulli canónico), \texttt{binario\_capacidad} (selector determinista
+    por violación) y \texttt{pr\_aislado} (Path Relinking con umbral de
+    estancamiento 30), a 5 repeticiones.
+  \item \textbf{Campaña val/egl (julio 2026)}: transferencia de los knobs
+    calibrados a las 64 instancias restantes con presupuesto uniforme por
+    corrida de $10^6$ evaluaciones de costo o 300\,s de pared (lo primero que
+    ocurra), registrando en cada CSV qué criterio detuvo la corrida
+    (\texttt{cap\_disparado} $\in$ \{TIEMPO, ITERS, NATURAL\}).
+\end{itemize}
+
+\input{recocido_simulado}
+\input{busqueda_tabu_simple}
+\input{busqueda_tabu_reactiva}
+\input{abc_simple}
+\input{cuckoo_search}
+\input{vibration_damping}

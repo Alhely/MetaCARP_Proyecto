@@ -1,0 +1,83 @@
+% ============================================================================
+% Documentación: Búsqueda Tabú Reactiva (RTS) para CARP
+% Generado/actualizado: 2026-07-10. Fuente: metacarp/busqueda_tabu_reactiva.py,
+% scripts/run_tabu_reactiva_automatico.py, _calibracion_2knob.
+% ============================================================================
+\section{Búsqueda Tabú Reactiva (RTS)}
+\label{sec:mh-rts}
+
+\subsection{Concepto algorítmico}
+La RTS (Battiti y Tecchiolli, 1994) extiende la Búsqueda Tabú clásica haciendo
+que la lista tabú \textbf{deje de ser estática}: el algoritmo detecta cuándo
+está ciclando y ajusta su memoria en consecuencia. Sus tres pilares:
+
+\begin{enumerate}
+  \item \textbf{Tenencia tabú dinámica}: el tenure varía dentro de
+    $[\texttt{tenure}_{\min}, \texttt{tenure}_{\max}]$. Cuando la solución
+    actual ya fue visitada antes (señal de ciclo), el tenure crece
+    multiplicándose por \texttt{factor\_aumento} $(>1)$; tras
+    suficientes iteraciones sin repeticiones decrece multiplicándose por
+    \texttt{factor\_reduccion} $(<1)$.
+  \item \textbf{Memoria de soluciones visitadas}: cada solución se registra
+    mediante un hash canónico en un diccionario, lo que permite detectar
+    repeticiones en $O(1)$ sin comparar contra todo el historial.
+  \item \textbf{Mecanismo de escape}: si una solución se repite más de
+    \texttt{umbral\_repeticiones\_escape} veces (ciclo ``duro''), se aplican
+    varios movimientos aleatorios consecutivos ignorando la lista tabú, y se
+    limpian tanto la lista como el historial (las prohibiciones de la zona
+    vieja no son útiles en la nueva).
+\end{enumerate}
+
+Hereda de la TS simple el muestreo de lote (\texttt{tam\_vecindario} vecinos,
+evaluación vectorizada), el criterio de aspiración, el doble criterio de
+parada y los 9 operadores compartidos del proyecto.
+
+\subsection{Parámetros}
+\begin{table}[htbp]
+\centering
+\caption{Parámetros de la RTS.}
+\begin{tabular}{lll}
+\toprule
+Parámetro & Significado & Valor calibrado \\
+\midrule
+\texttt{factor\_aumento} & multiplicador del tenure al detectar ciclo & 1.2 (grid) \\
+\texttt{factor\_reduccion} & multiplicador de relajación del tenure & 0.95 (knob 2) \\
+\texttt{umbral\_repeticiones\_escape} & repeticiones antes del escape & grid \\
+$p_{inter}$ & prob.\ de operadores inter-ruta (factible) & 0.5 \\
+$[\texttt{tenure}_{\min}, \texttt{tenure}_{\max}]$ & cotas del tenure dinámico & instance-aware \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Búsqueda de malla (grid search)}
+Es la grilla más grande de la campaña --- la RTS es la metaheurística con más
+knobs estructurales:
+\begin{itemize}
+  \item \textbf{Grilla principal} (\texttt{run\_tabu\_reactiva\_automatico.py}):
+    \texttt{factor\_aumento} $\in \{1.05, 1.1, 1.2, 1.3, 1.4\}$ (5) $\times$
+    \texttt{umbral\_escape} $\in \{2, 3, 5, 8\}$ (4) $\times$
+    $p_{inter} \in \{0.4, 0.5, 0.6, 0.7, 0.8\}$ (5) $\times$
+    \texttt{factor\_reduccion} $\in \{0.85, 0.9, 0.95\}$ (3)
+    $= 300$ combinaciones $\times$ 23 instancias $\times$ 5 repeticiones
+    $= 34{,}500$ corridas.
+  \item \textbf{Segundo knob} (verificación fina): \texttt{factor\_reduccion}
+    $\in \{0.85, 0.9, 0.95\}$ con el resto fijo; ganó $0.95$ con gap medio de
+    $5.101\,\%$ (contra $5.438\,\%$ y $5.766\,\%$). Reducción lenta del tenure
+    = memoria que se relaja con cautela.
+  \item \textbf{Configuración fija resultante}: \texttt{factor\_aumento} $=
+    1.2$, \texttt{factor\_reduccion} $= 0.95$, $p_{inter} = 0.5$; corrida con
+    los tres approaches a 5 repeticiones.
+\end{itemize}
+
+\paragraph{Resultado en las 23 pequeñas.} Mejor-por-instancia: gap medio
+$1.16\,\%$ y 16/23 BKS --- segunda mejor tras el SA. El approach
+\texttt{pr\_aislado} ganó 18/23 celdas.
+
+\subsection{Transferencia a las instancias val/egl}
+La RTS es la que mejor transfiere de las cinco: su tenure se autoadapta por
+diseño, así que los factores calibrados se mantienen sin cambios
+(\texttt{factor\_aumento} $= 1.2$, \texttt{factor\_reduccion} $= 0.95$). Solo
+se ajusta $p_{inter} = 0.6$ en la clase egl (más vehículos $\Rightarrow$ más
+movimientos inter-ruta). Presupuesto uniforme: $10^6$ evaluaciones
+($\texttt{iteraciones\_max} = \lfloor 10^6 / \max(20, 2n) \rfloor$) o 300\,s
+de pared. Approach: \texttt{pr\_aislado}.
