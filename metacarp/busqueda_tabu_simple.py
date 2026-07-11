@@ -282,6 +282,13 @@ def busqueda_tabu_simple(
     intensificador: Callable | None = None,
     # Penalización por capacidad (lambda_grid_20260525). None = default instance-aware.
     lambda_capacidad: float | None = None,
+    # --- Presupuesto de wall-clock (val_egl_20260710) ---
+    # Corta la corrida cuando el tiempo transcurrido desde ``t0`` alcanza este
+    # límite (en segundos). Se comprueba UNA vez al inicio de cada iteración
+    # del bucle principal (best-non-tabu), lo que ya está en la granularidad
+    # correcta (una iteración = un lote de tam_vecindario evaluaciones).
+    # None = sin límite (comportamiento clásico).
+    tiempo_limite_segundos: float | None = None,
     **_ignorado_kwargs: object,        # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> BusquedaTabuSimpleResult:
     """
@@ -532,6 +539,15 @@ def busqueda_tabu_simple(
         # Verificación al INICIO de la iteración para que la corrida pueda
         # detenerse en cualquier momento sin gastar trabajo extra.
         if iter_sin_mejora >= max_iter_sin_mejora:
+            break
+
+        # --- Presupuesto de wall-clock (val_egl_20260710) ---
+        # Cortamos la corrida si se alcanza el tiempo máximo. La comprobación
+        # es una sustracción trivial (nanosegundos) — el overhead es despreciable.
+        if (
+            tiempo_limite_segundos is not None
+            and (time.perf_counter() - t0) >= tiempo_limite_segundos
+        ):
             break
 
         if guardar_historial:
@@ -869,6 +885,8 @@ def busqueda_tabu_simple_desde_instancia(
     intensificador: Callable | None = None,
     # Penalización por capacidad (lambda_grid_20260525). None = default instance-aware.
     lambda_capacidad: float | None = None,
+    # Presupuesto de wall-clock (val_egl_20260710). None = sin límite.
+    tiempo_limite_segundos: float | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> BusquedaTabuSimpleResult:
     """
@@ -915,4 +933,6 @@ def busqueda_tabu_simple_desde_instancia(
         intensificador=intensificador,
         # Propagamos la penalización de capacidad (lambda_grid_20260525).
         lambda_capacidad=lambda_capacidad,
+        # Propagamos el presupuesto de wall-clock (val_egl_20260710).
+        tiempo_limite_segundos=tiempo_limite_segundos,
     )

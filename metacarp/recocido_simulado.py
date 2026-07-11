@@ -313,6 +313,12 @@ def recocido_simulado(
     # aleatorio. None = comportamiento clasico (kick aleatorio). Es la API
     # limpia que reemplaza los frame-hacks del PR del primer ciclo.
     intensificador: Callable | None = None,
+    # --- Presupuesto de wall-clock (val_egl_20260710) ---
+    # Corta la corrida cuando el tiempo transcurrido desde ``t0`` alcanza este
+    # límite (en segundos). Se comprueba UNA vez al inicio de cada nivel de
+    # temperatura (bucle externo), NO en cada iteración interna, para no meter
+    # overhead en el hot path. None = sin límite (comportamiento clásico).
+    tiempo_limite_segundos: float | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
@@ -536,6 +542,15 @@ def recocido_simulado(
     # === BUCLE EXTERNO: niveles de temperatura (enfriamiento) ===
     # Se repite mientras T no baje del mínimo (criterio de parada puro del SA clásico).
     while T > T_min_eff:
+        # --- Presupuesto de wall-clock (val_egl_20260710) ---
+        # Comprobado UNA sola vez por nivel para no meter overhead en el
+        # bucle interno. Suficientemente frecuente porque un nivel dura L
+        # iteraciones = n² evaluaciones (ordenes de magnitud menor a 300s).
+        if (
+            tiempo_limite_segundos is not None
+            and (time.perf_counter() - t0) >= tiempo_limite_segundos
+        ):
+            break
         # Capturamos el mejor costo reportable ANTES del bucle interno.
         # Esta foto del estado se compara, al final del nivel, con el costo
         # reportable tras todas las iteraciones internas: si no mejoró, este
@@ -926,6 +941,8 @@ def recocido_simulado_desde_instancia(
     max_resets: int | None = None,
     # Hook de intensificacion opcional (p.ej. Path Relinking limpio).
     intensificador: Callable | None = None,
+    # Presupuesto de wall-clock (val_egl_20260710). None = sin límite.
+    tiempo_limite_segundos: float | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> RecocidoSimuladoResult:
     """
@@ -973,4 +990,6 @@ def recocido_simulado_desde_instancia(
         max_resets=max_resets,
         # Propagamos el hook de intensificacion (p.ej. Path Relinking limpio).
         intensificador=intensificador,
+        # Propagamos el presupuesto de wall-clock (val_egl_20260710).
+        tiempo_limite_segundos=tiempo_limite_segundos,
     )

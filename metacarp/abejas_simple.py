@@ -413,6 +413,12 @@ def busqueda_abejas_simple(
     # None = comportamiento clasico (kick aleatorio). API limpia que reemplaza
     # los frame-hacks del PR del primer ciclo.
     intensificador: Callable | None = None,
+    # --- Presupuesto de wall-clock (val_egl_20260710) ---
+    # Corta la corrida cuando el tiempo transcurrido desde ``t0`` alcanza este
+    # límite (en segundos). Se comprueba UNA vez al inicio de cada ciclo del
+    # bucle principal (una iteración = fase empleadas + observadoras + scouts).
+    # None = sin límite (comportamiento clásico).
+    tiempo_limite_segundos: float | None = None,
     extra_csv: dict[str, object] | None = None,  # columnas extra para el CSV (no se usan aquí)
     **_ignorado_kwargs: object,              # absorbe kwargs heredados (id_corrida, config_id, ...)
 ) -> AbejasSimpleResult:
@@ -709,6 +715,17 @@ def busqueda_abejas_simple(
     # Usamos ``iteraciones_eff`` (instance-aware) como tope duro.
     for ciclo in range(iteraciones_eff):
         ciclo_final = ciclo + 1
+
+        # --- Presupuesto de wall-clock (val_egl_20260710) ---
+        # Cortamos si se alcanza el tiempo máximo. Se comprueba al principio de
+        # cada ciclo para no meter overhead en las fases internas.
+        if (
+            tiempo_limite_segundos is not None
+            and (time.perf_counter() - t0) >= tiempo_limite_segundos
+        ):
+            # Restamos 1: este ciclo no llegó a ejecutarse.
+            ciclo_final = ciclo
+            break
 
         # 8a) Criterio de parada anticipada por estancamiento.
         # ``max_sin_mejora_eff`` es el valor instance-aware: nunca es None en
@@ -1174,6 +1191,8 @@ def busqueda_abejas_simple_desde_instancia(
     max_resets: int | None = None,
     # Hook de intensificacion opcional (p.ej. Path Relinking limpio).
     intensificador: Callable | None = None,
+    # Presupuesto de wall-clock (val_egl_20260710). None = sin límite.
+    tiempo_limite_segundos: float | None = None,
     extra_csv: dict[str, object] | None = None,
     **_ignorado_kwargs: object,
 ) -> AbejasSimpleResult:
@@ -1223,5 +1242,7 @@ def busqueda_abejas_simple_desde_instancia(
         max_resets=max_resets,
         # Propagamos el hook de intensificacion (p.ej. Path Relinking limpio).
         intensificador=intensificador,
+        # Propagamos el presupuesto de wall-clock (val_egl_20260710).
+        tiempo_limite_segundos=tiempo_limite_segundos,
         extra_csv=extra_csv,
     )

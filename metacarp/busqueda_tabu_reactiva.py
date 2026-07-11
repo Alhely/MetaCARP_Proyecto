@@ -449,6 +449,12 @@ def busqueda_tabu_reactiva(
     intensificador: Callable | None = None,
     # Penalización por capacidad (lambda_grid_20260525). None = default instance-aware.
     lambda_capacidad: float | None = None,
+    # --- Presupuesto de wall-clock (val_egl_20260710) ---
+    # Corta la corrida cuando el tiempo transcurrido desde ``t0`` alcanza este
+    # límite (en segundos). Se comprueba UNA vez al inicio de cada iteración
+    # del bucle principal (best-non-tabu con tenure reactivo).
+    # None = sin límite (comportamiento clásico).
+    tiempo_limite_segundos: float | None = None,
     **_ignorado_kwargs: object,                # absorbe kwargs heredados (id_corrida, config_id)
 ) -> BusquedaTabuReactivaResult:
     """
@@ -786,6 +792,15 @@ def busqueda_tabu_reactiva(
         # Criterio de estancamiento: si llevamos demasiadas iteraciones
         # consecutivas sin mejorar el mejor global, terminamos.
         if iter_sin_mejora >= max_sin_mejora_eff:
+            break
+
+        # --- Presupuesto de wall-clock (val_egl_20260710) ---
+        # Cortamos la corrida si se alcanza el tiempo máximo. La comprobación
+        # es una sustracción trivial (nanosegundos) — overhead despreciable.
+        if (
+            tiempo_limite_segundos is not None
+            and (time.perf_counter() - t0) >= tiempo_limite_segundos
+        ):
             break
 
         # Registramos métricas al INICIO de la iteración.
@@ -1276,6 +1291,8 @@ def busqueda_tabu_reactiva_desde_instancia(
     intensificador: Callable | None = None,
     # Penalización por capacidad (lambda_grid_20260525). None = default instance-aware.
     lambda_capacidad: float | None = None,
+    # Presupuesto de wall-clock (val_egl_20260710). None = sin límite.
+    tiempo_limite_segundos: float | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (id_corrida, config_id)
 ) -> BusquedaTabuReactivaResult:
     """
@@ -1329,4 +1346,6 @@ def busqueda_tabu_reactiva_desde_instancia(
         intensificador=intensificador,
         # Propagamos la penalización de capacidad (lambda_grid_20260525).
         lambda_capacidad=lambda_capacidad,
+        # Propagamos el presupuesto de wall-clock (val_egl_20260710).
+        tiempo_limite_segundos=tiempo_limite_segundos,
     )
