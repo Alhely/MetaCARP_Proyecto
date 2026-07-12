@@ -14,10 +14,23 @@ Para cada (MH, instancia) se toma la repetición de menor costo (desempate por
 menor tiempo). El "parámetro" por celda queda determinado por (MH, clase);
 la leyenda se documenta en el pie de tabla y en config_fija.json de cada MH.
 
-IMPORTANTE sobre la referencia: para val/gdb la columna ``bks_referencia``
-proviene del COMENTARIO del archivo de instancia, que en val es una COTA
-SUPERIOR histórica, no la BKS de literatura — por eso hay gaps negativos.
-Las negritas marcan el MEJOR VALOR POR FILA (ganador entre MHs), no la BKS.
+IMPORTANTE — ajuste de escala de costos en la familia val (diagnóstico
+2026-07-12): los ``.dat`` originales de val (bccm) son internamente
+inconsistentes: su encabezado (``COSTE_TOTAL_REQ``, ``BKS``) está en una
+escala de costos de servicio distinta a la de su propia lista de aristas
+(p.ej. val1A: encabezado 220 vs aristas 146). Como toda solución factible
+sirve todas las aristas exactamente una vez, ambas escalas difieren por la
+CONSTANTE por instancia ``delta = COSTE_TOTAL_REQ - suma(costos aristas)``.
+Verificación empírica: ``mejor_encontrado + delta`` reproduce el BKS exacto
+en 12/34 val y nunca queda por debajo (34/34 coherentes). El evaluador de
+costo del proyecto fue validado de forma independiente (DP de orientaciones
+sobre el grafo crudo) y es CORRECTO; el ajuste aquí es solo de reporte:
+
+    costo_comparable = mejor_costo + delta      (delta = 0 fuera de val)
+    gap_comparable   = (costo_comparable - BKS) / BKS
+
+Las negritas marcan el MEJOR VALOR POR FILA (ganador entre MHs; el ganador
+no cambia con el ajuste porque delta es constante por instancia).
 
 Salidas (en ``resultados/mejores_val_egl_20260712/``):
   1. ``mejores_val_egl.csv``            — tabla larga (MH × instancia).
@@ -58,8 +71,29 @@ FUENTES = [
 ]
 
 
+def _deltas_val() -> dict[str, float]:
+    """Delta de escala por instancia: COSTE_TOTAL_REQ - suma(costos aristas).
+
+    Solo es distinto de cero en la familia val (ver docstring del módulo).
+    Se calcula desde los pickles para no depender de tablas manuales.
+    """
+    import pickle
+    deltas: dict[str, float] = {}
+    for ruta in glob.glob(str(RAIZ / "PickleInstances" / "*.pkl")):
+        d = pickle.load(open(ruta, "rb"))
+        nombre = d.get("NOMBRE") or Path(ruta).stem
+        meta = d.get("COSTE_TOTAL_REQ")
+        if meta is None:
+            deltas[nombre] = 0.0
+            continue
+        suma = sum(a["costo"] for a in d["LISTA_ARISTAS_REQ"])
+        deltas[nombre] = float(meta) - float(suma)
+    return deltas
+
+
 def recolectar() -> dict[tuple[str, str], dict]:
     """{(etiqueta_mh, instancia): mejor fila}. Ignora _partials."""
+    deltas = _deltas_val()
     mejores: dict[tuple[str, str], dict] = {}
     for _mh_csv, etiqueta, patron in FUENTES:
         for ruta in glob.glob(str(RAIZ / patron)):
@@ -75,13 +109,21 @@ def recolectar() -> dict[tuple[str, str], dict]:
                     if (actual is None or costo < actual["mejor_costo"]
                             or (costo == actual["mejor_costo"]
                                 and t < actual["tiempo_segundos"])):
+                        # Ajuste de escala val (delta = 0 en gdb/egl): el
+                        # costo comparable vive en la misma escala que el
+                        # BKS del encabezado del .dat (ver docstring).
+                        delta = deltas.get(inst, 0.0)
+                        bks = float(fila["bks_referencia"])
+                        comparable = costo + delta
                         mejores[clave] = {
                             "metaheuristica": etiqueta,
                             "instancia": inst,
-                            "referencia": float(fila["bks_referencia"]),
+                            "referencia": bks,
                             "mejor_costo": costo,
+                            "delta_escala_val": delta,
+                            "costo_comparable": comparable,
                             "gap_referencia_porcentaje":
-                                float(fila["gap_bks_porcentaje"]),
+                                (comparable - bks) / bks * 100.0,
                             "tiempo_segundos": t,
                             "repeticion": fila["repeticion"],
                         }
@@ -91,6 +133,7 @@ def recolectar() -> dict[tuple[str, str], dict]:
 def escribir_csv(mejores: dict) -> None:
     SALIDA.mkdir(parents=True, exist_ok=True)
     campos = ["metaheuristica", "instancia", "referencia", "mejor_costo",
+              "delta_escala_val", "costo_comparable",
               "gap_referencia_porcentaje", "tiempo_segundos", "repeticion"]
     with open(SALIDA / "mejores_val_egl.csv", "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=campos)
@@ -109,10 +152,11 @@ def _tabla(mejores: dict, instancias: list[str], titulo: str,
         r"\begin{table}[htbp]",
         r"\centering",
         rf"\caption{{{titulo} Presupuesto uniforme $10^6$ evaluaciones /"
-        r" 300\,s por corrida, 5 repeticiones; se reporta el mejor costo."
-        r" En \textbf{negritas}, el ganador por instancia. La referencia de"
-        r" val/gdb es la cota superior histórica del archivo de instancia"
-        r" (no BKS de literatura).}",
+        r" 300\,s por corrida, 5 repeticiones; se reporta el mejor costo"
+        r" en la escala de la referencia BKS (en la familia val se aplica el"
+        r" ajuste constante de escala $\delta$ documentado en el texto)."
+        r" En \textbf{negritas}, el ganador por instancia; con estrella"
+        r" ($\star$), los que igualan la BKS.}",
         rf"\label{{{etiqueta}}}",
         r"\small",
         r"\begin{tabular}{lr" + "r" * len(mhs) + "}",
@@ -122,17 +166,20 @@ def _tabla(mejores: dict, instancias: list[str], titulo: str,
     ]
     for inst in instancias:
         costos = {mh: mejores.get((mh, inst)) for mh in mhs}
-        presentes = [b["mejor_costo"] for b in costos.values() if b]
+        presentes = [b["costo_comparable"] for b in costos.values() if b]
         ganador = min(presentes) if presentes else None
         celdas = []
         for mh in mhs:
             b = costos[mh]
             if b is None:
                 celdas.append("--")
-            elif b["mejor_costo"] == ganador:
-                celdas.append(rf"$\mathbf{{{b['mejor_costo']:.0f}}}$")
+                continue
+            c = b["costo_comparable"]
+            estrella = r"^{\star}" if c <= b["referencia"] else ""
+            if c == ganador:
+                celdas.append(rf"$\mathbf{{{c:.0f}}}{estrella}$")
             else:
-                celdas.append(rf"${b['mejor_costo']:.0f}$")
+                celdas.append(rf"${c:.0f}{estrella}$")
         ref = next((b["referencia"] for b in costos.values() if b), float("nan"))
         lineas.append(rf"\texttt{{{inst}}} & {ref:.0f} & "
                       + " & ".join(celdas) + r" \\")
@@ -143,8 +190,8 @@ def _tabla(mejores: dict, instancias: list[str], titulo: str,
         g = [mejores[(mh, i)]["gap_referencia_porcentaje"]
              for i in instancias if (mh, i) in mejores]
         w = sum(1 for i in instancias
-                if (mh, i) in mejores and mejores[(mh, i)]["mejor_costo"] ==
-                min(mejores[(m2, i)]["mejor_costo"] for m2 in mhs
+                if (mh, i) in mejores and mejores[(mh, i)]["costo_comparable"] ==
+                min(mejores[(m2, i)]["costo_comparable"] for m2 in mhs
                     if (m2, i) in mejores))
         gaps.append(f"{statistics.mean(g):.1f}\\%" if g else "--")
         wins.append(str(w))
