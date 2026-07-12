@@ -14,17 +14,22 @@ Para cada (MH, instancia) se toma la repetición de menor costo (desempate por
 menor tiempo). El "parámetro" por celda queda determinado por (MH, clase);
 la leyenda se documenta en el pie de tabla y en config_fija.json de cada MH.
 
-IMPORTANTE — ajuste de escala de costos en la familia val (diagnóstico
-2026-07-12): los ``.dat`` originales de val (bccm) son internamente
-inconsistentes: su encabezado (``COSTE_TOTAL_REQ``, ``BKS``) está en una
-escala de costos de servicio distinta a la de su propia lista de aristas
-(p.ej. val1A: encabezado 220 vs aristas 146). Como toda solución factible
-sirve todas las aristas exactamente una vez, ambas escalas difieren por la
-CONSTANTE por instancia ``delta = COSTE_TOTAL_REQ - suma(costos aristas)``.
+IMPORTANTE — convención de costos CARPLIB en la familia val (diagnóstico
+2026-07-12): según el READ_ME oficial de CARPLIB (Universitat de València,
+http://www.uv.es/~belengue/carp/READ_ME), las instancias distinguen DOS
+costos por arista requerida: el costo de SERVICIO (atravesar + servir) y el
+de TRÁNSITO (solo pasar, deadheading). La columna ``coste`` de
+``LISTA_ARISTAS_REQ`` es el costo de TRÁNSITO; ``COSTE_TOTAL_REQ`` del
+encabezado es la suma de los costos de SERVICIO. En val (bccm, Benavent et
+al. 1992) ambos difieren (val1A: servicio total 220, tránsito 146); en
+gdb/kshs/egl coinciden, por eso solo val requiere ajuste. El costo canónico
+es ``COSTE_TOTAL_REQ + deadheading``; como el evaluador del proyecto cuenta
+el servicio a costo de tránsito, difiere del canónico por la CONSTANTE
+``delta = COSTE_TOTAL_REQ - suma(costos aristas)`` en toda solución.
 Verificación empírica: ``mejor_encontrado + delta`` reproduce el BKS exacto
-en 12/34 val y nunca queda por debajo (34/34 coherentes). El evaluador de
-costo del proyecto fue validado de forma independiente (DP de orientaciones
-sobre el grafo crudo) y es CORRECTO; el ajuste aquí es solo de reporte:
+en 12/34 val y nunca queda por debajo (34/34 coherentes). El evaluador fue
+validado de forma independiente (DP de orientaciones sobre el grafo crudo)
+y es CORRECTO en su escala; el ajuste aquí es solo de reporte:
 
     costo_comparable = mejor_costo + delta      (delta = 0 fuera de val)
     gap_comparable   = (costo_comparable - BKS) / BKS
