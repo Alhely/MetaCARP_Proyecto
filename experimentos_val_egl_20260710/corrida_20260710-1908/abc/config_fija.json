@@ -1,0 +1,93 @@
+{
+  "mh": "abc",
+  "modulo": "metacarp.abejas_simple",
+  "experimento": "val_egl_20260710",
+  "approach": "pr_aislado",
+  "umbral_pr": 30,
+  "max_evaluaciones_objetivo": 1000000,
+  "tiempo_limite_segundos": 300.0,
+  "clases": {
+    "val": {
+      "instancias": [
+        "val1A",
+        "val1B",
+        "val1C",
+        "val2A",
+        "val2B",
+        "val2C",
+        "val3A",
+        "val3B",
+        "val3C",
+        "val4A",
+        "val4B",
+        "val4C",
+        "val4D",
+        "val5A",
+        "val5B",
+        "val5C",
+        "val5D",
+        "val6A",
+        "val6B",
+        "val6C",
+        "val7A",
+        "val7B",
+        "val7C",
+        "val8A",
+        "val8B",
+        "val8C",
+        "val9A",
+        "val9B",
+        "val9C",
+        "val9D",
+        "val10A",
+        "val10B",
+        "val10C",
+        "val10D",
+        "gdb8",
+        "gdb9",
+        "gdb11",
+        "gdb18",
+        "gdb22",
+        "gdb23"
+      ],
+      "config_fija": {
+        "num_fuentes": 30,
+        "p_inter": 0.5
+      }
+    },
+    "egl": {
+      "instancias": [
+        "egl-e1-A",
+        "egl-e1-B",
+        "egl-e1-C",
+        "egl-e2-A",
+        "egl-e2-B",
+        "egl-e2-C",
+        "egl-e3-A",
+        "egl-e3-B",
+        "egl-e3-C",
+        "egl-e4-A",
+        "egl-e4-B",
+        "egl-e4-C",
+        "egl-s1-A",
+        "egl-s1-B",
+        "egl-s1-C",
+        "egl-s2-A",
+        "egl-s2-B",
+        "egl-s2-C",
+        "egl-s3-A",
+        "egl-s3-B",
+        "egl-s3-C",
+        "egl-s4-A",
+        "egl-s4-B",
+        "egl-s4-C"
+      ],
+      "config_fija": {
+        "num_fuentes": 30,
+        "p_inter": 0.6
+      }
+    }
+  },
+  "repeticiones": 5,
+  "semilla_base": 0
+}
