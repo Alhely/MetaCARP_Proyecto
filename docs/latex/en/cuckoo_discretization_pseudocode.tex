@@ -72,7 +72,7 @@ $f_{\mathrm{steps}} = 0.25$.
 
 \KwIn{CARP instance; nests $K$; abandonment fraction $p_a$; L\'evy exponent
       $\lambda$; scale $P_{\mathrm{base}}$; inter-route bias $p_{inter}$;
-      penalty weight $\omega$; evaluation/time budget}
+      penalty weight $\omega$; max evaluations $10^6$ or max time 300\,s}
 \KwOut{Best solution found $s^{*}$}
 
 \BlankLine
@@ -88,7 +88,7 @@ $f_{\mathrm{steps}} = 0.25$.
 \BlankLine
 initialize nests $N[0..K{-}1]$ from a Path-Scanning warm start;\quad
 $s^{*} \leftarrow \arg\min_i f(N[i])$\;
-\While{budget not exhausted \textbf{and} not stagnated}{
+\While{evals $< 10^6$ \textbf{and} time $< 300$\,s \textbf{and} not stagnated}{
   $\mathcal{O} \leftarrow$ inter-route group with prob.\
   $\max(p_{inter}, 0.8 \cdot \mathbb{1}[\text{violation}])$, intra-route
   otherwise\;
