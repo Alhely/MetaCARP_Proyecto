@@ -10,7 +10,7 @@ Tablas producidas:
   3. Efecto del Path Relinking: Delta gap (sin PR -> con PR).  [aislamiento]
   4. Detalle por instancia de la MEJOR configuracion.          [granular]
 
-Salida: docs/seccion_resultados_tesis.tex (fragmento LaTeX, sin preambulo).
+Salida: docs/latex/es/seccion_resultados_tesis.tex (fragmento LaTeX, sin preambulo).
 Solo stdlib.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ import statistics
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(RAIZ, "experimentos_costo_fixed")
-SALIDA = os.path.join(RAIZ, "docs", "seccion_resultados_tesis.tex")
+SALIDA = os.path.join(RAIZ, "docs", "latex", "es", "seccion_resultados_tesis.tex")
 
 ORDEN_INST = [
     "gdb19", "kshs1", "kshs2", "kshs3", "kshs4", "kshs5", "kshs6",

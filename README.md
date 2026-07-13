@@ -45,18 +45,20 @@ MetaCARP_Proyecto/
 ├── README.md                              # Este archivo
 ├── pyproject.toml                         # Configuración del paquete
 │
-├── docs/                                  # Documentación técnica de las metaheurísticas
-│   ├── busqueda_tabu.md
-│   ├── busqueda_tabu_simple.md
-│   ├── busqueda_tabu_reactiva.md
-│   ├── comparativa_tabu.md
-│   ├── abc_simple.md
-│   ├── colonia_abejas.md
-│   ├── cuckoo_search.md
-│   ├── recocido_simulado.md
-│   ├── generacion_vecinos.md
-│   ├── experimentacion.md
-│   └── experimentos_full_combined_all.txt
+├── docs/                                  # Toda la documentación de tesis y referencia
+│   ├── README.md                          # Índice completo de documentos
+│   ├── figuras/                           # Imágenes PNG compartidas para LaTeX
+│   ├── markdown/
+│   │   ├── es/                            # Docs Markdown en español (10 archivos MH + vecindarios)
+│   │   │   └── vecindarios_revisados/     # Revisión detallada de los 9 operadores (10 .md)
+│   │   └── en/                            # (reservado)
+│   └── latex/
+│       ├── referencias.bib               # Bibliografía compartida
+│       ├── es/                            # Docs LaTeX en español
+│       │   ├── metaheuristicas/           # Capítulos LaTeX de los 6 algoritmos
+│       │   └── pseudocodigos/             # Pseudocódigos en español (6 .tex)
+│       └── en/
+│           └── pseudocodigos/             # Pseudocódigos en inglés (4 .tex)
 │
 ├── scripts/                               # Scripts ejecutables
 │   ├── testing.py                         # Demostración interactiva de la API
@@ -220,7 +222,7 @@ python scripts/experimentos.py \
 > `--salida-dir`, `--usar-gpu` y `--root`. Las rejillas de hiperparámetros (iteraciones,
 > tenure, lambda, etc.) están definidas dentro del propio script. El programa
 > experimental moderno con evaluador de costo corregido vive en `scripts/` con sus
-> propios runners (ver [docs/experimentacion.md](docs/experimentacion.md)).
+> propios runners (ver [experimentacion.md](docs/markdown/es/experimentacion.md)).
 
 Los resultados se guardan en archivos CSV por metaheurística e instancia, con columnas de tiempo, costo, iteraciones y contador de operadores.
 
@@ -247,7 +249,7 @@ resultado = busqueda_tabu_desde_instancia(
 )
 ```
 
-**Parámetros recomendados:** ver [docs/busqueda_tabu.md](docs/busqueda_tabu.md) (extendida), [docs/busqueda_tabu_simple.md](docs/busqueda_tabu_simple.md) y [docs/busqueda_tabu_reactiva.md](docs/busqueda_tabu_reactiva.md)
+**Parámetros recomendados:** ver [busqueda_tabu.md](docs/markdown/es/busqueda_tabu.md) (extendida), [busqueda_tabu_simple.md](docs/markdown/es/busqueda_tabu_simple.md) y [busqueda_tabu_reactiva.md](docs/markdown/es/busqueda_tabu_reactiva.md)
 
 ### Colonia de Abejas Artificiales
 
@@ -266,7 +268,7 @@ resultado = busqueda_abejas_desde_instancia(
 )
 ```
 
-**Parámetros recomendados:** ver [docs/colonia_abejas.md](docs/colonia_abejas.md) (versión extendida) y [docs/abc_simple.md](docs/abc_simple.md) (versión canónica `abejas_simple` con defaults instance-aware)
+**Parámetros recomendados:** ver [colonia_abejas.md](docs/markdown/es/colonia_abejas.md) (versión extendida) y [abc_simple.md](docs/markdown/es/abc_simple.md) (versión canónica `abejas_simple` con defaults instance-aware)
 
 ### Búsqueda del Cucú
 
@@ -285,7 +287,7 @@ resultado = cuckoo_search_desde_instancia(
 )
 ```
 
-**Parámetros recomendados:** ver [docs/cuckoo_search.md](docs/cuckoo_search.md)
+**Parámetros recomendados:** ver [cuckoo_search.md](docs/markdown/es/cuckoo_search.md)
 
 ### Recocido Simulado
 
@@ -304,7 +306,7 @@ resultado = recocido_simulado_desde_instancia(
 )
 ```
 
-**Parámetros recomendados:** ver [docs/recocido_simulado.md](docs/recocido_simulado.md)
+**Parámetros recomendados:** ver [recocido_simulado.md](docs/markdown/es/recocido_simulado.md)
 
 ---
 
@@ -384,13 +386,13 @@ Genera un reporte legible con:
 
 ## Documentación detallada
 
-Consulta los archivos en [docs/](docs/) para detalles técnicos profundos:
+Consulta [docs/README.md](docs/README.md) para el índice completo. Documentos principales:
 
-- [busqueda_tabu.md](docs/busqueda_tabu.md) — Algoritmo, pseudocódigo y ajuste de parámetros
-- [colonia_abejas.md](docs/colonia_abejas.md) — Mecánica de la colonia y operadores
-- [cuckoo_search.md](docs/cuckoo_search.md) — Vuelos de Lévy y abandono de nidos
-- [recocido_simulado.md](docs/recocido_simulado.md) — Escalas de temperatura y enfriamiento
-- [generacion_vecinos.md](docs/generacion_vecinos.md) — Los 9 operadores de vecindario
+- [busqueda_tabu.md](docs/markdown/es/busqueda_tabu.md) — Algoritmo, pseudocódigo y ajuste de parámetros
+- [colonia_abejas.md](docs/markdown/es/colonia_abejas.md) — Mecánica de la colonia y operadores
+- [cuckoo_search.md](docs/markdown/es/cuckoo_search.md) — Vuelos de Lévy y abandono de nidos
+- [recocido_simulado.md](docs/markdown/es/recocido_simulado.md) — Escalas de temperatura y enfriamiento
+- [generacion_vecinos.md](docs/markdown/es/generacion_vecinos.md) — Los 9 operadores de vecindario
 
 ---
 
@@ -527,4 +529,4 @@ Este proyecto es producto del trabajo de tesis sobre resolución del Problema de
 
 ---
 
-**Para más información, consulta los scripts de ejemplo, la documentación en [docs/](docs/) y los comentarios en el código fuente.**
+**Para más información, consulta los scripts de ejemplo, la documentación en [docs/README.md](docs/README.md) y los comentarios en el código fuente.**

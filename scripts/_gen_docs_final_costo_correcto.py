@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Generador del documento LaTeX ``docs_final_costo_correcto_con_resultados.tex``.
+Generador del documento LaTeX ``docs/latex/es/docs_final_costo_correcto_con_resultados.tex``.
 
 Recorre TODOS los experimentos lanzados DESPUES de eliminar el calculador de
 costo incorrecto (commit dab620b, "orientacion greedy como unica logica del
@@ -15,7 +15,7 @@ evaluador") y produce un unico .tex AUTOCONTENIDO y compilable en Overleaf
      por instancia (longtable), detalle por repeticion y la MEJOR solucion por
      instancia (rutas + desglose de deadheading).
   3. Embebe VERBATIM (como LaTeX real) los capitulos ya redactados de cada
-     approach (docs/experimento_*_costo_fixed.tex): tablas booktabs extensas,
+     approach (docs/latex/es/experimento_*_costo_fixed.tex): tablas booktabs extensas,
      pseudocodigos en entorno algorithm y conclusiones.
 
 No depende de pandas: usa unicamente la biblioteca estandar.
@@ -32,13 +32,13 @@ import unicodedata
 # Raiz del proyecto = un nivel arriba de scripts/
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(RAIZ, "experimentos_costo_fixed")
-SALIDA = os.path.join(RAIZ, "docs_final_costo_correcto_con_resultados.tex")
+SALIDA = os.path.join(RAIZ, "docs", "latex", "es", "docs_final_costo_correcto_con_resultados.tex")
 
 # Capitulos LaTeX (fragmentos sin preambulo) ya redactados por approach.
 TEX_POR_APPROACH = {
-    "solo_p_inter": os.path.join(RAIZ, "docs", "experimento_solo_p_inter_costo_fixed.tex"),
-    "binario_capacidad": os.path.join(RAIZ, "docs", "experimento_binario_capacidad_costo_fixed.tex"),
-    "pr_aislado": os.path.join(RAIZ, "docs", "experimento_pr_aislado_costo_fixed.tex"),
+    "solo_p_inter": os.path.join(RAIZ, "docs", "latex", "es", "experimento_solo_p_inter_costo_fixed.tex"),
+    "binario_capacidad": os.path.join(RAIZ, "docs", "latex", "es", "experimento_binario_capacidad_costo_fixed.tex"),
+    "pr_aislado": os.path.join(RAIZ, "docs", "latex", "es", "experimento_pr_aislado_costo_fixed.tex"),
 }
 
 ORDEN_INST = [
@@ -313,7 +313,7 @@ PREAMBULO = r"""\documentclass[11pt,a4paper]{article}
 
 % ----- Figuras -----
 \usepackage{graphicx}
-\graphicspath{{docs/figuras/}{figuras/}{./}}
+\graphicspath{{../../figuras/}{docs/figuras/}{figuras/}{./}}
 
 % ----- Pseudocodigo (capitulos embebidos) -----
 \usepackage{algorithm}
@@ -561,7 +561,7 @@ def main() -> None:
     L.append(r"\item Fuente de datos: "
              r"\texttt{experimentos\_costo\_fixed/<mh>\_<approach>\_<fecha>/final/*.csv}")
     L.append(r"\item Capitulos LaTeX embebidos: "
-             r"\texttt{docs/experimento\_\{solo\_p\_inter,binario\_capacidad,pr\_aislado\}"
+             r"\texttt{docs/latex/es/experimento\_\{solo\_p\_inter,binario\_capacidad,pr\_aislado\}"
              r"\_costo\_fixed.tex}")
     L.append(r"\item Regenerar: \texttt{python3 scripts/\_gen\_docs\_final\_costo\_correcto.py}")
     L.append(r"\end{itemize}")

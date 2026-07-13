@@ -24,18 +24,19 @@ from MetaCARP_Proyecto.metacarp import (
 )
 
 # Raíz del proyecto: carpeta donde están PickleInstances/, Matrices/, InitialSolution/
-_ROOT        = Path(__file__).parent
-_SALIDA_JSON = _ROOT / "feasibility_labels.json"
-_SALIDA_CSV  = _ROOT / "feasibility_summary.csv"
+# (un nivel arriba de scripts/, donde vive este archivo)
+_DATA_ROOT   = Path(__file__).parent.parent
+_SALIDA_JSON = Path(__file__).parent / "feasibility_labels.json"
+_SALIDA_CSV  = Path(__file__).parent / "feasibility_summary.csv"
 
 _CSV_CAMPOS = ["instancia", "factible", "c1_cobertura", "c2_conectividad",
                "c3_capacidad", "c4_vehiculos", "c5_deposito"]
 
 
 def _etiquetar_instancia(nombre: str) -> dict:
-    solucion = cargar_solucion_inicial(nombre, root=_ROOT)
-    data     = load_instance(nombre, root=_ROOT)
-    matriz   = cargar_matriz_dijkstra(nombre, root=_ROOT)
+    solucion = cargar_solucion_inicial(nombre, root=_DATA_ROOT)
+    data     = load_instance(nombre, root=_DATA_ROOT)
+    matriz   = cargar_matriz_dijkstra(nombre, root=_DATA_ROOT)
     result   = verificar_factibilidad(solucion, data, matriz)
     det      = result.details
     return {
@@ -56,7 +57,7 @@ def _etiquetar_instancia(nombre: str) -> dict:
 
 
 def main() -> None:
-    nombres = nombres_soluciones_iniciales_disponibles(root=_ROOT)
+    nombres = nombres_soluciones_iniciales_disponibles(root=_DATA_ROOT)
     total   = len(nombres)
     print(f"Procesando {total} soluciones iniciales…")
 
