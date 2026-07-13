@@ -18,7 +18,10 @@ Los parámetros por fila se toman DEL CSV de la corrida ganadora
 (num_nidos_efectivo, pa_abandono, beta_levy, factor_pasos, p_inter), no de
 tablas manuales, para trazabilidad completa.
 
-Salida: resultados/tabla_cuckoo_por_instancia_20260712.tex (longtable).
+Salidas (longtable, mismos datos, dos idiomas):
+    resultados/tabla_cuckoo_por_instancia_20260712.tex     (español)
+    resultados/cuckoo_results_table_en_20260712.tex        (inglés, para el
+                                                            artículo)
 
 Uso:
     python scripts/_gen_tabla_cuckoo_20260712.py
@@ -98,38 +101,55 @@ def _mejor_por_instancia(patrones: list[tuple[str, str]]) -> dict[str, dict]:
     return mejores
 
 
-def main() -> None:
-    deltas = _deltas()
-    small = _mejor_por_instancia(
-        [("experimentos_costo_fixed/cuckoo_*/final/*.csv", "?")])
-    grandes = _mejor_por_instancia(
-        [("experimentos_val_egl_20260710/cs_campana/cs_minigrid/"
-          "corrida_*/final/*.csv", "W")])
+# Textos por idioma para render dual (mismos datos, dos salidas).
+TEXTOS = {
+    "es": {
+        "caption": (
+            r"Cuckoo Search: mejor resultado por instancia y parámetros"
+            r" de la corrida ganadora. Costos en la convención CARPLIB"
+            r" (servicio + deadheading; en val se aplica el ajuste $\delta$)."
+            r" Config: $P$~=~\texttt{solo\_p\_inter},"
+            r" $B$~=~\texttt{binario\_capacidad}, $R$~=~\texttt{pr\_aislado},"
+            r" $W$~=~warm-start Path-Scanning con Path Relinking (campaña"
+            r" val/egl, presupuesto $10^6$ eval.\ / 300\,s). En"
+            r" \textbf{negritas}, costos que igualan la BKS."),
+        "label": "tab:cuckoo-por-instancia",
+        "enc": (r"Instancia & BKS & Costo & Gap\,\% & $t$(s) & nidos & $p_a$"
+                r" & $\beta$ & $f_{pasos}$ & $p_{inter}$/cfg \\"),
+        "resumen": "Gap medio", "bks": "BKS alcanzadas",
+    },
+    "en": {
+        "caption": (
+            r"Cuckoo Search: best result per instance and parameters of the"
+            r" winning run. Costs follow the CARPLIB convention (servicing"
+            r" + deadheading; the constant $\delta$ adjustment is applied on"
+            r" the val family). Config: $P$~=~\texttt{solo\_p\_inter},"
+            r" $B$~=~\texttt{binario\_capacidad}, $R$~=~\texttt{pr\_aislado}"
+            r" (Path Relinking), $W$~=~Path-Scanning warm start with Path"
+            r" Relinking (val/egl campaign, budget of $10^6$ evaluations /"
+            r" 300\,s per run). Costs matching the BKS are shown in"
+            r" \textbf{bold}."),
+        "label": "tab:cuckoo-per-instance",
+        "enc": (r"Instance & BKS & Cost & Gap\,\% & $t$(s) & nests & $p_a$"
+                r" & $\beta$ & $f_{steps}$ & $p_{inter}$/cfg \\"),
+        "resumen": "Mean gap", "bks": "BKS reached",
+    },
+}
 
-    filas: list[tuple[str, dict]] = (
-        [(i, small[i]) for i in INSTANCIAS_SMALL if i in small]
-        + [(i, grandes[i]) for i in INSTANCIAS_VAL_GDB if i in grandes]
-        + [(i, grandes[i]) for i in INSTANCIAS_EGL if i in grandes]
-    )
 
+def _render(filas: list[tuple[str, dict]], deltas: dict[str, float],
+            idioma: str, destino: Path) -> None:
+    """Escribe la longtable en el idioma pedido a partir de las filas."""
+    t = TEXTOS[idioma]
     L: list[str] = []
     ap = L.append
     ap(r"% Generado por scripts/_gen_tabla_cuckoo_20260712.py")
     ap(r"% Requiere: \usepackage{booktabs, longtable}")
     ap(r"\begingroup\scriptsize")
     ap(r"\begin{longtable}{lrrrrrrrrl}")
-    ap(r"\caption{Cuckoo Search: mejor resultado por instancia y parámetros"
-       r" de la corrida ganadora. Costos en la convención CARPLIB (servicio"
-       r" + deadheading; en val se aplica el ajuste $\delta$). Config:"
-       r" $P$~=~\texttt{solo\_p\_inter}, $B$~=~\texttt{binario\_capacidad},"
-       r" $R$~=~\texttt{pr\_aislado}, $W$~=~warm-start Path-Scanning con"
-       r" Path Relinking (campaña val/egl, presupuesto $10^6$ eval.\ /"
-       r" 300\,s). En \textbf{negritas}, costos que igualan la BKS.}"
-       r"\label{tab:cuckoo-por-instancia}\\")
-    enc = (r"Instancia & BKS & Costo & Gap\,\% & $t$(s) & nidos & $p_a$ &"
-           r" $\beta$ & $f_{pasos}$ & $p_{inter}$/cfg \\")
-    ap(r"\toprule"); ap(enc); ap(r"\midrule"); ap(r"\endfirsthead")
-    ap(r"\toprule"); ap(enc); ap(r"\midrule"); ap(r"\endhead")
+    ap(rf"\caption{{{t['caption']}}}\label{{{t['label']}}}\\")
+    ap(r"\toprule"); ap(t["enc"]); ap(r"\midrule"); ap(r"\endfirsthead")
+    ap(r"\toprule"); ap(t["enc"]); ap(r"\midrule"); ap(r"\endhead")
     ap(r"\bottomrule"); ap(r"\endfoot")
 
     gaps = []
@@ -145,14 +165,32 @@ def main() -> None:
            rf" {b['tiempo']:.0f} & {b['nidos']} & {b['pa']} & {b['beta']} &"
            rf" {fp} & {b['p_inter']}\,({b['origen']}) \\")
     ap(r"\midrule")
-    ap(rf"\multicolumn{{3}}{{l}}{{Gap medio: {statistics.mean(gaps):.2f}\%}}"
-       rf" & \multicolumn{{7}}{{l}}{{BKS alcanzadas:"
+    ap(rf"\multicolumn{{3}}{{l}}{{{t['resumen']}: {statistics.mean(gaps):.2f}\%}}"
+       rf" & \multicolumn{{7}}{{l}}{{{t['bks']}:"
        rf" {sum(1 for g in gaps if g <= 0.0001)}/{len(gaps)}}} \\")
     ap(r"\end{longtable}")
     ap(r"\endgroup")
+    destino.write_text("\n".join(L), encoding="utf-8")
+    print(f"[{idioma}] Filas: {len(filas)}  ->  {destino}")
 
-    DESTINO.write_text("\n".join(L), encoding="utf-8")
-    print(f"Filas: {len(filas)} (esperadas 87)  ->  {DESTINO}")
+
+def main() -> None:
+    deltas = _deltas()
+    small = _mejor_por_instancia(
+        [("experimentos_costo_fixed/cuckoo_*/final/*.csv", "?")])
+    grandes = _mejor_por_instancia(
+        [("experimentos_val_egl_20260710/cs_campana/cs_minigrid/"
+          "corrida_*/final/*.csv", "W")])
+
+    filas: list[tuple[str, dict]] = (
+        [(i, small[i]) for i in INSTANCIAS_SMALL if i in small]
+        + [(i, grandes[i]) for i in INSTANCIAS_VAL_GDB if i in grandes]
+        + [(i, grandes[i]) for i in INSTANCIAS_EGL if i in grandes]
+    )
+
+    _render(filas, deltas, "es", DESTINO)
+    _render(filas, deltas, "en",
+            RAIZ / "resultados" / "cuckoo_results_table_en_20260712.tex")
 
 
 if __name__ == "__main__":
