@@ -127,11 +127,12 @@ TEXTOS = {
             r" $B$~=~\texttt{binario\_capacidad}, $R$~=~\texttt{pr\_aislado}"
             r" (Path Relinking), $W$~=~Path-Scanning warm start with Path"
             r" Relinking (val/egl campaign, budget of $10^6$ evaluations /"
-            r" 300\,s per run). Costs matching the BKS are shown in"
-            r" \textbf{bold}."),
+            r" 300\,s per run). $\lambda$ is the L\'evy exponent of Yang \&"
+            r" Deb (2009) (named \texttt{beta\_levy} in the code). Costs"
+            r" matching the BKS are shown in \textbf{bold}."),
         "label": "tab:cuckoo-per-instance",
         "enc": (r"Instance & BKS & Cost & Gap\,\% & $t$(s) & nests & $p_a$"
-                r" & $\beta$ & $f_{steps}$ & $p_{inter}$/cfg \\"),
+                r" & $\lambda$ & $f_{steps}$ & $p_{inter}$/cfg \\"),
         "resumen": "Mean gap", "bks": "BKS reached",
     },
 }

@@ -62,11 +62,12 @@ the roulette-wheel selection of the onlookers.
     \item $c(s)$: pure cost of solution $s$.
     \item $\mathrm{viol}(s)$: total demand excess with respect to the vehicle
           capacity.
-    \item $f(s) = c(s) + \lambda \cdot \mathrm{viol}(s)$: penalized objective
-          ($\lambda > 0$).
+    \item $f(s) = c(s) + \omega \cdot \mathrm{viol}(s)$: penalized objective
+          ($\omega > 0$, capacity-penalty weight).
     \item $p_a \in (0,1)$: fraction of worst nests abandoned per iteration.
-    \item $\beta > 0$: shape parameter of the L\'evy flight ($\beta = 1.5$
-          classical).
+    \item $\lambda$: exponent of the L\'evy step-length distribution
+          ($\mathrm{L\acute{e}vy} \sim u = t^{-\lambda}$, $1 < \lambda \leq 3$;
+          Yang \& Deb use $\lambda = 1.5$).
     \item $L$: number of steps of the discrete L\'evy flight (random variable
           bounded to $[1, 12]$, see Section~\ref{sec:levy}).
     \item $P_{\mathrm{base}}$: base scale of the L\'evy steps.
@@ -114,7 +115,7 @@ approximated by the \emph{number of consecutive perturbations} $L$:
 
 \[
 x \sim |\mathcal{N}(0,\,1)|, \qquad
-L = \min\!\left(12,\; 1 + \left\lfloor x^{1/\beta} \cdot P_{\mathrm{base}} \right\rfloor\right).
+L = \min\!\left(12,\; 1 + \left\lfloor x^{1/\lambda} \cdot P_{\mathrm{base}} \right\rfloor\right).
 \]
 
 A large $x$ (tail of the normal distribution) produces a large $L$ and hence a
@@ -133,18 +134,18 @@ group is selected uniformly at random.
 % -------- Discrete Lévy flight (auxiliary) -------------------
 \begin{algorithm}[H]
 \DontPrintSemicolon
-\caption{DiscreteL\'evyFlight($s_{\mathrm{base}},\, P_{\mathrm{base}},\, \beta,\,
+\caption{DiscreteL\'evyFlight($s_{\mathrm{base}},\, P_{\mathrm{base}},\, \lambda,\,
          \mathcal{O}_{\mathrm{group}}$)}
 \label{alg:levy}
 
 \KwIn{Base solution $s_{\mathrm{base}}$;\; scale $P_{\mathrm{base}}$;\;
-      parameter $\beta$;\; operator group $\mathcal{O}_{\mathrm{group}}$}
+      exponent $\lambda$;\; operator group $\mathcal{O}_{\mathrm{group}}$}
 \KwOut{Cuckoo solution $s'$;\; list of applied moves $\mathbf{m}$}
 
 \BlankLine
 $x \leftarrow |{\cal N}(0,1)|$
     \tcp{absolute value of a standard normal sample}
-$L \leftarrow \min\!\left(12,\; 1 + \lfloor x^{1/\beta} \cdot
+$L \leftarrow \min\!\left(12,\; 1 + \lfloor x^{1/\lambda} \cdot
     \max(1, P_{\mathrm{base}}) \rfloor\right)$
     \tcp{number of flight steps; bounded to $[1,12]$}
 $s' \leftarrow$ copy of $s_{\mathrm{base}}$ \;
@@ -166,7 +167,7 @@ $\mathbf{m} \leftarrow [\,]$ \;
 \label{alg:cuckoo}
 
 \KwIn{CARP instance $G$;\; initial solution $s_0$;\;
-      $p_a$;\; $\beta$;\; $p_{\mathrm{inter}}$;\; $\lambda$;\;
+      $p_a$;\; $\lambda$;\; $p_{\mathrm{inter}}$;\; $\omega$;\;
       optionally: $K$, $P_{\mathrm{base}}$, $\mathit{iterations}$,
       $M$ (all instance-aware when omitted)}
 \KwOut{Best solution found $s^{*}$}
@@ -216,7 +217,7 @@ $\mathit{iter\_no\_improve} \leftarrow 0$ \;
             \mathrm{viol}(N[i]),\,
             \mathcal{O}_{\mathrm{inter}},\, \mathcal{O}_{\mathrm{intra}}$) \;
         $(\mathit{ck}[i],\, \mathbf{m}[i]) \leftarrow$ \textsc{DiscreteL\'evyFlight}($N[i],\,
-            P_{\mathrm{base}},\, \beta,\, \mathcal{O}_{\mathrm{group}}$) \;
+            P_{\mathrm{base}},\, \lambda,\, \mathcal{O}_{\mathrm{group}}$) \;
         \ForEach{$m \in \mathbf{m}[i]$}{\textsc{Propose}($m$)} \;
     }
 
@@ -254,7 +255,7 @@ $\mathit{iter\_no\_improve} \leftarrow 0$ \;
         \mathcal{O}_{\mathrm{inter}},\, \mathcal{O}_{\mathrm{intra}}$) \;
     \ForEach{$k \in \mathit{worst}$}{
         $(N[k],\, \mathbf{m}_{\mathrm{ab}}) \leftarrow$ \textsc{DiscreteL\'evyFlight}($N[j^{*}],\,
-            P_{\mathrm{base}},\, \beta,\, \mathcal{O}_{\mathrm{ab}}$)
+            P_{\mathrm{base}},\, \lambda,\, \mathcal{O}_{\mathrm{ab}}$)
             \tcp{L\'evy flight from the current best nest}
         \ForEach{$m \in \mathbf{m}_{\mathrm{ab}}$}{\textsc{Propose}($m$)} \;
         \tcp{(evaluation included in the final block)}
@@ -315,11 +316,11 @@ ABC, scouts replace exhausted sources with completely random solutions (pure
 exploration). Cuckoo Search tends to explore around the best-known region;
 simple ABC keeps a higher global diversification.
 
-\paragraph{Parameter $\beta$.}
-The classical value of Yang \& Deb is $\beta = 1.5$. Smaller values (e.g.,
-$\beta = 1.2$) yield heavier-tailed distributions: more long jumps, more
-exploration but less local precision. Larger values (e.g., $\beta = 2.0$)
+\paragraph{Parameter $\lambda$.}
+The classical value of Yang \& Deb is $\lambda = 1.5$. Smaller values (e.g.,
+$\lambda = 1.2$) yield heavier-tailed distributions: more long jumps, more
+exploration but less local precision. Larger values (e.g., $\lambda = 2.0$)
 produce shorter steps, favoring exploitation. In MetaCARP, the calibrated value
-$\beta = 1.3$ is used as default for the experimental campaigns.
+$\lambda = 1.3$ is used as default for the experimental campaigns.
 
 \end{document}

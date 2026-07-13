@@ -2,13 +2,13 @@
 % Requiere: \usepackage{booktabs, longtable}
 \begingroup\scriptsize
 \begin{longtable}{lrrrrrrrrl}
-\caption{Cuckoo Search: best result per instance and parameters of the winning run. Costs follow the CARPLIB convention (servicing + deadheading; the constant $\delta$ adjustment is applied on the val family). Config: $P$~=~\texttt{solo\_p\_inter}, $B$~=~\texttt{binario\_capacidad}, $R$~=~\texttt{pr\_aislado} (Path Relinking), $W$~=~Path-Scanning warm start with Path Relinking (val/egl campaign, budget of $10^6$ evaluations / 300\,s per run). Costs matching the BKS are shown in \textbf{bold}.}\label{tab:cuckoo-per-instance}\\
+\caption{Cuckoo Search: best result per instance and parameters of the winning run. Costs follow the CARPLIB convention (servicing + deadheading; the constant $\delta$ adjustment is applied on the val family). Config: $P$~=~\texttt{solo\_p\_inter}, $B$~=~\texttt{binario\_capacidad}, $R$~=~\texttt{pr\_aislado} (Path Relinking), $W$~=~Path-Scanning warm start with Path Relinking (val/egl campaign, budget of $10^6$ evaluations / 300\,s per run). $\lambda$ is the L\'evy exponent of Yang \& Deb (2009) (named \texttt{beta\_levy} in the code). Costs matching the BKS are shown in \textbf{bold}.}\label{tab:cuckoo-per-instance}\\
 \toprule
-Instance & BKS & Cost & Gap\,\% & $t$(s) & nests & $p_a$ & $\beta$ & $f_{steps}$ & $p_{inter}$/cfg \\
+Instance & BKS & Cost & Gap\,\% & $t$(s) & nests & $p_a$ & $\lambda$ & $f_{steps}$ & $p_{inter}$/cfg \\
 \midrule
 \endfirsthead
 \toprule
-Instance & BKS & Cost & Gap\,\% & $t$(s) & nests & $p_a$ & $\beta$ & $f_{steps}$ & $p_{inter}$/cfg \\
+Instance & BKS & Cost & Gap\,\% & $t$(s) & nests & $p_a$ & $\lambda$ & $f_{steps}$ & $p_{inter}$/cfg \\
 \midrule
 \endhead
 \bottomrule
