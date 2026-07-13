@@ -1,0 +1,50 @@
+% ============================================================================
+% Neighborhood (move) operators of MetaCARP — article-ready table (English).
+% Source of truth: metacarp/vecindarios.py and docs/markdown/es/vecindarios_revisados/.
+% Requires: \usepackage{booktabs}. Generated/updated: 2026-07-12.
+% ============================================================================
+\begin{table}[htbp]
+\centering
+\caption{Neighborhood operators shared by all metaheuristics. Solutions are
+sets of routes (sequences of required edges); every move preserves the task
+multiset, so feasibility only depends on capacity. Intra-route operators
+reorder tasks within one route; inter-route operators move tasks across two
+routes ($r_a \neq r_b$). At each iteration the operator group is chosen with
+probability $P(\text{inter}) = p_{inter}$, raised to
+$\max(p_{inter}, 0.8)$ under capacity violation, and the operator is drawn
+uniformly within the group.}
+\label{tab:neighborhood-operators}
+\small
+\begin{tabular}{llp{7.2cm}c}
+\toprule
+Operator & Scope & Move & $|r|$ pres.$^{\mathrm{a}}$ \\
+\midrule
+\texttt{relocate}      & intra & Remove the task at position $i$ and reinsert
+                                 it at position $j$ of the same route. & \checkmark \\
+\texttt{swap}          & intra & Exchange the tasks at positions $i$ and $j$
+                                 of the same route. & \checkmark \\
+\texttt{2-opt}         & intra & Reverse the task segment $[i..j]$ within the
+                                 route (arc-routing analogue of TSP 2-opt). & \checkmark \\
+\midrule
+\texttt{relocate}      & inter & Remove the task at position $i$ of route
+                                 $r_a$ and insert it at position $j$ of route
+                                 $r_b$; may empty $r_a$. & -- \\
+\texttt{swap}          & inter & Exchange one task of $r_a$ with one task of
+                                 $r_b$. & \checkmark \\
+\texttt{2-opt$^{*}$}   & inter & Split each route at a cut point and exchange
+                                 the tails: $r_a$ keeps its head and adopts the
+                                 tail of $r_b$, and vice versa. & -- \\
+\texttt{cross-exchange}& inter & Exchange a contiguous segment $[i..j]$ of
+                                 $r_a$ with a contiguous segment $[k..l]$ of
+                                 $r_b$; segment lengths may differ (most
+                                 disruptive move). & -- \\
+\texttt{Or-opt-2}      & inter & Relocate a block of 2 consecutive tasks from
+                                 $r_a$ into a position of $r_b$, preserving the
+                                 block order. & -- \\
+\texttt{Or-opt-3}      & inter & Same as Or-opt-2 with a block of 3 consecutive
+                                 tasks. & -- \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize $^{\mathrm{a}}$\;\checkmark: route
+cardinalities are preserved; --: route sizes may change.}
+\end{tabular}
+\end{table}
