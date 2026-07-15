@@ -41,15 +41,18 @@ intermediate, so it never worsens $s$.
 
 \KwIn{CARP instance; $T_0 = 20\,d_{\max}/n$; $T_{\min} = 10^{-3}$; cooling
       factor $\alpha$; chain length $L = n^2$; reheat fraction $\rho$;
-      inter-route bias $p_{inter}$; penalty weight $\omega$;
-      max evaluations $10^6$ or max time 300\,s}
+      patience $P = 10$; stale-reheat limit $R = 10$; inter-route bias
+      $p_{inter}$; penalty weight $\omega$; max evaluations $10^6$ or max
+      time 300\,s}
 \KwOut{Best solution found $s^{*}$}
 
 \BlankLine
 $s \leftarrow$ initial solution (precomputed greedy construction);\quad
 $s^{*} \leftarrow s$;\quad $T \leftarrow T_0$\;
-\While{evals $< 10^6$ \textbf{and} time $< 300$\,s \textbf{and}
-       reheats without improvement $< 10$}{
+$u \leftarrow 0$ \tcp*{consecutive levels without improving $s^{*}$}
+$r \leftarrow 0$ \tcp*{consecutive reheats without improving $s^{*}$}
+\While{$T > T_{\min}$ \textbf{and} $r < R$ \textbf{and} evals $< 10^6$
+       \textbf{and} time $< 300$\,s}{
   \For(\tcp*[f]{Markov chain at level $T$}){$\ell \leftarrow 1$ \KwTo $L$}{
     $\mathcal{O} \leftarrow$ inter-route group with prob.\
     $\max(p_{inter}, 0.8 \cdot \mathbb{1}[\text{violation}])$, intra-route
@@ -60,11 +63,16 @@ $s^{*} \leftarrow s$;\quad $T \leftarrow T_0$\;
          \exp(-\Delta/T)$}{$s \leftarrow s'$}
     \lIf{$f(s) < f(s^{*})$}{$s^{*} \leftarrow s$}
   }
-  $T \leftarrow \max(\alpha T,\, T_{\min})$\;
-  \lIf(\tcp*[f]{reheat}){10 levels without improving
-      $s^{*}$}{$T \leftarrow \rho\, T_0$}
-  \lIf(\tcp*[f]{intensification}){30 levels without improving
-      $s^{*}$}{$s \leftarrow \mathrm{PathRelinking}(s, s^{*})$}
+  \leIf{$s^{*}$ improved during this level}{$u \leftarrow 0$}{
+      $u \leftarrow u + 1$}
+  \uIf(\tcp*[f]{reheating}){$u \geq P$}{
+    $T \leftarrow \rho\, T_0$;\quad $u \leftarrow 0$\;
+    \leIf{$s^{*}$ improved since the previous reheat}{$r \leftarrow 0$}{
+        $r \leftarrow r + 1$}
+  }
+  \lElse(\tcp*[f]{geometric cooling}){$T \leftarrow \alpha\, T$}
+  \lIf(\tcp*[f]{intensification}){30 consecutive non-improving
+      levels}{$s \leftarrow \mathrm{PathRelinking}(s, s^{*})$}
 }
 \Return $s^{*}$\;
 \end{algorithm}

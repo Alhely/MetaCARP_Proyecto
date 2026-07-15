@@ -1,0 +1,30 @@
+% ============================================================================
+% Article paragraph: the reheating mechanism of SA (MetaCARP).
+% Source of truth: metacarp/recocido_simulado.py (patience, reheat_factor,
+% max_reheats_sin_mejora). Generated: 2026-07-15.
+% ============================================================================
+\paragraph{Reheating.}
+A geometrically cooled SA eventually degenerates into greedy descent: once
+$T$ is nearly zero the Metropolis rule rejects virtually every worsening
+move, and the search freezes in the current basin of attraction. Our
+implementation counters this with a \emph{reheating} mechanism driven by a
+patience counter. At the end of every temperature level (a Markov chain of
+$L = n^2$ evaluations), the incumbent $s^{*}$ is compared against its value
+before the level: if it did not improve, a counter $u$ of consecutive
+non-improving levels increases, and it resets to zero otherwise. When
+$u \geq P$ (patience $P = 10$ levels), the temperature is restored to
+$T \leftarrow \rho\, T_0$ with $\rho = 0.5$ --- half of the instance-aware
+initial temperature --- and $u$ resets; the incumbent is always preserved,
+so reheating re-enables uphill moves without discarding the best solution
+found. Reheating also provides the practical stopping criterion of the
+algorithm: at each reheat, the incumbent is compared against its value at
+the previous reheat, and a second counter $r$ of consecutive
+\emph{stale} reheats (reheats that produced no global improvement)
+increases or resets accordingly. The run stops when $r \geq R$ (with
+$R = 10$, calibrated by grid search over $\{3, 5, 10\}$), when the
+classical condition $T \leq T_{\min}$ is met, or when the evaluation/time
+budget is exhausted, whichever comes first. Intuitively, the pair $(P, R)$
+grants the search up to $R$ ``second chances'', each consisting of $P$
+levels of renewed exploration at temperature $\rho\, T_0$; the calibration
+preferred the most patient setting, indicating that on CARP landscapes
+late reheats still pay off within the budget.
