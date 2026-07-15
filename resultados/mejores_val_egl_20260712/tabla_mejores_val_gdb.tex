@@ -4,53 +4,53 @@
 \caption{Mejor costo por instancia (clase val + gdb restantes). Presupuesto uniforme $10^6$ evaluaciones / 300\,s por corrida, 5 repeticiones; se reporta el mejor costo en la escala de la referencia BKS (en la familia val se aplica el ajuste constante de escala $\delta$ documentado en el texto). En \textbf{negritas}, el ganador por instancia; con estrella ($\star$), los que igualan la BKS.}
 \label{tab:mejores-val-gdb}
 \small
-\begin{tabular}{lrrrrrr}
+\begin{tabular}{lrrrrrrr}
 \toprule
-Instancia & Ref. & SA & TS & RTS & ABC & CS \\
+Instancia & Ref. & SA & TS & RTS & ABC & CS & VDO \\
 \midrule
-\texttt{val1A} & 247 & $\mathbf{247}^{\star}$ & $\mathbf{247}^{\star}$ & $\mathbf{247}^{\star}$ & $\mathbf{247}^{\star}$ & $\mathbf{247}^{\star}$ \\
-\texttt{val1B} & 247 & $\mathbf{252}$ & $279$ & $259$ & $257$ & $270$ \\
-\texttt{val1C} & 319 & $343$ & $348$ & $346$ & $\mathbf{324}$ & $338$ \\
-\texttt{val2A} & 298 & $\mathbf{298}^{\star}$ & $\mathbf{298}^{\star}$ & $\mathbf{298}^{\star}$ & $\mathbf{298}^{\star}$ & $\mathbf{298}^{\star}$ \\
-\texttt{val2B} & 330 & $331$ & $\mathbf{330}^{\star}$ & $331$ & $338$ & $339$ \\
-\texttt{val2C} & 528 & $554$ & $\mathbf{548}$ & $558$ & $558$ & $560$ \\
-\texttt{val3A} & 105 & $\mathbf{105}^{\star}$ & $\mathbf{105}^{\star}$ & $\mathbf{105}^{\star}$ & $\mathbf{105}^{\star}$ & $\mathbf{105}^{\star}$ \\
-\texttt{val3B} & 111 & $113$ & $112$ & $112$ & $\mathbf{111}^{\star}$ & $112$ \\
-\texttt{val3C} & 162 & $172$ & $166$ & $\mathbf{162}^{\star}$ & $171$ & $167$ \\
-\texttt{val4A} & 522 & $\mathbf{522}^{\star}$ & $563$ & $536$ & $534$ & $530$ \\
-\texttt{val4B} & 534 & $\mathbf{536}$ & $580$ & $551$ & $570$ & $560$ \\
-\texttt{val4C} & 550 & $\mathbf{560}$ & $641$ & $603$ & $615$ & $602$ \\
-\texttt{val4D} & 650 & $\mathbf{674}$ & $717$ & $713$ & $758$ & $720$ \\
-\texttt{val5A} & 566 & $\mathbf{570}$ & $599$ & $576$ & $598$ & $588$ \\
-\texttt{val5B} & 589 & $\mathbf{594}$ & $635$ & $608$ & $609$ & $613$ \\
-\texttt{val5C} & 617 & $\mathbf{621}$ & $669$ & $650$ & $643$ & $645$ \\
-\texttt{val5D} & 718 & $\mathbf{749}$ & $797$ & $786$ & $813$ & $801$ \\
-\texttt{val6A} & 330 & $\mathbf{330}^{\star}$ & $332$ & $\mathbf{330}^{\star}$ & $334$ & $332$ \\
-\texttt{val6B} & 340 & $\mathbf{346}$ & $348$ & $350$ & $348$ & $356$ \\
-\texttt{val6C} & 424 & $\mathbf{434}$ & $436$ & $\mathbf{434}$ & $449$ & $442$ \\
-\texttt{val7A} & 382 & $\mathbf{386}$ & $427$ & $405$ & $396$ & $393$ \\
-\texttt{val7B} & 386 & $\mathbf{386}^{\star}$ & $419$ & $405$ & $426$ & $407$ \\
-\texttt{val7C} & 437 & $\mathbf{448}$ & $511$ & $472$ & $484$ & $488$ \\
-\texttt{val8A} & 522 & $\mathbf{523}$ & $545$ & $541$ & $556$ & $546$ \\
-\texttt{val8B} & 531 & $\mathbf{537}$ & $563$ & $556$ & $589$ & $547$ \\
-\texttt{val8C} & 657 & $\mathbf{691}$ & $774$ & $749$ & $759$ & $716$ \\
-\texttt{val9A} & 450 & $\mathbf{453}$ & $485$ & $474$ & $477$ & $483$ \\
-\texttt{val9B} & 453 & $\mathbf{457}$ & $500$ & $479$ & $494$ & $504$ \\
-\texttt{val9C} & 459 & $\mathbf{459}^{\star}$ & $513$ & $496$ & $497$ & $503$ \\
-\texttt{val9D} & 515 & $\mathbf{538}$ & $584$ & $587$ & $629$ & $574$ \\
-\texttt{val10A} & 637 & $\mathbf{637}^{\star}$ & $668$ & $660$ & $661$ & $659$ \\
-\texttt{val10B} & 645 & $\mathbf{646}$ & $694$ & $671$ & $678$ & $667$ \\
-\texttt{val10C} & 655 & $\mathbf{657}$ & $709$ & $691$ & $702$ & $694$ \\
-\texttt{val10D} & 734 & $\mathbf{755}$ & $826$ & $800$ & $831$ & $798$ \\
-\texttt{gdb8} & 348 & $\mathbf{354}$ & $\mathbf{354}$ & $\mathbf{354}$ & $364$ & $368$ \\
-\texttt{gdb9} & 303 & $\mathbf{317}$ & $321$ & $323$ & $342$ & $320$ \\
-\texttt{gdb11} & 395 & $\mathbf{395}^{\star}$ & $399$ & $399$ & $399$ & $426$ \\
-\texttt{gdb18} & 164 & $\mathbf{164}^{\star}$ & $\mathbf{164}^{\star}$ & $\mathbf{164}^{\star}$ & $\mathbf{164}^{\star}$ & $\mathbf{164}^{\star}$ \\
-\texttt{gdb22} & 200 & $\mathbf{200}^{\star}$ & $\mathbf{200}^{\star}$ & $\mathbf{200}^{\star}$ & $202$ & $204$ \\
-\texttt{gdb23} & 233 & $\mathbf{233}^{\star}$ & $243$ & $245$ & $243$ & $243$ \\
+\texttt{val1A} & 247 & $\mathbf{247}^{\star}$ & $\mathbf{247}^{\star}$ & $\mathbf{247}^{\star}$ & $\mathbf{247}^{\star}$ & $\mathbf{247}^{\star}$ & $256$ \\
+\texttt{val1B} & 247 & $\mathbf{252}$ & $279$ & $259$ & $257$ & $270$ & $293$ \\
+\texttt{val1C} & 319 & $343$ & $348$ & $346$ & $\mathbf{324}$ & $338$ & $395$ \\
+\texttt{val2A} & 298 & $\mathbf{298}^{\star}$ & $\mathbf{298}^{\star}$ & $\mathbf{298}^{\star}$ & $\mathbf{298}^{\star}$ & $\mathbf{298}^{\star}$ & $305$ \\
+\texttt{val2B} & 330 & $331$ & $\mathbf{330}^{\star}$ & $331$ & $338$ & $339$ & $343$ \\
+\texttt{val2C} & 528 & $554$ & $\mathbf{548}$ & $558$ & $558$ & $560$ & $597$ \\
+\texttt{val3A} & 105 & $\mathbf{105}^{\star}$ & $\mathbf{105}^{\star}$ & $\mathbf{105}^{\star}$ & $\mathbf{105}^{\star}$ & $\mathbf{105}^{\star}$ & $108$ \\
+\texttt{val3B} & 111 & $113$ & $112$ & $112$ & $\mathbf{111}^{\star}$ & $112$ & $116$ \\
+\texttt{val3C} & 162 & $172$ & $166$ & $\mathbf{162}^{\star}$ & $171$ & $167$ & $179$ \\
+\texttt{val4A} & 522 & $\mathbf{522}^{\star}$ & $563$ & $536$ & $534$ & $530$ & $625$ \\
+\texttt{val4B} & 534 & $\mathbf{536}$ & $580$ & $551$ & $570$ & $560$ & $654$ \\
+\texttt{val4C} & 550 & $\mathbf{560}$ & $641$ & $603$ & $615$ & $602$ & $765$ \\
+\texttt{val4D} & 650 & $\mathbf{674}$ & $717$ & $713$ & $758$ & $720$ & $922$ \\
+\texttt{val5A} & 566 & $\mathbf{570}$ & $599$ & $576$ & $598$ & $588$ & $594$ \\
+\texttt{val5B} & 589 & $\mathbf{594}$ & $635$ & $608$ & $609$ & $613$ & $657$ \\
+\texttt{val5C} & 617 & $\mathbf{621}$ & $669$ & $650$ & $643$ & $645$ & $711$ \\
+\texttt{val5D} & 718 & $\mathbf{749}$ & $797$ & $786$ & $813$ & $801$ & $882$ \\
+\texttt{val6A} & 330 & $\mathbf{330}^{\star}$ & $332$ & $\mathbf{330}^{\star}$ & $334$ & $332$ & $346$ \\
+\texttt{val6B} & 340 & $\mathbf{346}$ & $348$ & $350$ & $348$ & $356$ & $374$ \\
+\texttt{val6C} & 424 & $\mathbf{434}$ & $436$ & $\mathbf{434}$ & $449$ & $442$ & $452$ \\
+\texttt{val7A} & 382 & $\mathbf{386}$ & $427$ & $405$ & $396$ & $393$ & $423$ \\
+\texttt{val7B} & 386 & $\mathbf{386}^{\star}$ & $419$ & $405$ & $426$ & $407$ & $459$ \\
+\texttt{val7C} & 437 & $\mathbf{448}$ & $511$ & $472$ & $484$ & $488$ & $645$ \\
+\texttt{val8A} & 522 & $\mathbf{523}$ & $545$ & $541$ & $556$ & $546$ & $556$ \\
+\texttt{val8B} & 531 & $\mathbf{537}$ & $563$ & $556$ & $589$ & $547$ & $579$ \\
+\texttt{val8C} & 657 & $\mathbf{691}$ & $774$ & $749$ & $759$ & $716$ & $812$ \\
+\texttt{val9A} & 450 & $\mathbf{453}$ & $485$ & $474$ & $477$ & $483$ & $521$ \\
+\texttt{val9B} & 453 & $\mathbf{457}$ & $500$ & $479$ & $494$ & $504$ & $947$ \\
+\texttt{val9C} & 459 & $\mathbf{459}^{\star}$ & $513$ & $496$ & $497$ & $503$ & $977$ \\
+\texttt{val9D} & 515 & $\mathbf{538}$ & $584$ & $587$ & $629$ & $574$ & $960$ \\
+\texttt{val10A} & 637 & $\mathbf{637}^{\star}$ & $668$ & $660$ & $661$ & $659$ & $725$ \\
+\texttt{val10B} & 645 & $\mathbf{646}$ & $694$ & $671$ & $678$ & $667$ & $1236$ \\
+\texttt{val10C} & 655 & $\mathbf{657}$ & $709$ & $691$ & $702$ & $694$ & $975$ \\
+\texttt{val10D} & 734 & $\mathbf{755}$ & $826$ & $800$ & $831$ & $798$ & $887$ \\
+\texttt{gdb8} & 348 & $\mathbf{354}$ & $\mathbf{354}$ & $\mathbf{354}$ & $364$ & $368$ & $393$ \\
+\texttt{gdb9} & 303 & $\mathbf{317}$ & $321$ & $323$ & $342$ & $320$ & $359$ \\
+\texttt{gdb11} & 395 & $\mathbf{395}^{\star}$ & $399$ & $399$ & $399$ & $426$ & $424$ \\
+\texttt{gdb18} & 164 & $\mathbf{164}^{\star}$ & $\mathbf{164}^{\star}$ & $\mathbf{164}^{\star}$ & $\mathbf{164}^{\star}$ & $\mathbf{164}^{\star}$ & $168$ \\
+\texttt{gdb22} & 200 & $\mathbf{200}^{\star}$ & $\mathbf{200}^{\star}$ & $\mathbf{200}^{\star}$ & $202$ & $204$ & $206$ \\
+\texttt{gdb23} & 233 & $\mathbf{233}^{\star}$ & $243$ & $245$ & $243$ & $243$ & $249$ \\
 \midrule
-Gap medio vs ref. & -- & 1.6\% & 6.7\% & 4.5\% & 6.2\% & 5.3\% \\
-Victorias & -- & 35 & 8 & 9 & 6 & 4 \\
+Gap medio vs ref. & -- & 1.6\% & 6.7\% & 4.5\% & 6.2\% & 5.3\% & 23.7\% \\
+Victorias & -- & 35 & 8 & 9 & 6 & 4 & 0 \\
 \bottomrule
 \end{tabular}
 \end{table}

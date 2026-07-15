@@ -1,0 +1,29 @@
+{
+  "mh": "vdo",
+  "modulo": "metacarp.vibration_damping",
+  "experimento": "val_egl_20260710",
+  "approach": "pr_aislado",
+  "umbral_pr": 30,
+  "max_evaluaciones_objetivo": 100000,
+  "tiempo_limite_segundos": 10.0,
+  "clases": {
+    "val": {
+      "instancias": [
+        "val1A"
+      ],
+      "config_fija": {
+        "p_inter": 0.5
+      }
+    },
+    "egl": {
+      "instancias": [
+        "egl-e1-A"
+      ],
+      "config_fija": {
+        "p_inter": 0.6
+      }
+    }
+  },
+  "repeticiones": 1,
+  "semilla_base": 0
+}

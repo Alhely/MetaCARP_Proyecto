@@ -1,0 +1,36 @@
+% ============================================================================
+% Article paragraph: grid search and general calibration of SA (MetaCARP).
+% Source: docs/latex/es/metaheuristicas/recocido_simulado.tex and the
+% June/July campaign logs. Generated: 2026-07-15.
+% ============================================================================
+\paragraph{Calibration and grid search.}
+Most SA parameters are set by \emph{instance-aware} rules rather than
+tuning: the initial temperature $T_0 = 20\, d_{\max}/n$ (where $d_{\max}$ is
+the largest shortest-path distance and $n$ the number of required tasks),
+the Markov-chain length $L = n^2$, the minimum temperature
+$T_{\min} = 10^{-3}$, the reheating fraction $\rho = 0.5$, and a patience of
+10 temperature levels before reheating. Only the two knobs that govern the
+exploration--exploitation balance were calibrated by grid search on a
+23-instance training set of small benchmarks (gdb/kshs): the cooling factor
+$\alpha \in \{0.80, 0.82, 0.84, 0.86, 0.88, 0.90, 0.92, 0.94, 0.96, 0.98,
+0.99\}$ crossed with the inter-route bias $p_{inter} \in \{0.4, 0.5, 0.6,
+0.7, 0.8\}$, i.e.\ 55 combinations $\times$ 23 instances $\times$ 2
+repetitions $= 2{,}530$ runs with deterministic per-run seeding. The winning
+setting was $\alpha = 0.9$, $p_{inter} = 0.5$. A second, one-dimensional
+pass then tuned the stopping criterion --- the maximum number of consecutive
+reheats without global improvement --- over $\{3, 5, 10\}$; the value 10 won
+with a mean gap of $2.90\%$ against $3.08\%$ and $3.20\%$. With this fixed
+configuration, SA reached a best-per-instance mean gap of $0.08\%$ and 21/23
+best-known solutions on the training set. For the large egl instances the
+calibrated knobs were transferred with two size-motivated adjustments:
+$\alpha = 0.95$, since the chain $L = n^2$ is already very long and slower
+cooling exploits more levels within the budget, and $p_{inter} = 0.6$, on
+the rationale that more vehicles imply more inter-route redistribution. All
+egl runs share a uniform budget of $10^6$ cost evaluations or 300\,s of wall
+clock, whichever is reached first; since SA exposes no iteration cap, the
+wall-clock limit (checked once per temperature level) is the binding
+criterion on this class. The operator-level analysis of
+Table~\ref{tab:sa-operator-analysis} revisits the $p_{inter} = 0.6$ transfer
+choice critically: on large instances the acceptance rate of inter-route
+moves collapses, so a majority of the evaluation budget is spent on
+proposals that the Metropolis rule almost always rejects.

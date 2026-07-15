@@ -18,6 +18,11 @@ Los parámetros por fila se toman DEL CSV de la corrida ganadora
 (num_nidos_efectivo, pa_abandono, beta_levy, factor_pasos, p_inter), no de
 tablas manuales, para trazabilidad completa.
 
+Debajo de cada fila se imprime la MEJOR SOLUCIÓN encontrada como arreglo de
+arcos: cada marcador TRk de ``mejor_solucion_tr_legible`` se traduce a la
+arista requerida (u,v) del pickle (campo ``nodos``); las rutas se separan
+con ``|`` y el depósito es implícito en los extremos de cada ruta.
+
 Salidas (longtable, mismos datos, dos idiomas):
     resultados/tabla_cuckoo_por_instancia_20260712.tex     (español)
     resultados/cuckoo_results_table_en_20260712.tex        (inglés, para el
@@ -66,6 +71,37 @@ def _deltas() -> dict[str, float]:
     return out
 
 
+def _mapas_tr() -> dict[str, dict[str, tuple[int, int]]]:
+    """{instancia: {"TRk": (u, v)}} desde los pickles."""
+    out: dict[str, dict[str, tuple[int, int]]] = {}
+    for ruta in glob.glob(str(RAIZ / "PickleInstances" / "*.pkl")):
+        d = pickle.load(open(ruta, "rb"))
+        nombre = d.get("NOMBRE") or Path(ruta).stem
+        out[nombre] = {a["tarea"]: tuple(a["nodos"])
+                       for a in d["LISTA_ARISTAS_REQ"]}
+    return out
+
+
+def _solucion_arcos(tr_str: str, mapa: dict[str, tuple[int, int]]) -> str:
+    """Traduce "R1: D -> TR1 -> ... -> D || R2: ..." a arcos compactos.
+
+    Salida: "(1,2),(2,3) | (4,5),(5,6)" — rutas separadas por '|', depósito
+    implícito. Los TR sin mapa (no debería ocurrir) se dejan literales.
+    """
+    rutas = []
+    for ruta in tr_str.split("||"):
+        arcos = []
+        for tok in ruta.split("->"):
+            tok = tok.split(":")[-1].strip()  # quita el prefijo "Rk:"
+            if not tok.startswith("TR"):
+                continue  # depósito u otro marcador
+            uv = mapa.get(tok)
+            arcos.append(f"({uv[0]},{uv[1]})" if uv else tok)
+        if arcos:
+            rutas.append(",".join(arcos))
+    return " | ".join(rutas)
+
+
 def _mejor_por_instancia(patrones: list[tuple[str, str]]) -> dict[str, dict]:
     """{(instancia): fila ganadora con origen}. patrones = [(glob, origen)]."""
     mejores: dict[str, dict] = {}
@@ -97,6 +133,8 @@ def _mejor_por_instancia(patrones: list[tuple[str, str]]) -> dict[str, dict]:
                             "beta": fila.get("beta_levy", "--"),
                             "fpasos": fila.get("factor_pasos") or "--",
                             "p_inter": fila.get("p_inter") or "--",
+                            "sol_tr": fila.get(
+                                "mejor_solucion_tr_legible", ""),
                         }
     return mejores
 
@@ -112,7 +150,10 @@ TEXTOS = {
             r" $B$~=~\texttt{binario\_capacidad}, $R$~=~\texttt{pr\_aislado},"
             r" $W$~=~warm-start Path-Scanning con Path Relinking (campaña"
             r" val/egl, presupuesto $10^6$ eval.\ / 300\,s). En"
-            r" \textbf{negritas}, costos que igualan la BKS."),
+            r" \textbf{negritas}, costos que igualan la BKS. Bajo cada fila"
+            r" se lista la mejor solución como arreglo de arcos requeridos"
+            r" $(u,v)$: rutas separadas por $|$, depósito implícito en los"
+            r" extremos de cada ruta."),
         "label": "tab:cuckoo-por-instancia",
         "enc": (r"Instancia & BKS & Costo & Gap\,\% & $t$(s) & nidos & $p_a$"
                 r" & $\beta$ & $f_{pasos}$ & $p_{inter}$/cfg \\"),
@@ -129,7 +170,10 @@ TEXTOS = {
             r" Relinking (val/egl campaign, budget of $10^6$ evaluations /"
             r" 300\,s per run). $\lambda$ is the L\'evy exponent of Yang \&"
             r" Deb (2009) (named \texttt{beta\_levy} in the code). Costs"
-            r" matching the BKS are shown in \textbf{bold}."),
+            r" matching the BKS are shown in \textbf{bold}. Below each row,"
+            r" the best solution is listed as an array of required edges"
+            r" $(u,v)$: routes are separated by $|$ and the depot is"
+            r" implicit at both ends of every route."),
         "label": "tab:cuckoo-per-instance",
         "enc": (r"Instance & BKS & Cost & Gap\,\% & $t$(s) & nests & $p_a$"
                 r" & $\lambda$ & $f_{steps}$ & $p_{inter}$/cfg \\"),
@@ -139,6 +183,7 @@ TEXTOS = {
 
 
 def _render(filas: list[tuple[str, dict]], deltas: dict[str, float],
+            mapas: dict[str, dict[str, tuple[int, int]]],
             idioma: str, destino: Path) -> None:
     """Escribe la longtable en el idioma pedido a partir de las filas."""
     t = TEXTOS[idioma]
@@ -165,6 +210,13 @@ def _render(filas: list[tuple[str, dict]], deltas: dict[str, float],
         ap(rf"\texttt{{{inst}}} & {b['bks']:.0f} & {ctxt} & {gap:.2f} &"
            rf" {b['tiempo']:.0f} & {b['nidos']} & {b['pa']} & {b['beta']} &"
            rf" {fp} & {b['p_inter']}\,({b['origen']}) \\")
+        # Fila de ancho completo con la mejor solución como arcos (u,v).
+        sol = _solucion_arcos(b.get("sol_tr", ""), mapas.get(inst, {}))
+        if sol:
+            # Espacios tras cada arco para permitir cortes de línea.
+            sol = sol.replace("),(", "), (")
+            ap(rf"\multicolumn{{10}}{{p{{0.96\linewidth}}}}"
+               rf"{{\tiny\raggedright\arraybackslash {sol}}} \\[2pt]")
     ap(r"\midrule")
     ap(rf"\multicolumn{{3}}{{l}}{{{t['resumen']}: {statistics.mean(gaps):.2f}\%}}"
        rf" & \multicolumn{{7}}{{l}}{{{t['bks']}:"
@@ -177,6 +229,7 @@ def _render(filas: list[tuple[str, dict]], deltas: dict[str, float],
 
 def main() -> None:
     deltas = _deltas()
+    mapas = _mapas_tr()
     small = _mejor_por_instancia(
         [("experimentos_costo_fixed/cuckoo_*/final/*.csv", "?")])
     grandes = _mejor_por_instancia(
@@ -189,8 +242,8 @@ def main() -> None:
         + [(i, grandes[i]) for i in INSTANCIAS_EGL if i in grandes]
     )
 
-    _render(filas, deltas, "es", DESTINO)
-    _render(filas, deltas, "en",
+    _render(filas, deltas, mapas, "es", DESTINO)
+    _render(filas, deltas, mapas, "en",
             RAIZ / "resultados" / "cuckoo_results_table_en_20260712.tex")
 
 

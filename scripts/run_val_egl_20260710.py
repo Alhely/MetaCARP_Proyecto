@@ -186,6 +186,14 @@ CONFIG_POR_MH: dict[str, dict[str, dict]] = {
         "val": {"num_fuentes": 30, "p_inter": 0.5},
         "egl": {"num_fuentes": 30, "p_inter": 0.6},
     },
+    "vdo": {
+        # VDO no tiene calibración propia: usa los defaults instance-aware
+        # (A0 = 20·d_max/n, sigma = A0/2, gamma = 0.05, L = n²) con el mismo
+        # criterio de clase que las demás MH para p_inter. ``max_niveles``
+        # se resuelve por INSTANCIA (cap de evaluaciones / n²).
+        "val": {"p_inter": 0.5},
+        "egl": {"p_inter": 0.6},
+    },
 }
 
 # Umbral de PR (mismo que _pr_aislado_20260531_common.py). Fijo, no se calibra.
@@ -209,6 +217,7 @@ MH_MODULOS: dict[str, str] = {
     "ts":  "metacarp.busqueda_tabu_simple",
     "rts": "metacarp.busqueda_tabu_reactiva",
     "abc": "metacarp.abejas_simple",
+    "vdo": "metacarp.vibration_damping",
 }
 
 
@@ -393,6 +402,18 @@ def _construir_kwargs(tarea: Tarea) -> dict:
             max_iter_sin_mejora=iteraciones,
             p_inter=float(cfg_mh["p_inter"]),
         )
+    elif tarea.mh == "vdo":
+        # VDO evalúa 1 vecino por iteración con L = n² iteraciones por nivel
+        # de amplitud, así que el cap de evaluaciones se traduce a un cap de
+        # NIVELES: max_niveles = 1e6 / n². El resto de parámetros usa los
+        # defaults instance-aware del módulo (A0, A_min, sigma, gamma).
+        max_niveles = _cap_iters_por_lote(
+            tarea.max_evaluaciones, n_tareas * n_tareas)
+        base.update(
+            max_niveles=max_niveles,
+            p_inter=float(cfg_mh["p_inter"]),
+            alpha_inter=0.80,
+        )
     else:
         raise ValueError(f"MH desconocida: {tarea.mh!r}")
     return base
@@ -412,6 +433,8 @@ def _cargar_runner(mh: str):
         from metacarp import busqueda_tabu_reactiva_desde_instancia as runner
     elif mh == "abc":
         from metacarp import busqueda_abejas_simple_desde_instancia as runner
+    elif mh == "vdo":
+        from metacarp import vibration_damping_desde_instancia as runner
     else:
         raise ValueError(f"MH desconocida: {mh!r}")
     return runner
@@ -690,7 +713,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         choices=["val", "egl", "todas"],
                         help="Filtrar por CLASE de instancia.")
     parser.add_argument("--solo-mh", type=str, default="todas",
-                        choices=["sa", "ts", "rts", "abc", "todas"],
+                        choices=["sa", "ts", "rts", "abc", "vdo", "todas"],
                         help="Filtrar por metaheurística.")
     parser.add_argument("--smoke", action="store_true",
                         help="Prueba tibia: 2 instancias {val1A, egl-e1-A}, "

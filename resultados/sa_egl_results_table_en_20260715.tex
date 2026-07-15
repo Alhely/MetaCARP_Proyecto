@@ -1,0 +1,43 @@
+% Generado por scripts/_gen_tablas_mh_20260713.py
+% Requiere: \usepackage{booktabs, longtable}
+\begingroup\scriptsize
+\begin{longtable}{lrrrrrrrl}
+\caption{Simulated Annealing: best result per instance and parameters of the winning run. Costs follow the CARPLIB convention (the constant $\delta$ adjustment is applied on the val family); costs matching the BKS are shown in \textbf{bold}. $T_0$ is the effective instance-aware initial temperature ($20\,d_{\max}/n$), $\alpha$ the geometric cooling factor and $L$ the Markov-chain length per temperature level ($n^2$). All rows come from the egl transfer campaign: class-tuned configuration ($\alpha = 0.95$, $p_{inter} = 0.6$) with \texttt{pr\_aislado} (Path Relinking on stagnation), budget of $10^6$ evaluations / 300\,s per run, 5 repetitions.}\label{tab:sa-egl-per-instance}\\
+\toprule
+Instance & BKS & Cost & Gap\,\% & $t$(s) & $T_0$ & $\alpha$ & $L$ & $p_{inter}$/cfg \\
+\midrule
+\endfirsthead
+\toprule
+Instance & BKS & Cost & Gap\,\% & $t$(s) & $T_0$ & $\alpha$ & $L$ & $p_{inter}$/cfg \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{egl-e1-A} & 3548 & $\mathbf{3548}$ & 0.00 & 302 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e1-B} & 4498 & 4569 & 1.58 & 302 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e1-C} & 5595 & 5745 & 2.68 & 300 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e2-A} & 5018 & 5070 & 1.04 & 301 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e2-B} & 6317 & 6485 & 2.66 & 301 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e2-C} & 8335 & 8662 & 3.92 & 301 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e3-A} & 5898 & 6099 & 3.41 & 304 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e3-B} & 7744 & 8344 & 7.75 & 307 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e3-C} & 10244 & 10839 & 5.81 & 301 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e4-A} & 6408 & 6830 & 6.59 & 305 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e4-B} & 8935 & 9764 & 9.28 & 305 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-e4-C} & 11512 & 12952 & 12.51 & 308 & 91.0 & 0.95 & 9604 & 0.6\,(T) \\
+\texttt{egl-s1-A} & 5018 & 5919 & 17.96 & 310 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s1-B} & 6388 & 7153 & 11.98 & 321 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s1-C} & 8518 & 9534 & 11.93 & 309 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s2-A} & 9825 & 14093 & 43.44 & 328 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s2-B} & 13017 & 17809 & 36.81 & 328 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s2-C} & 16425 & 21219 & 29.19 & 328 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s3-A} & 10165 & 15302 & 50.54 & 312 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s3-B} & 13648 & 19125 & 40.13 & 306 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s3-C} & 17188 & 22176 & 29.02 & 342 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s4-A} & 12153 & 19215 & 58.11 & 319 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s4-B} & 16113 & 23504 & 45.87 & 331 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\texttt{egl-s4-C} & 20430 & 27901 & 36.57 & 323 & 57.8 & 0.95 & 36100 & 0.6\,(T) \\
+\midrule
+\multicolumn{3}{l}{Mean gap: 19.53\%} & \multicolumn{6}{l}{BKS reached: 1/24} \\
+\end{longtable}
+\endgroup

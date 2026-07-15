@@ -1,0 +1,43 @@
+{
+  "mh": "vdo",
+  "modulo": "metacarp.vibration_damping",
+  "experimento": "val_egl_20260710",
+  "approach": "pr_aislado",
+  "umbral_pr": 30,
+  "max_evaluaciones_objetivo": 1000000,
+  "tiempo_limite_segundos": 300.0,
+  "clases": {
+    "val": {
+      "instancias": [
+        "gdb19",
+        "kshs1",
+        "kshs2",
+        "kshs3",
+        "kshs4",
+        "kshs5",
+        "kshs6",
+        "gdb4",
+        "gdb14",
+        "gdb15",
+        "gdb1",
+        "gdb20",
+        "gdb3",
+        "gdb6",
+        "gdb7",
+        "gdb12",
+        "gdb10",
+        "gdb2",
+        "gdb5",
+        "gdb13",
+        "gdb16",
+        "gdb17",
+        "gdb21"
+      ],
+      "config_fija": {
+        "p_inter": 0.5
+      }
+    }
+  },
+  "repeticiones": 5,
+  "semilla_base": 0
+}

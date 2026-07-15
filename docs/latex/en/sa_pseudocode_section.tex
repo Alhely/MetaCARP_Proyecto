@@ -1,0 +1,89 @@
+% ============================================================================
+% Article subsection: Simulated Annealing for the CARP.
+% Companion of cuckoo_discretization_pseudocode.tex — same shared setup
+% (nine operators, penalized objective with omega, p_inter bias, PR
+% intensification, budget 10^6 evals / 300 s). Requires:
+% \usepackage[ruled,vlined,linesnumbered]{algorithm2e}, amsmath.
+% Generated/updated: 2026-07-13.
+% ============================================================================
+\subsection{Simulated Annealing}
+\label{subsec:sa}
+
+Simulated Annealing (SA) explores the discrete space of CARP solutions with
+the classical Metropolis rule: a random neighbor $s'$ of the current solution
+$s$ is always accepted when $\Delta = f(s') - f(s) \leq 0$, and accepted with
+probability $\exp(-\Delta/T)$ otherwise, where $f(s) = c(s) + \omega \cdot
+\mathrm{viol}(s)$ is the shared penalized objective. Neighbors are drawn from
+the nine operators of Table~\ref{tab:neighborhood-operators}, choosing the
+inter-route group with probability $\max(p_{inter}, 0.8)$ under capacity
+violation and $p_{inter}$ otherwise. The temperature decreases geometrically,
+$T \leftarrow \alpha T$, after every Markov chain of $L$ iterations.
+
+Two instance-aware rules set the temperature scale and the chain length: the
+initial temperature is $T_0 = 20\, d_{\max} / n$, where $d_{\max}$ is the
+largest entry of the shortest-path distance matrix and $n$ the number of
+required tasks (so early acceptance probabilities are comparable across
+instances), and $L = n^2$ (the chain grows with the neighborhood size).
+Because a nearly frozen SA degenerates into greedy descent, a
+\textbf{reheating} mechanism restores $T \leftarrow \rho\, T_0$ (with
+$\rho = 0.5$) after \textit{patience} $= 10$ consecutive temperature levels
+without improving the incumbent $s^{*}$; the search stops after 10
+consecutive reheats without global improvement, or when the budget of
+$10^6$ evaluations / 300\,s is exhausted. On stagnation (30 consecutive
+non-improving levels) a truncated Path Relinking walk from $s$ toward
+$s^{*}$ replaces the current solution; the walk returns its best
+intermediate, so it never worsens $s$.
+
+\begin{algorithm}[htbp]
+\DontPrintSemicolon
+\caption{Simulated Annealing for the CARP}
+\label{alg:sa-carp}
+
+\KwIn{CARP instance; $T_0 = 20\,d_{\max}/n$; $T_{\min} = 10^{-3}$; cooling
+      factor $\alpha$; chain length $L = n^2$; reheat fraction $\rho$;
+      inter-route bias $p_{inter}$; penalty weight $\omega$;
+      max evaluations $10^6$ or max time 300\,s}
+\KwOut{Best solution found $s^{*}$}
+
+\BlankLine
+$s \leftarrow$ initial solution (precomputed greedy construction);\quad
+$s^{*} \leftarrow s$;\quad $T \leftarrow T_0$\;
+\While{evals $< 10^6$ \textbf{and} time $< 300$\,s \textbf{and}
+       reheats without improvement $< 10$}{
+  \For(\tcp*[f]{Markov chain at level $T$}){$\ell \leftarrow 1$ \KwTo $L$}{
+    $\mathcal{O} \leftarrow$ inter-route group with prob.\
+    $\max(p_{inter}, 0.8 \cdot \mathbb{1}[\text{violation}])$, intra-route
+    otherwise\;
+    $s' \leftarrow$ random move on $s$ with an operator of $\mathcal{O}$;\quad
+    $\Delta \leftarrow f(s') - f(s)$\;
+    \lIf{$\Delta \leq 0$ \textbf{or} $\mathrm{rand}() <
+         \exp(-\Delta/T)$}{$s \leftarrow s'$}
+    \lIf{$f(s) < f(s^{*})$}{$s^{*} \leftarrow s$}
+  }
+  $T \leftarrow \max(\alpha T,\, T_{\min})$\;
+  \lIf(\tcp*[f]{reheat}){10 levels without improving
+      $s^{*}$}{$T \leftarrow \rho\, T_0$}
+  \lIf(\tcp*[f]{intensification}){30 levels without improving
+      $s^{*}$}{$s \leftarrow \mathrm{PathRelinking}(s, s^{*})$}
+}
+\Return $s^{*}$\;
+\end{algorithm}
+
+\paragraph{Calibration.} The primary grid on the 23-instance calibration set
+crossed $\alpha \in \{0.80, 0.82, \ldots, 0.98, 0.99\}$ (11 values) with
+$p_{inter} \in \{0.4, 0.5, 0.6, 0.7, 0.8\}$ (5 values): 55 combinations
+$\times$ 23 instances $\times$ 2 repetitions $= 2{,}530$ runs. A second,
+one-dimensional pass then tuned the stopping knob (maximum consecutive
+reheats without improvement) over $\{3, 5, 10\}$; the value 10 won with a
+mean gap of $2.90\%$ (against $3.08\%$ and $3.20\%$). The resulting fixed
+configuration --- $\alpha = 0.9$, $p_{inter} = 0.5$, 10 reheats --- was run
+with the three experimental variants (\texttt{solo\_p\_inter},
+\texttt{binario\_capacidad}, \texttt{pr\_aislado}) at 5 repetitions,
+yielding a best-per-instance mean gap of $0.08\%$ and 21/23 BKS, the
+strongest result of the campaign on small instances. For the val/egl
+transfer the calibrated knobs carry over with two size-motivated
+adjustments on the egl class: $\alpha = 0.95$ (slower cooling: the chain
+$L = n^2$ is already long, so exploiting more levels pays off) and
+$p_{inter} = 0.6$ (more routes $\Rightarrow$ more weight on inter-route
+moves). Full per-instance results are reported in
+Table~\ref{tab:sa-per-instance}.

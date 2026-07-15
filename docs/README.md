@@ -59,6 +59,20 @@ docs/
 
 ---
 
+## docs/latex/en/
+
+Subsecciones de artículo (descripción + pseudocódigo `algorithm2e` +
+síntesis de calibración) por metaheurística, y tablas listas para Overleaf.
+
+| Archivo | Descripción |
+|---------|-------------|
+| `sa_pseudocode_section.tex` | Simulated Annealing: article subsection + pseudocode |
+| `ts_pseudocode_section.tex` | Tabu Search: article subsection + pseudocode |
+| `rts_pseudocode_section.tex` | Reactive Tabu Search: article subsection + pseudocode |
+| `abc_pseudocode_section.tex` | Artificial Bee Colony: article subsection + pseudocode |
+| `cuckoo_discretization_pseudocode.tex` | Cuckoo Search: Discretization and Pseudocode subsection |
+| `neighborhood_operators_table.tex` | Table of the 9 shared neighborhood operators |
+
 ## docs/latex/en/pseudocodigos/
 
 | Archivo | Descripción |

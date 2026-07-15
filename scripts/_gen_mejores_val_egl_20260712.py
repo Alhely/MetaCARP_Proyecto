@@ -73,6 +73,8 @@ FUENTES = [
      "experimentos_val_egl_20260710/corrida_*/abc/final/*.csv"),
     ("cuckoo_search",          "CS",
      "experimentos_val_egl_20260710/cs_campana/cs_minigrid/corrida_*/final/*.csv"),
+    ("vibration_damping",      "VDO",
+     "experimentos_vdo_20260714/val_egl/corrida_*/vdo/final/*.csv"),
 ]
 
 

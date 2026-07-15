@@ -1,0 +1,106 @@
+% Generado por scripts/_gen_tablas_mh_20260713.py
+% Requiere: \usepackage{booktabs, longtable}
+\begingroup\scriptsize
+\begin{longtable}{lrrrrrrl}
+\caption{Tabu Search: best result per instance and parameters of the winning run. Costs follow the CARPLIB convention (the constant $\delta$ adjustment is applied on the val family); costs matching the BKS are shown in \textbf{bold}. $\theta$ is the tabu tenure and $B$ the number of random neighbors sampled and evaluated per iteration. cfg: $P$~=~\texttt{solo\_p\_inter}, $B$~=~\texttt{binario\_capacidad}, $R$~=~\texttt{pr\_aislado} (Path Relinking) on the 23-instance calibration set; $T$~=~val/egl transfer campaign (class-tuned configuration, \texttt{pr\_aislado}, budget of $10^6$ evaluations / 300\,s per run).}\label{tab:ts-per-instance}\\
+\toprule
+Instance & BKS & Cost & Gap\,\% & $t$(s) & $\theta$ & $B$ & $p_{inter}$/cfg \\
+\midrule
+\endfirsthead
+\toprule
+Instance & BKS & Cost & Gap\,\% & $t$(s) & $\theta$ & $B$ & $p_{inter}$/cfg \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{gdb19} & 55 & $\mathbf{55}$ & 0.00 & 1 & 25 & 40 & 0.4\,(P) \\
+\texttt{kshs1} & 14661 & $\mathbf{14661}$ & 0.00 & 1 & 25 & 40 & 0.4\,(P) \\
+\texttt{kshs2} & 9863 & $\mathbf{9863}$ & 0.00 & 1 & 25 & 40 & 0.4\,(P) \\
+\texttt{kshs3} & 9320 & $\mathbf{9320}$ & 0.00 & 1 & 25 & 40 & 0.4\,(P) \\
+\texttt{kshs4} & 11498 & 11888 & 3.39 & 4 & 25 & 40 & 0.4\,(R) \\
+\texttt{kshs5} & 10957 & $\mathbf{10957}$ & 0.00 & 3 & 25 & 40 & 0.4\,(R) \\
+\texttt{kshs6} & 10197 & $\mathbf{10197}$ & 0.00 & 2 & 25 & 40 & 0.4\,(P) \\
+\texttt{gdb4} & 287 & $\mathbf{287}$ & 0.00 & 2 & 25 & 40 & 0.4\,(P) \\
+\texttt{gdb14} & 100 & $\mathbf{100}$ & 0.00 & 5 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb15} & 58 & $\mathbf{58}$ & 0.00 & 2 & 25 & 40 & 0.4\,(P) \\
+\texttt{gdb1} & 316 & $\mathbf{316}$ & 0.00 & 5 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb20} & 121 & 124 & 2.48 & 4 & 25 & 40 & 0.4\,(P) \\
+\texttt{gdb3} & 275 & 279 & 1.45 & 5 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb6} & 298 & $\mathbf{298}$ & 0.00 & 5 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb7} & 325 & 329 & 1.23 & 5 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb12} & 458 & $\mathbf{458}$ & 0.00 & 6 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb10} & 275 & 285 & 3.64 & 5 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb2} & 339 & 347 & 2.36 & 6 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb5} & 377 & 383 & 1.59 & 6 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb13} & 536 & 576 & 7.46 & 6 & 25 & 40 & 0.4\,(R) \\
+\texttt{gdb16} & 127 & 131 & 3.15 & 3 & 25 & 40 & 0.4\,(P) \\
+\texttt{gdb17} & 91 & $\mathbf{91}$ & 0.00 & 2 & 25 & 40 & 0.4\,(P) \\
+\texttt{gdb21} & 156 & 163 & 4.49 & 7 & 25 & 40 & 0.4\,(R) \\
+\texttt{val1A} & 247 & $\mathbf{247}$ & 0.00 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{val1B} & 247 & 279 & 12.96 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{val1C} & 319 & 348 & 9.09 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{val2A} & 298 & $\mathbf{298}$ & 0.00 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{val2B} & 330 & $\mathbf{330}$ & 0.00 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{val2C} & 528 & 548 & 3.79 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{val3A} & 105 & $\mathbf{105}$ & 0.00 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{val3B} & 111 & 112 & 0.90 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{val3C} & 162 & 166 & 2.47 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{val4A} & 522 & 563 & 7.85 & 300 & 25 & 69 & 0.4\,(T) \\
+\texttt{val4B} & 534 & 580 & 8.61 & 300 & 25 & 69 & 0.4\,(T) \\
+\texttt{val4C} & 550 & 641 & 16.55 & 300 & 25 & 69 & 0.4\,(T) \\
+\texttt{val4D} & 650 & 717 & 10.31 & 300 & 25 & 69 & 0.4\,(T) \\
+\texttt{val5A} & 566 & 599 & 5.83 & 300 & 25 & 65 & 0.4\,(T) \\
+\texttt{val5B} & 589 & 635 & 7.81 & 300 & 25 & 65 & 0.4\,(T) \\
+\texttt{val5C} & 617 & 669 & 8.43 & 300 & 25 & 65 & 0.4\,(T) \\
+\texttt{val5D} & 718 & 797 & 11.00 & 300 & 25 & 65 & 0.4\,(T) \\
+\texttt{val6A} & 330 & 332 & 0.61 & 300 & 25 & 50 & 0.4\,(T) \\
+\texttt{val6B} & 340 & 348 & 2.35 & 300 & 25 & 50 & 0.4\,(T) \\
+\texttt{val6C} & 424 & 436 & 2.83 & 300 & 25 & 50 & 0.4\,(T) \\
+\texttt{val7A} & 382 & 427 & 11.78 & 300 & 25 & 66 & 0.4\,(T) \\
+\texttt{val7B} & 386 & 419 & 8.55 & 300 & 25 & 66 & 0.4\,(T) \\
+\texttt{val7C} & 437 & 511 & 16.93 & 300 & 25 & 66 & 0.4\,(T) \\
+\texttt{val8A} & 522 & 545 & 4.41 & 300 & 25 & 63 & 0.4\,(T) \\
+\texttt{val8B} & 531 & 563 & 6.03 & 300 & 25 & 63 & 0.4\,(T) \\
+\texttt{val8C} & 657 & 774 & 17.81 & 300 & 25 & 63 & 0.4\,(T) \\
+\texttt{val9A} & 450 & 485 & 7.78 & 300 & 25 & 92 & 0.4\,(T) \\
+\texttt{val9B} & 453 & 500 & 10.38 & 300 & 25 & 92 & 0.4\,(T) \\
+\texttt{val9C} & 459 & 513 & 11.76 & 300 & 25 & 92 & 0.4\,(T) \\
+\texttt{val9D} & 515 & 584 & 13.40 & 302 & 25 & 92 & 0.4\,(T) \\
+\texttt{val10A} & 637 & 668 & 4.87 & 300 & 25 & 97 & 0.4\,(T) \\
+\texttt{val10B} & 645 & 694 & 7.60 & 301 & 25 & 97 & 0.4\,(T) \\
+\texttt{val10C} & 655 & 709 & 8.24 & 300 & 25 & 97 & 0.4\,(T) \\
+\texttt{val10D} & 734 & 826 & 12.53 & 300 & 25 & 97 & 0.4\,(T) \\
+\texttt{gdb8} & 348 & 354 & 1.72 & 300 & 25 & 46 & 0.4\,(T) \\
+\texttt{gdb9} & 303 & 321 & 5.94 & 300 & 25 & 51 & 0.4\,(T) \\
+\texttt{gdb11} & 395 & 399 & 1.01 & 300 & 25 & 45 & 0.4\,(T) \\
+\texttt{gdb18} & 164 & $\mathbf{164}$ & 0.00 & 300 & 25 & 40 & 0.4\,(T) \\
+\texttt{gdb22} & 200 & $\mathbf{200}$ & 0.00 & 300 & 25 & 44 & 0.4\,(T) \\
+\texttt{gdb23} & 233 & 243 & 4.29 & 300 & 25 & 55 & 0.4\,(T) \\
+\texttt{egl-e1-A} & 3548 & 3803 & 7.19 & 300 & 25 & 51 & 0.6\,(T) \\
+\texttt{egl-e1-B} & 4498 & 4673 & 3.89 & 300 & 25 & 51 & 0.6\,(T) \\
+\texttt{egl-e1-C} & 5595 & 5854 & 4.63 & 300 & 25 & 51 & 0.6\,(T) \\
+\texttt{egl-e2-A} & 5018 & 5879 & 17.16 & 300 & 25 & 72 & 0.6\,(T) \\
+\texttt{egl-e2-B} & 6317 & 7168 & 13.47 & 300 & 25 & 72 & 0.6\,(T) \\
+\texttt{egl-e2-C} & 8335 & 9418 & 12.99 & 300 & 25 & 72 & 0.6\,(T) \\
+\texttt{egl-e3-A} & 5898 & 7483 & 26.87 & 300 & 25 & 87 & 0.6\,(T) \\
+\texttt{egl-e3-B} & 7744 & 9064 & 17.05 & 300 & 25 & 87 & 0.6\,(T) \\
+\texttt{egl-e3-C} & 10244 & 11103 & 8.39 & 300 & 25 & 87 & 0.6\,(T) \\
+\texttt{egl-e4-A} & 6408 & 7972 & 24.41 & 300 & 25 & 98 & 0.6\,(T) \\
+\texttt{egl-e4-B} & 8935 & 10817 & 21.06 & 300 & 25 & 98 & 0.6\,(T) \\
+\texttt{egl-e4-C} & 11512 & 15817 & 37.40 & 303 & 25 & 98 & 0.6\,(T) \\
+\texttt{egl-s1-A} & 5018 & 6223 & 24.01 & 301 & 25 & 75 & 0.6\,(T) \\
+\texttt{egl-s1-B} & 6388 & 7232 & 13.21 & 300 & 25 & 75 & 0.6\,(T) \\
+\texttt{egl-s1-C} & 8518 & 10051 & 18.00 & 300 & 25 & 75 & 0.6\,(T) \\
+\texttt{egl-s2-A} & 9825 & 12211 & 24.28 & 300 & 37 & 147 & 0.6\,(T) \\
+\texttt{egl-s2-B} & 13017 & 19576 & 50.39 & 304 & 37 & 147 & 0.6\,(T) \\
+\texttt{egl-s2-C} & 16425 & 20350 & 23.90 & 300 & 37 & 147 & 0.6\,(T) \\
+\texttt{egl-s3-A} & 10165 & 11897 & 17.04 & 300 & 40 & 159 & 0.6\,(T) \\
+\texttt{egl-s3-B} & 13648 & 16749 & 22.72 & 300 & 40 & 159 & 0.6\,(T) \\
+\texttt{egl-s3-C} & 17188 & 20887 & 21.52 & 300 & 40 & 159 & 0.6\,(T) \\
+\texttt{egl-s4-A} & 12153 & 15674 & 28.97 & 300 & 48 & 190 & 0.6\,(T) \\
+\texttt{egl-s4-B} & 16113 & 20765 & 28.87 & 300 & 48 & 190 & 0.6\,(T) \\
+\texttt{egl-s4-C} & 20430 & 29338 & 43.60 & 300 & 48 & 190 & 0.6\,(T) \\
+\midrule
+\multicolumn{3}{l}{Mean gap: 9.30\%} & \multicolumn{5}{l}{BKS reached: 19/87} \\
+\end{longtable}
+\endgroup

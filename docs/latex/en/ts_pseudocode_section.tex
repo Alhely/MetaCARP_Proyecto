@@ -1,0 +1,78 @@
+% ============================================================================
+% Article subsection: Tabu Search for the CARP.
+% Companion of cuckoo_discretization_pseudocode.tex — same shared setup.
+% Requires: \usepackage[ruled,vlined,linesnumbered]{algorithm2e}, amsmath.
+% Generated/updated: 2026-07-13.
+% ============================================================================
+\subsection{Tabu Search}
+\label{subsec:ts}
+
+Tabu Search (TS) is a best-improvement local search with short-term memory:
+at every iteration it moves to the best available neighbor even if it is
+worse than the current solution, and forbids recently executed moves for
+$\theta$ iterations (a FIFO tabu list with tenure $\theta$) to avoid cycling.
+The classical \textbf{aspiration criterion} overrides the prohibition
+whenever a tabu move produces a solution strictly better than the incumbent
+$s^{*}$. The implementation is deliberately minimalist --- a single FIFO
+list of move attributes, without frequency memory or an elite pool --- so
+that the contribution of the reactive extension
+(Section~\ref{subsec:rts}) can be isolated.
+
+Enumerating the full CARP neighborhood is prohibitive, so each iteration
+\emph{samples} a batch of $B$ random neighbors, drawn from the nine shared
+operators of Table~\ref{tab:neighborhood-operators} with the usual group
+bias ($P(\text{inter}) = \max(p_{inter}, 0.8)$ under capacity violation),
+and evaluates the batch in a vectorized pass over the penalized objective
+$f(s) = c(s) + \omega \cdot \mathrm{viol}(s)$. The search stops when the
+budget of $10^6$ evaluations or 300\,s is exhausted (the iteration cap is
+$\lfloor 10^6 / B \rfloor$, since every iteration evaluates a full batch)
+or on prolonged stagnation. After 30 consecutive non-improving iterations,
+a truncated Path Relinking walk from $s$ toward $s^{*}$ replaces the
+current solution.
+
+\begin{algorithm}[htbp]
+\DontPrintSemicolon
+\caption{Tabu Search for the CARP}
+\label{alg:ts-carp}
+
+\KwIn{CARP instance; tabu tenure $\theta$; batch size $B$; inter-route bias
+      $p_{inter}$; penalty weight $\omega$; max evaluations $10^6$ or max
+      time 300\,s}
+\KwOut{Best solution found $s^{*}$}
+
+\BlankLine
+$s \leftarrow$ initial solution (precomputed greedy construction);\quad
+$s^{*} \leftarrow s$;\quad $\mathcal{T} \leftarrow \emptyset$
+\tcp*{FIFO tabu list}
+\While{evals $< 10^6$ \textbf{and} time $< 300$\,s \textbf{and} not
+       stagnated}{
+  sample $B$ random neighbors of $s$ (shared operators, group bias
+  $\max(p_{inter}, 0.8 \cdot \mathbb{1}[\text{violation}])$) and evaluate
+  $f$ vectorized\;
+  $s' \leftarrow$ best sampled neighbor whose move is not in $\mathcal{T}$,
+  \textbf{or} a tabu one if $f(s') < f(s^{*})$ \tcp*{aspiration}
+  $s \leftarrow s'$;\quad push the executed move into $\mathcal{T}$
+  (expires after $\theta$ iterations)\;
+  \lIf{$f(s) < f(s^{*})$}{$s^{*} \leftarrow s$}
+  \lIf(\tcp*[f]{intensification}){30 iterations without improving
+      $s^{*}$}{$s \leftarrow \mathrm{PathRelinking}(s, s^{*})$}
+}
+\Return $s^{*}$\;
+\end{algorithm}
+
+\paragraph{Calibration.} TS has a single structural knob, so its primary
+grid was the smallest of the campaign: $\theta \in \{5, 10, 15, 20, 25,
+30\}$ $\times$ 23 instances $\times$ 2 repetitions $= 276$ runs, won by
+$\theta = 25$. A second pass tuned the batch size over $B \in \{15, 25,
+40\}$: $B = 40$ won decisively with a mean gap of $5.35\%$ against
+$8.84\%$ and $13.32\%$ --- in sampled TS, the batch size matters more than
+the tenure. With the fixed configuration ($\theta = 25$, $B = 40$,
+$p_{inter} = 0.4$) the three experimental variants ran at 5 repetitions;
+best-per-instance: mean gap $1.38\%$, 12/23 BKS, with the Path Relinking
+variant winning 22 of 23 cells --- consistent with the absence of native
+diversification in this minimalist TS. Both fixed knobs scale poorly with
+instance size (with $\sim$190 tasks a tenure of 25 is proportionally huge
+and a batch of 40 minuscule), so the val/egl transfer adopts the
+proportional rules $\theta = \max(25, \lfloor n/4 \rceil)$ and
+$B = \max(40, n)$, with $p_{inter} = 0.4$ on val and $0.6$ on egl. Full
+per-instance results are reported in Table~\ref{tab:ts-per-instance}.

@@ -127,7 +127,7 @@ import random
 # Medición de tiempo de alta resolución.
 import time
 # Tipos abstractos para firmas de funciones.
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 # Soporte de dataclasses.
 from dataclasses import dataclass, field
 # Tipos de anotación.
@@ -297,6 +297,23 @@ def vibration_damping(
     alpha_inter: float = 0.8,   # fracción de prob. asignada a ops inter-ruta bajo violación
     p_inter: float = 0.6,       # fracción fija de prob. inter-ruta en régimen factible
     metodo_seleccion: str = "canonico",  # método de combinación inter/intra
+    # --- Kick reactivo / intensificación (mismo contrato que SA) ---
+    # Cuando ``niveles_sin_mejora_kick`` alcanza este umbral se aplica una
+    # perturbación (o el intensificador) y se reinicia el contador.
+    # None = mecanismo desactivado.
+    max_iter_sin_mejora_kick: int | None = None,
+    # Cota dura de kicks; al alcanzarla la corrida termina. None = sin tope.
+    max_resets: int | None = None,
+    # Hook de intensificación OPCIONAL (p.ej. Path Relinking limpio). Si se
+    # provee, en el punto de estancamiento se ejecuta
+    # ``intensificador(sol_actual, mejor_global, ctx, lam, rng, encoding,
+    # md)`` HACIA la mejor solución global EN LUGAR del kick aleatorio.
+    intensificador: Callable | None = None,
+    # --- Presupuesto de wall-clock (val_egl_20260710) ---
+    # Corta la corrida al alcanzar este límite en segundos. Se comprueba UNA
+    # vez al inicio de cada nivel de amplitud (bucle externo), NO en cada
+    # iteración interna. None = sin límite (comportamiento clásico).
+    tiempo_limite_segundos: float | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> VibrationDampingResult:
     """
@@ -464,6 +481,10 @@ def vibration_damping(
     historial_best: list[float] = []
     historial_amp: list[float] = []
     contador = ContadorOperadores()
+    # Contadores del kick reactivo (solo activos si se pasó
+    # max_iter_sin_mejora_kick; misma semántica que en SA).
+    niveles_sin_mejora_kick = 0
+    n_resets_kick = 0
 
     def costo_para_reporte() -> float:
         """Devuelve el mejor costo factible si existe; si no, el mejor global."""
@@ -476,6 +497,20 @@ def vibration_damping(
         # Tope opcional por número de niveles ejecutados.
         if max_niveles is not None and nivel >= max_niveles:
             break
+
+        # --- Presupuesto de wall-clock (val_egl_20260710) ---
+        # Comprobado UNA sola vez por nivel para no meter overhead en el
+        # bucle interno (un nivel dura L = n² evaluaciones).
+        if (
+            tiempo_limite_segundos is not None
+            and (time.perf_counter() - t0) >= tiempo_limite_segundos
+        ):
+            break
+
+        # Foto del mejor reportable ANTES del bucle interno: al final del
+        # nivel se compara para decidir si este nivel cuenta como "sin
+        # mejora" hacia el umbral del kick (mismo esquema que SA).
+        _rep_antes_nivel = costo_para_reporte()
 
         if guardar_historial:
             # Registramos la amplitud y el mejor costo al inicio de este nivel.
@@ -589,6 +624,38 @@ def vibration_damping(
         nivel += 1
         A = A0_eff * math.exp(-gamma_eff * nivel / 2.0)
 
+        # --- Kick por estancamiento global (mismo contrato que SA) ---
+        # El nivel cuenta como "sin mejora" si el mejor reportable no avanzó
+        # respecto a la foto tomada antes del bucle interno.
+        if costo_para_reporte() < _rep_antes_nivel - 1e-12:
+            niveles_sin_mejora_kick = 0
+        else:
+            niveles_sin_mejora_kick += 1
+        if (max_iter_sin_mejora_kick is not None
+                and niveles_sin_mejora_kick >= max_iter_sin_mejora_kick):
+            if intensificador is not None:
+                # Intensificación (p.ej. Path Relinking limpio) hacia la
+                # mejor solución global: la guía es la mejor factible si
+                # existe; si no, la mejor any.
+                guia = mejor_fact_s if mejor_fact_s is not None else mejor_any_s
+                sol_actual = intensificador(
+                    sol_actual, guia, ctx, lam_eff, rng, encoding, md_op
+                )
+            else:
+                # Import diferido: solo se carga si la corrida activa el kick.
+                from metacarp.strict_intra_inter_20260524 import aplicar_kick_labels
+                sol_actual = aplicar_kick_labels(
+                    sol_actual, rng, md_op, encoding=encoding
+                )
+            # Recalculamos costo y violación para que el siguiente nivel
+            # arranque con datos coherentes.
+            costo_actual = float(costo_rapido(sol_actual, ctx))
+            viol_actual = float(exceso_capacidad_rapido(sol_actual, ctx))
+            niveles_sin_mejora_kick = 0
+            n_resets_kick += 1
+            if max_resets is not None and n_resets_kick >= max_resets:
+                break
+
     # === FIN DEL BUCLE EXTERNO ===
 
     # Tiempo total de la corrida.
@@ -664,6 +731,7 @@ def vibration_damping(
             "mejor_solucion_tr_legible": solucion_legible_humana(sol_mejor),
             "reporte_detalle_deadheading": detalle_txt,
             "costo_total_desde_reporte": costo_total_reporte,
+            "n_resets_kick": n_resets_kick,
         }
         # Volcamos ``extra_csv`` a la fila (mismo contrato que Cuckoo).
         fila.update(extra_csv or {})
@@ -733,6 +801,10 @@ def vibration_damping_desde_instancia(
     alpha_inter: float = 0.8,
     p_inter: float = 0.6,
     metodo_seleccion: str = "canonico",
+    max_iter_sin_mejora_kick: int | None = None,
+    max_resets: int | None = None,
+    intensificador: Callable | None = None,
+    tiempo_limite_segundos: float | None = None,
     **_ignorado_kwargs: object,  # absorbe kwargs heredados (p.ej. id_corrida, config_id)
 ) -> VibrationDampingResult:
     """
@@ -775,4 +847,8 @@ def vibration_damping_desde_instancia(
         alpha_inter=alpha_inter,
         p_inter=p_inter,
         metodo_seleccion=metodo_seleccion,
+        max_iter_sin_mejora_kick=max_iter_sin_mejora_kick,
+        max_resets=max_resets,
+        intensificador=intensificador,
+        tiempo_limite_segundos=tiempo_limite_segundos,
     )

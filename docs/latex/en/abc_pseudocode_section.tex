@@ -1,0 +1,98 @@
+% ============================================================================
+% Article subsection: Artificial Bee Colony for the CARP.
+% Companion of cuckoo_discretization_pseudocode.tex — same shared setup.
+% Requires: \usepackage[ruled,vlined,linesnumbered]{algorithm2e}, amsmath.
+% Generated/updated: 2026-07-13.
+% ============================================================================
+\subsection{Artificial Bee Colony}
+\label{subsec:abc}
+
+The Artificial Bee Colony algorithm (ABC, after Karaboga) models the
+foraging of a hive: each of the $SN$ \textbf{food sources} is a candidate
+solution whose ``nectar'' is the quality $1/(1 + f)$ under the shared
+penalized objective $f(s) = c(s) + \omega \cdot \mathrm{viol}(s)$. Every
+cycle runs three phases:
+
+\begin{enumerate}
+  \item \textbf{Employed bees.} Each of the $SN$ employed bees generates one
+    neighbor of \emph{its own} source with the shared operators
+    (Table~\ref{tab:neighborhood-operators}, group bias
+    $\max(p_{inter}, 0.8)$ under capacity violation); if the neighbor
+    improves the source it replaces it and the trial counter
+    $\mathit{trials}_i$ resets, otherwise $\mathit{trials}_i$ increases.
+  \item \textbf{Onlooker bees.} $SN$ onlookers pick sources by roulette
+    selection proportional to fitness --- better sources receive more
+    improvement attempts --- and apply the same greedy replacement rule.
+    This phase is evaluated in a vectorized batch.
+  \item \textbf{Scout bees.} Every source with $\mathit{trials}_i \geq
+    \mathit{limit}$ is deemed exhausted and replaced by a \emph{pure random}
+    solution (a shuffled task sequence packed greedily by capacity),
+    faithful to the exploratory spirit of the canonical algorithm.
+\end{enumerate}
+
+The implementation is the canonical ABC with a single modernization: the
+inter/intra-route operator bias shared with the other four metaheuristics,
+so that capacity repair behaves consistently across the comparison. Since
+each cycle evaluates $\approx 2\,SN$ neighbors (employed plus onlookers),
+the budget of $10^6$ evaluations translates into $\lfloor 10^6 / (2\,SN)
+\rfloor$ cycles, also capped at 300\,s. After 30 consecutive non-improving
+cycles, a truncated Path Relinking walk from the best source toward the
+incumbent $s^{*}$ is applied.
+
+\begin{algorithm}[htbp]
+\DontPrintSemicolon
+\caption{Artificial Bee Colony for the CARP}
+\label{alg:abc-carp}
+
+\KwIn{CARP instance; sources $SN$; abandonment counter $\mathit{limit}$;
+      inter-route bias $p_{inter}$; penalty weight $\omega$; max
+      evaluations $10^6$ or max time 300\,s}
+\KwOut{Best solution found $s^{*}$}
+
+\BlankLine
+initialize sources $X[0..SN{-}1]$ (precomputed greedy construction plus
+random restarts);\quad $\mathit{trials}[\cdot] \leftarrow 0$;\quad
+$s^{*} \leftarrow \arg\min_i f(X[i])$\;
+\While{evals $< 10^6$ \textbf{and} time $< 300$\,s \textbf{and} not
+       stagnated}{
+  \For(\tcp*[f]{employed phase}){$i \leftarrow 0$ \KwTo $SN-1$}{
+    $x' \leftarrow$ random move on $X[i]$ (shared operators, group bias)\;
+    \lIf{$f(x') < f(X[i])$}{$X[i] \leftarrow x'$;
+        $\mathit{trials}[i] \leftarrow 0$}
+    \lElse{$\mathit{trials}[i] \leftarrow \mathit{trials}[i] + 1$}
+  }
+  \For(\tcp*[f]{onlooker phase, vectorized}){$k \leftarrow 0$ \KwTo
+      $SN-1$}{
+    $i \leftarrow$ roulette selection $\propto 1/(1 + f(X[i]))$\;
+    generate and greedily accept a neighbor of $X[i]$ as above\;
+  }
+  \For(\tcp*[f]{scout phase}){each $i$ with $\mathit{trials}[i] \geq
+      \mathit{limit}$}{
+    $X[i] \leftarrow$ random solution (shuffled tasks, greedy capacity
+    packing);\quad $\mathit{trials}[i] \leftarrow 0$\;
+  }
+  $s^{*} \leftarrow \arg\min\bigl(f(s^{*}),\, \min_i f(X[i])\bigr)$\;
+  \lIf(\tcp*[f]{intensification}){30 cycles without improving
+      $s^{*}$}{$X[\arg\min_i f(X[i])] \leftarrow
+      \mathrm{PathRelinking}(\arg\min_i f(X[i]),\, s^{*})$}
+}
+\Return $s^{*}$\;
+\end{algorithm}
+
+\paragraph{Calibration.} Because the natural population size grows with the
+dimension ($SN \sim 2\sqrt{n}$ by default), the grid explored
+\emph{scale factors} over the instance-aware defaults, keeping the search
+comparable across instance sizes: source factor $\in \{1.5, 2.0, 3.0,
+4.0\}$ $\times$ abandonment factor $\in \{0.25, 0.5, 0.75, 1.0\}$ $\times$
+$p_{inter} \in \{0.4, 0.5, 0.6, 0.7, 0.8\}$ $\times$ cycle factor $\in
+\{15, 20, 30\}$ $= 240$ combinations $\times$ 23 instances $\times$ 5
+repetitions $= 27{,}600$ runs. A second pass fixed
+$\mathit{limit} = 60$ (mean gap $9.53\%$). The resulting configuration
+($SN = 30$, $\mathit{limit} = 60$, $p_{inter} = 0.5$) achieved a
+best-per-instance mean gap of $1.32\%$ and 13/23 BKS on the calibration
+set. For the val/egl transfer, $SN = 30$ is kept (under an aligned
+evaluation budget, a larger population means fewer cycles), while the
+abandonment counter must grow with the dimension --- in the canonical ABC
+it is proportional to $SN \cdot D$ --- so $\mathit{limit} = \max(60, n)$,
+with $p_{inter} = 0.5$ on val and $0.6$ on egl. Full per-instance results
+are reported in Table~\ref{tab:abc-per-instance}.

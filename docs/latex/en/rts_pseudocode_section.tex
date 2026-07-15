@@ -1,0 +1,92 @@
+% ============================================================================
+% Article subsection: Reactive Tabu Search for the CARP.
+% Companion of cuckoo_discretization_pseudocode.tex — same shared setup.
+% Requires: \usepackage[ruled,vlined,linesnumbered]{algorithm2e}, amsmath.
+% Generated/updated: 2026-07-13.
+% ============================================================================
+\subsection{Reactive Tabu Search}
+\label{subsec:rts}
+
+Reactive Tabu Search (RTS), after Battiti and Tecchiolli, removes the main
+weakness of the static tabu list: the algorithm detects when it is cycling
+and adapts its own memory. It inherits from the plain TS of
+Section~\ref{subsec:ts} the batch sampling of $B$ neighbors, the vectorized
+evaluation of the penalized objective, the aspiration criterion and the
+shared operator vocabulary, and adds three mechanisms:
+
+\begin{itemize}
+  \item \textbf{Dynamic tenure.} The tenure varies within
+    $[\theta_{\min}, \theta_{\max}]$: whenever the current solution has been
+    visited before (a cycling signal), $\theta \leftarrow \min(\theta_{\max},
+    f_{+}\,\theta)$ with $f_{+} > 1$; after a sufficiently long stretch
+    without repetitions, $\theta \leftarrow \max(\theta_{\min},
+    f_{-}\,\theta)$ with $f_{-} < 1$ --- the memory relaxes cautiously.
+  \item \textbf{Visited-solution memory.} Every visited solution is recorded
+    through a canonical hash in a dictionary, so repetitions are detected in
+    $O(1)$ without scanning the history.
+  \item \textbf{Escape.} If some solution repeats more than a threshold
+    number of times (a ``hard'' cycle), several consecutive random moves are
+    applied ignoring the tabu list, and both the list and the visit history
+    are cleared: prohibitions from the abandoned region are useless in the
+    new one.
+\end{itemize}
+
+The stopping rules are those of the shared protocol: budget of $10^6$
+evaluations (iteration cap $\lfloor 10^6 / \max(20, 2n) \rfloor$) or
+300\,s, plus truncated Path Relinking toward the incumbent after 30
+consecutive non-improving iterations.
+
+\begin{algorithm}[htbp]
+\DontPrintSemicolon
+\caption{Reactive Tabu Search for the CARP}
+\label{alg:rts-carp}
+
+\KwIn{CARP instance; tenure bounds $[\theta_{\min}, \theta_{\max}]$ and
+      initial tenure $\theta_0$; adaptation factors $f_{+} > 1$,
+      $f_{-} < 1$; escape threshold $\kappa$; batch size $B$; inter-route
+      bias $p_{inter}$; penalty weight $\omega$; max evaluations $10^6$ or
+      max time 300\,s}
+\KwOut{Best solution found $s^{*}$}
+
+\BlankLine
+$s \leftarrow$ initial solution (precomputed greedy construction);\quad
+$s^{*} \leftarrow s$;\quad $\theta \leftarrow \theta_0$;\quad
+$\mathcal{T} \leftarrow \emptyset$;\quad $H \leftarrow \emptyset$
+\tcp*{hash map of visited solutions}
+\While{evals $< 10^6$ \textbf{and} time $< 300$\,s \textbf{and} not
+       stagnated}{
+  sample $B$ random neighbors of $s$ and evaluate $f$ vectorized;\quad
+  $s \leftarrow$ best non-tabu (or aspired) neighbor;\quad update
+  $\mathcal{T}$\;
+  \lIf{$f(s) < f(s^{*})$}{$s^{*} \leftarrow s$}
+  \uIf(\tcp*[f]{cycling signal}){$\mathrm{hash}(s) \in H$}{
+    $\theta \leftarrow \min(\theta_{\max},\, f_{+}\,\theta)$\;
+    \If(\tcp*[f]{hard cycle: escape}){$s$ repeated more than $\kappa$
+        times}{
+      apply several random moves to $s$ ignoring $\mathcal{T}$;\quad
+      clear $\mathcal{T}$ and $H$\;
+    }
+  }
+  \lElseIf{long stretch without repetitions}{
+    $\theta \leftarrow \max(\theta_{\min},\, f_{-}\,\theta)$}
+  record $\mathrm{hash}(s)$ in $H$\;
+  \lIf(\tcp*[f]{intensification}){30 iterations without improving
+      $s^{*}$}{$s \leftarrow \mathrm{PathRelinking}(s, s^{*})$}
+}
+\Return $s^{*}$\;
+\end{algorithm}
+
+\paragraph{Calibration.} RTS has the most structural knobs, and accordingly
+the largest grid of the campaign: $f_{+} \in \{1.05, 1.1, 1.2, 1.3, 1.4\}$
+$\times$ escape threshold $\kappa \in \{2, 3, 5, 8\}$ $\times$ $p_{inter}
+\in \{0.4, 0.5, 0.6, 0.7, 0.8\}$ $\times$ $f_{-} \in \{0.85, 0.9, 0.95\}$
+$= 300$ combinations $\times$ 23 instances $\times$ 5 repetitions
+$= 34{,}500$ runs. A confirmation pass on $f_{-}$ alone ratified $0.95$
+(mean gap $5.10\%$ against $5.44\%$ and $5.77\%$): the memory should relax
+slowly. The fixed configuration ($f_{+} = 1.2$, $f_{-} = 0.95$,
+$p_{inter} = 0.5$) achieved a best-per-instance mean gap of $1.16\%$ and
+16/23 BKS on the calibration set --- second only to SA. RTS is also the
+metaheuristic that transfers best to larger instances: since the tenure is
+self-adapting by design, the calibrated factors carry over unchanged, and
+only $p_{inter} = 0.6$ is adjusted on the egl class. Full per-instance
+results are reported in Table~\ref{tab:rts-per-instance}.
