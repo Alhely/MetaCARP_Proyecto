@@ -1,0 +1,43 @@
+% ============================================================================
+% Article paragraph: the SA variant used in the paper (Taillard-style
+% plateaus, instance-aware absolute temperatures). No grid-search details
+% here — calibration values belong to the experiments section.
+% Verified against metacarp/recocido_simulado.py (T_init = 20·d_max/n,
+% T_end = 20·d_max/n², L = n²). Generated: 2026-07-15.
+% ============================================================================
+In this paper we applied the SA algorithm with the following modifications,
+following the design guidelines of \cite{taillardDesignHeuristicAlgorithms2023}.
+First, unlike the textbook SA that decreases the temperature after every
+single iteration, this variant holds the temperature constant over a plateau
+of iterations --- a Markov chain --- before reducing it, as suggested in
+\cite{taillardDesignHeuristicAlgorithms2023}; the plateau length is adapted
+to the instance as $L = n^2$, where $n$ is the number of required edges
+(tasks), so that larger instances are granted proportionally longer chains
+at each temperature. Second, the algorithm requires absolute starting and
+ending temperatures, which we also derive from the instance:
+$T_{\mathrm{init}} = 20\, d_{\mathrm{max}}/n$ and
+$T_{\mathrm{end}} = 20\, d_{\mathrm{max}}/n^{2}$, where $d_{\mathrm{max}}$
+is the largest finite entry of the all-pairs shortest-path (deadheading)
+distance matrix. Since the cost change $\Delta$ of a random move is of the
+order of a few deadheading distances, scaling $T_{\mathrm{init}}$ by
+$d_{\mathrm{max}}/n$ makes the initial acceptance probability of worsening
+moves comparable across instances of very different size and cost scale.
+The temperature decreases geometrically between plateaus,
+$T \leftarrow \alpha T$, and we maintain the usual meaning of the cooling
+parameter $\alpha$; note that with these choices
+$T_{\mathrm{end}}/T_{\mathrm{init}} = 1/n$, so the number of temperature
+levels, $\lceil \ln n / \ln(1/\alpha) \rceil$, grows logarithmically with
+the instance size --- the schedule lengthens automatically on larger
+instances without introducing new parameters. Moves are drawn from the nine
+neighborhood operators shared by this study
+(Table~\ref{tab:neighborhood-operators}), selecting the inter-route group
+with probability $\max(p_{inter}, 0.8)$ under capacity violation and
+$p_{inter}$ otherwise, and candidates are compared through the penalized
+objective $f(s) = c(s) + \omega \cdot \mathrm{viol}(s)$, where
+$\mathrm{viol}(s)$ is the total capacity excess. Finally, the variant
+incorporates a reheating mechanism that restores the temperature to
+$\rho\, T_{\mathrm{init}}$ after a patience of non-improving temperature
+levels, described in detail below; the search terminates when
+$T \leq T_{\mathrm{end}}$, when consecutive reheats no longer improve the
+incumbent, or when the evaluation/time budget is exhausted. A pseudocode is
+shown in Algorithm~\ref{alg:sa_simple}.

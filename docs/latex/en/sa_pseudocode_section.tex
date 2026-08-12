@@ -39,11 +39,11 @@ intermediate, so it never worsens $s$.
 \caption{Simulated Annealing for the CARP}
 \label{alg:sa-carp}
 
-\KwIn{CARP instance; $T_0 = 20\,d_{\max}/n$; $T_{\min} = 10^{-3}$; cooling
-      factor $\alpha$; chain length $L = n^2$; reheat fraction $\rho$;
-      patience $P = 10$; stale-reheat limit $R = 10$; inter-route bias
-      $p_{inter}$; penalty weight $\omega$; max evaluations $10^6$ or max
-      time 300\,s}
+\KwIn{CARP instance; $T_0 = 20\,d_{\max}/n$; $T_{\min} = 20\,d_{\max}/n^2$;
+      cooling factor $\alpha$; chain length $L = n^2$; reheat fraction
+      $\rho$; patience $P = 10$; stale-reheat limit $R = 10$; inter-route
+      bias $p_{inter}$; penalty weight $\omega$; max evaluations $10^6$ or
+      max time 300\,s}
 \KwOut{Best solution found $s^{*}$}
 
 \BlankLine
@@ -53,26 +53,36 @@ $u \leftarrow 0$ \tcp*{consecutive levels without improving $s^{*}$}
 $r \leftarrow 0$ \tcp*{consecutive reheats without improving $s^{*}$}
 \While{$T > T_{\min}$ \textbf{and} $r < R$ \textbf{and} evals $< 10^6$
        \textbf{and} time $< 300$\,s}{
-  \For(\tcp*[f]{Markov chain at level $T$}){$\ell \leftarrow 1$ \KwTo $L$}{
-    $\mathcal{O} \leftarrow$ inter-route group with prob.\
-    $\max(p_{inter}, 0.8 \cdot \mathbb{1}[\text{violation}])$, intra-route
-    otherwise\;
-    $s' \leftarrow$ random move on $s$ with an operator of $\mathcal{O}$;\quad
-    $\Delta \leftarrow f(s') - f(s)$\;
+  \tcp{Markov chain at temperature $T$}
+  \For{$\ell \leftarrow 1$ \KwTo $L$}{
+    $p^{+} \leftarrow \max(p_{inter}, 0.8)$ \textbf{if} $s$ violates
+    capacity \textbf{else} $p_{inter}$\;
+    $\mathcal{O} \leftarrow$ inter-route operator group with prob.\
+    $p^{+}$, intra-route group otherwise\;
+    $s' \leftarrow$ random move on $s$ with an operator of
+    $\mathcal{O}$;\quad $\Delta \leftarrow f(s') - f(s)$\;
     \lIf{$\Delta \leq 0$ \textbf{or} $\mathrm{rand}() <
          \exp(-\Delta/T)$}{$s \leftarrow s'$}
     \lIf{$f(s) < f(s^{*})$}{$s^{*} \leftarrow s$}
   }
-  \leIf{$s^{*}$ improved during this level}{$u \leftarrow 0$}{
-      $u \leftarrow u + 1$}
-  \uIf(\tcp*[f]{reheating}){$u \geq P$}{
-    $T \leftarrow \rho\, T_0$;\quad $u \leftarrow 0$\;
-    \leIf{$s^{*}$ improved since the previous reheat}{$r \leftarrow 0$}{
-        $r \leftarrow r + 1$}
+  \eIf{$s^{*}$ improved during this level}{
+    $u \leftarrow 0$\;
+  }{
+    $u \leftarrow u + 1$\;
   }
-  \lElse(\tcp*[f]{geometric cooling}){$T \leftarrow \alpha\, T$}
-  \lIf(\tcp*[f]{intensification}){30 consecutive non-improving
-      levels}{$s \leftarrow \mathrm{PathRelinking}(s, s^{*})$}
+  \eIf(\tcp*[f]{reheating}){$u \geq P$}{
+    $T \leftarrow \rho\, T_0$;\quad $u \leftarrow 0$\;
+    \eIf{$s^{*}$ improved since the previous reheat}{
+      $r \leftarrow 0$\;
+    }{
+      $r \leftarrow r + 1$\;
+    }
+  }(\tcp*[f]{geometric cooling}){
+    $T \leftarrow \alpha\, T$\;
+  }
+  \tcp{intensification on stagnation}
+  \lIf{$30$ consecutive non-improving levels}{
+      $s \leftarrow \mathrm{PathRelinking}(s, s^{*})$}
 }
 \Return $s^{*}$\;
 \end{algorithm}

@@ -8,7 +8,8 @@ Most SA parameters are set by \emph{instance-aware} rules rather than
 tuning: the initial temperature $T_0 = 20\, d_{\max}/n$ (where $d_{\max}$ is
 the largest shortest-path distance and $n$ the number of required tasks),
 the Markov-chain length $L = n^2$, the minimum temperature
-$T_{\min} = 10^{-3}$, the reheating fraction $\rho = 0.5$, and a patience of
+$T_{\min} = 20\, d_{\max}/n^2$, the reheating fraction $\rho = 0.5$, and a
+patience of
 10 temperature levels before reheating. Only the two knobs that govern the
 exploration--exploitation balance were calibrated by grid search on a
 23-instance training set of small benchmarks (gdb/kshs): the cooling factor

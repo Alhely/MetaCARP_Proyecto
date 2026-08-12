@@ -89,7 +89,7 @@ import math
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -242,6 +242,11 @@ class Tarea:
     ruta_csv_parcial: str
     max_evaluaciones: int
     tiempo_limite_seg: float
+    # Overrides explícitos de kwargs (p.ej. p_inter o factor_pasos de un
+    # mini-grid dirigido). Se aplican DESPUÉS de la config por clase en
+    # ``_construir_kwargs``, así que ganan sobre CONFIG_POR_MH. Vacío por
+    # defecto para no afectar la campaña original.
+    overrides: dict = field(default_factory=dict)
 
 
 # ============================================================
@@ -405,17 +410,35 @@ def _construir_kwargs(tarea: Tarea) -> dict:
     elif tarea.mh == "vdo":
         # VDO evalúa 1 vecino por iteración con L = n² iteraciones por nivel
         # de amplitud, así que el cap de evaluaciones se traduce a un cap de
-        # NIVELES: max_niveles = 1e6 / n². El resto de parámetros usa los
-        # defaults instance-aware del módulo (A0, A_min, sigma, gamma).
+        # NIVELES: max_niveles = 1e6 / n².
         max_niveles = _cap_iters_por_lote(
             tarea.max_evaluaciones, n_tareas * n_tareas)
+        # FIX 20260805: con gamma=0.05 fijo, A0/A_min = n_tareas (por diseño:
+        # A0=20·d_max/n, A_min=20·d_max/n²), así que la amplitud solo llega a
+        # A_min tras 2·ln(n)/gamma niveles. En instancias grandes ese punto
+        # cae muy por delante del cap de wall-clock/evaluaciones: la corrida
+        # termina con A todavía alta, aceptando empeoramientos casi sin
+        # discriminar (diagnóstico de la campaña 20260714, gap medio VDO
+        # 28.29%). Recalibramos gamma para que el amortiguamiento coincida
+        # EXACTAMENTE con el presupuesto real de esta corrida:
+        #   A(max_niveles) = A0·exp(-gamma·max_niveles/2) = A_min
+        #   => gamma = 2·ln(A0/A_min) / max_niveles = 2·ln(n_tareas) / max_niveles
+        gamma_calibrado = 2.0 * math.log(max(2, n_tareas)) / max(1, max_niveles)
         base.update(
             max_niveles=max_niveles,
+            gamma=gamma_calibrado,
             p_inter=float(cfg_mh["p_inter"]),
             alpha_inter=0.80,
         )
     else:
         raise ValueError(f"MH desconocida: {tarea.mh!r}")
+    if tarea.overrides:
+        # Overrides de un re-intento dirigido (p.ej. p_inter corregido o un
+        # valor de mini-grid): ganan sobre la config por clase de arriba.
+        base["extra_csv"] = {**base.get("extra_csv", {}), **{
+            f"override_{k}": v for k, v in tarea.overrides.items()
+            if k != "extra_csv"}}
+        base.update({k: v for k, v in tarea.overrides.items() if k != "extra_csv"})
     return base
 
 

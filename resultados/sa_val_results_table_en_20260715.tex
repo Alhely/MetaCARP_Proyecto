@@ -1,0 +1,53 @@
+% Generado por scripts/_gen_tablas_mh_20260713.py
+% Requiere: \usepackage{booktabs, longtable}
+\begingroup\scriptsize
+\begin{longtable}{lrrrrrrrl}
+\caption{Simulated Annealing: best result per instance and parameters of the winning run. Costs follow the CARPLIB convention (the constant $\delta$ adjustment is applied on the val family); costs matching the BKS are shown in \textbf{bold}. $T_0$ is the effective instance-aware initial temperature ($20\,d_{\max}/n$), $\alpha$ the geometric cooling factor and $L$ the Markov-chain length per temperature level ($n^2$). All rows come from the val transfer campaign: class-tuned configuration ($\alpha = 0.9$, $p_{inter} = 0.5$) with \texttt{pr\_aislado} (Path Relinking on stagnation), budget of $10^6$ evaluations / 300\,s per run, 5 repetitions.}\label{tab:sa-val-per-instance}\\
+\toprule
+Instance & BKS & Cost & Gap\,\% & $t$(s) & $T_0$ & $\alpha$ & $L$ & $p_{inter}$/cfg \\
+\midrule
+\endfirsthead
+\toprule
+Instance & BKS & Cost & Gap\,\% & $t$(s) & $T_0$ & $\alpha$ & $L$ & $p_{inter}$/cfg \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{val1A} & 247 & $\mathbf{247}$ & 0.00 & 18 & 12.8 & 0.9 & 1521 & 0.5\,(T) \\
+\texttt{val1B} & 247 & 252 & 2.02 & 20 & 12.8 & 0.9 & 1521 & 0.5\,(T) \\
+\texttt{val1C} & 319 & 343 & 7.52 & 22 & 12.8 & 0.9 & 1521 & 0.5\,(T) \\
+\texttt{val2A} & 298 & $\mathbf{298}$ & 0.00 & 12 & 21.8 & 0.9 & 1156 & 0.5\,(T) \\
+\texttt{val2B} & 330 & 331 & 0.30 & 16 & 21.8 & 0.9 & 1156 & 0.5\,(T) \\
+\texttt{val2C} & 528 & 554 & 4.92 & 16 & 21.8 & 0.9 & 1156 & 0.5\,(T) \\
+\texttt{val3A} & 105 & $\mathbf{105}$ & 0.00 & 13 & 7.4 & 0.9 & 1225 & 0.5\,(T) \\
+\texttt{val3B} & 111 & 113 & 1.80 & 13 & 7.4 & 0.9 & 1225 & 0.5\,(T) \\
+\texttt{val3C} & 162 & 172 & 6.17 & 16 & 7.4 & 0.9 & 1225 & 0.5\,(T) \\
+\texttt{val4A} & 522 & $\mathbf{522}$ & 0.00 & 89 & 11.0 & 0.9 & 4761 & 0.5\,(T) \\
+\texttt{val4B} & 534 & 536 & 0.37 & 93 & 11.0 & 0.9 & 4761 & 0.5\,(T) \\
+\texttt{val4C} & 550 & 560 & 1.82 & 98 & 11.0 & 0.9 & 4761 & 0.5\,(T) \\
+\texttt{val4D} & 650 & 674 & 3.69 & 130 & 11.0 & 0.9 & 4761 & 0.5\,(T) \\
+\texttt{val5A} & 566 & 570 & 0.71 & 109 & 12.3 & 0.9 & 4225 & 0.5\,(T) \\
+\texttt{val5B} & 589 & 594 & 0.85 & 82 & 12.3 & 0.9 & 4225 & 0.5\,(T) \\
+\texttt{val5C} & 617 & 621 & 0.65 & 88 & 12.3 & 0.9 & 4225 & 0.5\,(T) \\
+\texttt{val5D} & 718 & 749 & 4.32 & 301 & 12.3 & 0.9 & 4225 & 0.5\,(T) \\
+\texttt{val6A} & 330 & $\mathbf{330}$ & 0.00 & 40 & 12.8 & 0.9 & 2500 & 0.5\,(T) \\
+\texttt{val6B} & 340 & 346 & 1.76 & 44 & 12.8 & 0.9 & 2500 & 0.5\,(T) \\
+\texttt{val6C} & 424 & 434 & 2.36 & 52 & 12.8 & 0.9 & 2500 & 0.5\,(T) \\
+\texttt{val7A} & 382 & 386 & 1.05 & 84 & 9.7 & 0.9 & 4356 & 0.5\,(T) \\
+\texttt{val7B} & 386 & $\mathbf{386}$ & 0.00 & 82 & 9.7 & 0.9 & 4356 & 0.5\,(T) \\
+\texttt{val7C} & 437 & 448 & 2.52 & 102 & 9.7 & 0.9 & 4356 & 0.5\,(T) \\
+\texttt{val8A} & 522 & 523 & 0.19 & 67 & 11.4 & 0.9 & 3969 & 0.5\,(T) \\
+\texttt{val8B} & 531 & 537 & 1.13 & 93 & 11.4 & 0.9 & 3969 & 0.5\,(T) \\
+\texttt{val8C} & 657 & 691 & 5.18 & 92 & 11.4 & 0.9 & 3969 & 0.5\,(T) \\
+\texttt{val9A} & 450 & 453 & 0.67 & 301 & 6.5 & 0.9 & 8464 & 0.5\,(T) \\
+\texttt{val9B} & 453 & 457 & 0.88 & 222 & 6.5 & 0.9 & 8464 & 0.5\,(T) \\
+\texttt{val9C} & 459 & $\mathbf{459}$ & 0.00 & 229 & 6.5 & 0.9 & 8464 & 0.5\,(T) \\
+\texttt{val9D} & 515 & 538 & 4.47 & 245 & 6.5 & 0.9 & 8464 & 0.5\,(T) \\
+\texttt{val10A} & 637 & $\mathbf{637}$ & 0.00 & 234 & 6.4 & 0.9 & 9409 & 0.5\,(T) \\
+\texttt{val10B} & 645 & 646 & 0.16 & 245 & 6.4 & 0.9 & 9409 & 0.5\,(T) \\
+\texttt{val10C} & 655 & 657 & 0.31 & 242 & 6.4 & 0.9 & 9409 & 0.5\,(T) \\
+\texttt{val10D} & 734 & 755 & 2.86 & 290 & 6.4 & 0.9 & 9409 & 0.5\,(T) \\
+\midrule
+\multicolumn{3}{l}{Mean gap: 1.73\%} & \multicolumn{6}{l}{BKS reached: 8/34} \\
+\end{longtable}
+\endgroup
